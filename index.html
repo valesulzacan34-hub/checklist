@@ -1,0 +1,1668 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Auditoria Operacional - Casa Bauducco</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --cb-bordo: #4A0E17;
+      --cb-bordo-dark: #36070E;
+      --cb-gold: #D4AF37;
+      --cb-cream: #FAF7F2;
+    }
+    .bg-cb-bordo { background-color: var(--cb-bordo); }
+    .bg-cb-bordo-dark { background-color: var(--cb-bordo-dark); }
+    .text-cb-bordo { color: var(--cb-bordo); }
+    .text-cb-gold { color: var(--cb-gold); }
+    .border-cb-gold { border-color: var(--cb-gold); }
+    .bg-cb-cream { background-color: var(--cb-cream); }
+  </style>
+</head>
+<body class="bg-cb-cream text-stone-800 antialiased pb-36 font-sans">
+
+  <!-- Tela de Login -->
+  <div id="login-screen" class="fixed inset-0 bg-cb-bordo-dark z-50 flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-sm rounded-2xl p-6 space-y-4 shadow-2xl border border-cb-gold/30">
+      <div class="flex flex-col items-center justify-center">
+        <img id="login-logo-img" alt="Casa Bauducco" class="h-24 w-auto object-contain">
+        <p class="text-xs text-stone-500 font-medium mt-1">Acesso à Supervisão Operacional</p>
+      </div>
+
+      <div class="space-y-3 text-sm">
+        <div>
+          <label class="block text-xs font-bold text-cb-bordo uppercase tracking-wider mb-1">Usuário</label>
+          <input type="text" id="login-user" placeholder="Digite seu usuário" class="w-full border rounded-lg p-2.5 bg-stone-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-cb-bordo">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-cb-bordo uppercase tracking-wider mb-1">Senha</label>
+          <input type="password" id="login-pass" placeholder="Digite sua senha" class="w-full border rounded-lg p-2.5 bg-stone-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-cb-bordo">
+        </div>
+      </div>
+
+      <p id="login-error" class="text-xs text-rose-600 font-semibold text-center hidden">Usuário ou senha incorretos!</p>
+
+      <button onclick="handleLogin()" class="w-full py-3 bg-cb-bordo hover:bg-cb-bordo-dark text-white font-bold text-xs rounded-lg transition uppercase tracking-widest border border-cb-gold/40 shadow-md">
+        Entrar
+      </button>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header class="bg-cb-bordo text-white sticky top-0 z-30 shadow-lg border-b-2 border-cb-gold">
+    <div class="max-w-xl mx-auto px-4 py-2 flex justify-between items-center">
+      <div class="flex items-center gap-2.5">
+        <div class="bg-white p-1 rounded-lg shadow-sm flex items-center justify-center">
+          <img id="header-logo-img" alt="Casa Bauducco" class="h-10 w-auto object-contain">
+        </div>
+        <div>
+          <h1 class="text-xs font-bold tracking-wider uppercase text-cb-gold" id="header-app-title">Casa Bauducco</h1>
+          <p class="text-[11px] text-stone-200" id="current-user-badge">Operador</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="btn-admin-users" onclick="toggleUsersModal()" class="hidden text-[11px] bg-cb-bordo-dark border border-cb-gold/40 hover:bg-stone-900 px-2 py-1.5 rounded-lg transition text-stone-200 font-medium">
+          👥 Usuários
+        </button>
+        <button onclick="toggleConfigModal()" class="text-[11px] bg-cb-bordo-dark border border-cb-gold/40 hover:bg-stone-900 px-2.5 py-1.5 rounded-lg transition text-stone-200 font-bold flex items-center gap-1">
+          ⚙️ <span>Configurar</span>
+        </button>
+        <button onclick="handleLogout()" class="text-xs text-rose-300 hover:text-white font-bold px-1.5">
+          Sair
+        </button>
+      </div>
+    </div>
+
+    <!-- Navegação de Telas -->
+    <div class="bg-cb-bordo-dark border-t border-cb-gold/20 flex text-xs font-bold text-center">
+      <button id="main-tab-audit" onclick="switchMainTab('audit')" class="flex-1 py-2.5 border-b-2 border-cb-gold text-cb-gold transition flex items-center justify-center gap-1.5">
+        <span>📋 Auditoria em Andamento</span>
+      </button>
+      <button id="main-tab-history" onclick="switchMainTab('history')" class="flex-1 py-2.5 border-b-2 border-transparent text-stone-300 hover:text-white transition flex items-center justify-center gap-1.5">
+        <span>📂 Relatórios Salvos</span>
+        <span id="history-badge-count" class="bg-cb-gold text-cb-bordo-dark px-1.5 py-0.2 rounded-full text-[10px] font-black">0</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- VIEW 1: FORMULÁRIO DE AUDITORIA -->
+  <main id="audit-view" class="max-w-xl mx-auto p-4 space-y-4">
+
+    <!-- Seletor de Modelo -->
+    <div class="bg-white p-3 rounded-xl shadow-sm border border-stone-200 flex items-center justify-between gap-2">
+      <label class="text-xs font-bold text-cb-bordo uppercase tracking-wide shrink-0">Modelo:</label>
+      <select id="checklist-selector" onchange="changeChecklistModel(this.value)" class="w-full text-xs font-semibold bg-stone-50 border rounded-lg p-2 focus:outline-none focus:ring-1 focus:ring-cb-bordo text-stone-800"></select>
+    </div>
+
+    <!-- Indicador de Conformidade -->
+    <div class="bg-cb-bordo text-white p-3.5 rounded-xl flex justify-between items-center shadow-sm border border-cb-gold/30">
+      <div>
+        <span class="text-xs font-bold text-stone-200 uppercase tracking-wider block">Conformidade Geral</span>
+        <span id="evaluated-count-display" class="text-[10px] text-stone-300">0 avaliados</span>
+      </div>
+      <span id="score-display" class="text-2xl font-black text-cb-gold">100%</span>
+    </div>
+
+    <!-- Dados da Unidade -->
+    <div class="bg-white p-4 rounded-xl shadow-sm border border-stone-200 space-y-3">
+      <h2 class="font-bold text-cb-bordo border-b pb-2 text-xs uppercase tracking-wider">Dados da Unidade</h2>
+      <div class="space-y-3 text-sm">
+        <div>
+          <label class="block text-xs font-semibold text-stone-600 mb-1">Unidade / Loja</label>
+          <input type="text" id="unit-name" placeholder="Ex: CB Vale Sul" class="w-full border rounded-lg p-2.5 text-sm bg-stone-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-cb-bordo">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-stone-600 mb-1">Supervisor / Operador</label>
+          <input type="text" id="supervisor-name" class="w-full border rounded-lg p-2.5 text-sm bg-stone-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-cb-bordo">
+        </div>
+      </div>
+    </div>
+
+    <!-- Container dos Itens -->
+    <div id="checklist-container" class="space-y-4"></div>
+
+    <!-- Observações Gerais -->
+    <div class="bg-white p-4 rounded-xl shadow-sm border border-stone-200 space-y-2">
+      <h2 class="font-bold text-cb-bordo text-xs uppercase tracking-wider">Observações Gerais da Visita</h2>
+      <textarea id="notes" rows="3" placeholder="Comentários gerais sobre a visita, postura da equipe, elogios..." class="w-full border rounded-lg p-2.5 text-sm bg-stone-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-cb-bordo"></textarea>
+    </div>
+
+  </main>
+
+  <!-- VIEW 2: HISTÓRICO DE RELATÓRIOS SALVOS -->
+  <main id="history-view" class="max-w-xl mx-auto p-4 space-y-4 hidden">
+    <div class="bg-white p-4 rounded-xl shadow-sm border border-stone-200 flex justify-between items-center">
+      <div>
+        <h2 class="font-bold text-cb-bordo text-sm uppercase tracking-wider">Histórico de Relatórios</h2>
+        <p class="text-xs text-stone-500">Auditorias concluídas e arquivadas no dispositivo</p>
+      </div>
+      <button onclick="clearAllHistory()" class="text-xs text-rose-600 font-bold hover:underline">
+        Limpar Histórico
+      </button>
+    </div>
+
+    <div id="history-list-container" class="space-y-3"></div>
+  </main>
+
+  <!-- Barra Inferior de Ações -->
+  <footer id="audit-footer" class="fixed bottom-0 left-0 right-0 bg-white border-t border-stone-200 p-3 z-30 shadow-lg">
+    <div class="max-w-xl mx-auto flex gap-2">
+      <button onclick="resetChecklist()" class="w-1/4 py-3 rounded-lg border border-stone-300 text-stone-700 text-xs font-bold hover:bg-stone-50 transition">
+        Limpar
+      </button>
+      <button onclick="generatePDF()" class="w-1/3 py-3 rounded-lg bg-cb-bordo hover:bg-cb-bordo-dark text-white text-xs font-bold tracking-wide transition flex items-center justify-center gap-1 border border-cb-gold/40">
+        <span>📄 Salvar / PDF</span>
+      </button>
+      <button onclick="shareWhatsApp()" class="flex-1 py-3 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold tracking-wide transition flex items-center justify-center gap-1">
+        <span>WhatsApp</span>
+      </button>
+    </div>
+  </footer>
+
+  <!-- Modal de Usuários -->
+  <div id="users-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-md rounded-2xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden border border-cb-gold/30">
+      <div class="p-4 border-b border-stone-200 flex justify-between items-center bg-cb-cream">
+        <div>
+          <h3 class="font-bold text-cb-bordo text-sm">Gerenciar Usuários</h3>
+          <p class="text-xs text-stone-500">Crie ou remova logins de acesso</p>
+        </div>
+        <button onclick="toggleUsersModal()" class="text-stone-400 hover:text-stone-700 text-lg font-bold p-1">✕</button>
+      </div>
+
+      <div id="users-list" class="p-4 overflow-y-auto space-y-2 flex-1 text-sm"></div>
+
+      <div class="p-4 border-t border-stone-200 bg-cb-cream space-y-2">
+        <span class="block text-xs font-bold text-cb-bordo uppercase">Novo Usuário</span>
+        <div class="grid grid-cols-2 gap-2">
+          <input type="text" id="new-user-name" placeholder="Login" class="text-xs border rounded-lg p-2 bg-white">
+          <input type="text" id="new-user-pass" placeholder="Senha" class="text-xs border rounded-lg p-2 bg-white">
+        </div>
+        <input type="text" id="new-user-fullname" placeholder="Nome Completo do Operador" class="w-full text-xs border rounded-lg p-2 bg-white">
+        <button onclick="addNewUser()" class="w-full py-2 bg-cb-bordo hover:bg-cb-bordo-dark text-white text-xs font-bold rounded-lg transition uppercase tracking-wider">
+          + Criar Acesso
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Configuração -->
+  <div id="config-modal" class="fixed inset-0 bg-black/70 z-50 hidden flex items-center justify-center p-2 sm:p-4">
+    <div class="bg-white w-full max-w-2xl h-[92vh] rounded-2xl flex flex-col shadow-2xl overflow-hidden border border-cb-gold/30">
+      
+      <div class="p-3.5 border-b border-stone-200 flex justify-between items-center bg-cb-bordo text-white">
+        <div>
+          <h3 class="font-bold text-sm text-cb-gold">Painel de Configuração</h3>
+          <p class="text-[11px] text-stone-200">Gerencie perguntas, setores, tipos de resposta e logotipo</p>
+        </div>
+        <button onclick="toggleConfigModal()" class="text-stone-300 hover:text-white text-xl font-bold px-2 py-0.5">✕</button>
+      </div>
+
+      <div class="flex border-b border-stone-200 bg-stone-100 text-xs font-bold">
+        <button id="tab-btn-items" onclick="switchConfigTab('items')" class="flex-1 py-3 border-b-2 border-cb-bordo text-cb-bordo bg-white transition">
+          📝 Perguntas & Setores
+        </button>
+        <button id="tab-btn-models" onclick="switchConfigTab('models')" class="flex-1 py-3 border-b-2 border-transparent text-stone-500 hover:text-cb-bordo transition">
+          📂 Modelos de Checklist
+        </button>
+        <button id="tab-btn-logo" onclick="switchConfigTab('logo')" class="flex-1 py-3 border-b-2 border-transparent text-stone-500 hover:text-cb-bordo transition">
+          🖼️ Logotipo
+        </button>
+      </div>
+
+      <div id="tab-content-items" class="flex-1 flex flex-col overflow-hidden">
+        <div id="modal-item-list" class="p-4 overflow-y-auto space-y-4 flex-1 text-sm bg-stone-50"></div>
+
+        <div class="p-3 border-t border-stone-200 bg-white space-y-2.5">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-cb-bordo uppercase">Adicionar Nova Pergunta</span>
+            <button onclick="toggleNewCategoryInput()" class="text-[11px] text-cb-bordo font-bold hover:underline">
+              + Criar Novo Setor/Categoria
+            </button>
+          </div>
+
+          <div id="new-cat-box" class="hidden flex gap-2 p-2 bg-stone-100 rounded-lg border">
+            <input type="text" id="new-cat-text" placeholder="Nome do novo setor (ex: 6. Manutenção)" class="flex-1 text-xs border rounded-lg p-2 bg-white">
+            <button onclick="addNewCategory()" class="px-3 py-2 bg-stone-800 hover:bg-black text-white text-xs font-bold rounded-lg transition">Salvar Setor</button>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <select id="new-item-category" class="text-xs border rounded-lg p-2 bg-stone-50 font-medium"></select>
+            <select id="new-item-type" class="text-xs border rounded-lg p-2 bg-stone-50 font-semibold text-stone-700">
+              <option value="boolean">🔘 Sim / Não / N/A (Conformidade)</option>
+              <option value="maintenance">🔧 Ordem de Manutenção (Abrir / Regular / N/A)</option>
+              <option value="stars">⭐ Avaliação (1 a 5 Estrelas)</option>
+              <option value="text">📝 Resposta Aberta (Texto Livre)</option>
+            </select>
+            <input type="text" id="new-item-text" placeholder="Título / Pergunta..." class="text-xs border rounded-lg p-2 bg-white">
+          </div>
+
+          <div class="flex items-center justify-between pt-1">
+            <label class="flex items-center gap-1.5 cursor-pointer text-stone-700 text-xs font-medium">
+              <input type="checkbox" id="new-item-req-photo" class="rounded text-cb-bordo focus:ring-0">
+              <span>Exigir Foto Obrigatória</span>
+            </label>
+            <button onclick="addNewItem()" class="px-4 py-2 bg-cb-bordo hover:bg-cb-bordo-dark text-white text-xs font-bold rounded-lg transition shadow-sm">
+              + Inserir Pergunta
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div id="tab-content-models" class="hidden p-5 space-y-5 overflow-y-auto flex-1 bg-stone-50 text-sm">
+        <div class="bg-white p-4 rounded-xl border border-stone-200 space-y-3 shadow-sm">
+          <span class="block text-xs font-bold text-cb-bordo uppercase tracking-wider">Renomear Modelo Atual</span>
+          <div class="flex gap-2">
+            <input type="text" id="edit-checklist-title" placeholder="Nome do Modelo" class="flex-1 text-xs border rounded-lg p-2.5 bg-stone-50 font-medium">
+            <button onclick="saveChecklistTitle()" class="px-4 py-2 bg-cb-bordo hover:bg-cb-bordo-dark text-white text-xs font-bold rounded-lg transition">
+              Salvar
+            </button>
+          </div>
+          <button onclick="deleteCurrentChecklist()" class="text-xs text-rose-600 font-bold hover:underline block pt-1">
+            🗑️ Excluir este modelo de checklist
+          </button>
+        </div>
+
+        <div class="bg-white p-4 rounded-xl border border-stone-200 space-y-3 shadow-sm">
+          <span class="block text-xs font-bold text-cb-bordo uppercase tracking-wider">Criar Novo Tipo de Checklist</span>
+          <p class="text-xs text-stone-500">Crie checklists independentes (ex: Abertura, Manutenção, Higiene).</p>
+          <div class="flex gap-2">
+            <input type="text" id="new-checklist-name" placeholder="Ex: Checklist de Manutenção" class="flex-1 text-xs border rounded-lg p-2.5 bg-stone-50">
+            <button onclick="createNewChecklistType()" class="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-lg transition">
+              + Criar
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div id="tab-content-logo" class="hidden p-5 space-y-4 overflow-y-auto flex-1 bg-stone-50 text-sm">
+        <div class="bg-white p-5 rounded-xl border border-stone-200 space-y-4 shadow-sm text-center">
+          <span class="block text-xs font-bold text-cb-bordo uppercase tracking-wider">Logotipo Atual em Uso</span>
+          <div class="flex justify-center p-3 bg-stone-50 rounded-lg border border-dashed border-stone-300">
+            <img id="preview-config-logo" class="h-20 w-auto object-contain">
+          </div>
+          <div class="flex flex-col sm:flex-row justify-center gap-3 pt-2">
+            <label class="cursor-pointer bg-cb-bordo hover:bg-cb-bordo-dark text-white px-4 py-2.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm">
+              📁 <span>Carregar Nova Imagem</span>
+              <input type="file" accept="image/*" class="hidden" onchange="uploadCustomLogo(event)">
+            </label>
+            <button onclick="resetLogoToDefault()" class="px-4 py-2.5 border border-stone-300 bg-white hover:bg-stone-50 text-stone-700 text-xs font-bold rounded-lg transition">
+              Restaurar Padrão
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-3 border-t flex justify-between bg-white text-xs items-center">
+        <button onclick="restoreDefaultChecklist()" class="text-rose-600 font-semibold hover:underline">
+          Restaurar Padrões da Casa Bauducco
+        </button>
+        <button onclick="toggleConfigModal()" class="bg-stone-900 hover:bg-black text-white font-bold px-6 py-2 rounded-lg transition">
+          Concluir
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    const DEFAULT_EMBEDDED_LOGO = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 350 220' width='100%' height='100%'><rect width='100%' height='100%' fill='white'/><g transform='translate(125, 20)'><path d='M0,85 L0,45 A45,45 0 0,1 90,45 L90,85 Z' fill='%234A0E17' stroke='%23D4AF37' stroke-width='5'/><path d='M25,68 Q30,35 36,22 Q34,42 32,72 Z' fill='white'/><path d='M35,65 Q40,36 55,36 Q68,36 65,51 Q62,60 52,62 Q66,62 66,74 Q66,85 46,82 Q37,80 35,65 Z' fill='white'/><path d='M39,58 Q47,58 58,56 Q55,42 47,42 Q40,42 39,58 Z' fill='%234A0E17'/><path d='M39,66 Q41,77 50,77 Q60,77 59,68 Q57,64 41,64 Z' fill='%234A0E17'/><path d='M20,80 Q45,82 70,77' stroke='white' stroke-width='3.5' fill='none' stroke-linecap='round'/></g><text x='175' y='165' font-family='Georgia, serif' font-size='30' font-weight='bold' fill='%234A0E17' text-anchor='middle' letter-spacing='3'>CASA BAUDUCCO</text></svg>";
+
+    const STORAGE_KEY_USERS = "CB_AUDITORIA_APP_USERS_PROD";
+    const STORAGE_KEY_CHECKLISTS = "CB_AUDITORIA_APP_CHECKLISTS_PROD";
+    const STORAGE_KEY_ACTIVE_ID = "CB_AUDITORIA_APP_ACTIVE_ID_PROD";
+    const STORAGE_KEY_REPORTS = "CB_AUDITORIA_APP_REPORTS_PROD";
+    const STORAGE_KEY_LOGO = "CB_AUDITORIA_APP_LOGO_PROD";
+
+    let currentLogo = localStorage.getItem(STORAGE_KEY_LOGO) || DEFAULT_EMBEDDED_LOGO;
+
+    const defaultUsers = [
+      { username: "alcides", pass: "12345678", name: "Alcides Ramos", role: "admin" }
+    ];
+
+    const defaultTemplates = [
+      {
+        id: "cb-supervisao",
+        name: "Casa Bauducco - Rota de Supervisão",
+        categories: [
+          {
+            category: "1. Estrutura, Salão & Visual",
+            items: [
+              { title: "Fachada da loja, luzes, letreiros, Leds", type: "boolean", requirePhoto: true },
+              { title: "Ambiente interno", type: "boolean", requirePhoto: true },
+              { title: "A comunicação visual está dentro do padrão?", type: "boolean", requirePhoto: true },
+              { title: "Mesas de atendimento", type: "boolean", requirePhoto: false },
+              { title: "Avaliar som ambiente", type: "boolean", requirePhoto: false },
+              { title: "Temperatura da Loja", type: "boolean", requirePhoto: false },
+              { title: "Todas áreas da loja estão sendo utilizadas para sua devida finalidade?", type: "boolean", requirePhoto: false },
+              { title: "Condição de móveis, utensílios e equipamentos", type: "boolean", requirePhoto: true }
+            ]
+          },
+          {
+            category: "2. Atendimento, Caixa & Equipe",
+            items: [
+              { title: "Avaliar apresentação dos colaboradores", type: "boolean", requirePhoto: true },
+              { title: "Escala de horários e Plano de posicionamento do dia está preenchido?", type: "boolean", requirePhoto: true },
+              { title: "Checar cumprimento da jornada do cliente durante o atendimento", type: "boolean", requirePhoto: false },
+              { title: "Verificar realização de venda sugestiva", type: "boolean", requirePhoto: false },
+              { title: "Conhecimentos gerais sobre marca e produtos?", type: "boolean", requirePhoto: false },
+              { title: "Formou fila maior que 3 clientes?", type: "boolean", requirePhoto: false },
+              { title: "Verificar organização da área do caixa", type: "boolean", requirePhoto: true },
+              { title: "PDV 1 e PDV 2 abertos?", type: "boolean", requirePhoto: true },
+              { title: "Tabela nutricional e Código de defesa do consumidor", type: "boolean", requirePhoto: false },
+              { title: "Cardápios disponíveis e em bom estado de conservação?", type: "boolean", requirePhoto: false }
+            ]
+          },
+          {
+            category: "3. Produtos, Exposição & Café",
+            items: [
+              { title: "Vitrine refrigerada com exposição adequada?", type: "boolean", requirePhoto: true },
+              { title: "Máquina de café e moinho regulados?", type: "boolean", requirePhoto: true },
+              { title: "Fatias dentro do padrão de peso e visual?", type: "boolean", requirePhoto: true },
+              { title: "Exposição do empório", type: "boolean", requirePhoto: true },
+              { title: "Insumos repostos de acordo com o movimento?", type: "boolean", requirePhoto: true }
+            ]
+          },
+          {
+            category: "4. Equipamentos, Limpeza & Segurança Alimentar",
+            items: [
+              { title: "Equipamentos operacionais em boas condições de uso e limpos?", type: "boolean", requirePhoto: true },
+              { title: "Inspecionar segurança de alimentos e boas práticas", type: "boolean", requirePhoto: true },
+              { title: "Tabela de validades impressa e disponível", type: "boolean", requirePhoto: true },
+              { title: "PAPs impressos e disponíveis", type: "boolean", requirePhoto: true },
+              { title: "Organização dos estoques", type: "boolean", requirePhoto: true }
+            ]
+          },
+          {
+            category: "5. Gestão, Controles & Administrativo",
+            items: [
+              { title: "Cadernos de controles estão sendo preenchidos?", type: "boolean", requirePhoto: false },
+              { title: "Loja está batendo a meta da semana?", type: "boolean", requirePhoto: false },
+              { title: "CAFs de reembolso foram abertos?", type: "boolean", requirePhoto: false },
+              { title: "Notas fiscais estão lançadas no GCOM?", type: "boolean", requirePhoto: false }
+            ]
+          },
+          {
+            category: "6. Ordens de Manutenção & Equipamentos",
+            items: [
+              { title: "Necessidade de Manutenção em Equipamentos do Salão ou Balcão?", type: "maintenance", requirePhoto: true },
+              { title: "Necessidade de Manutenção Predial / Hidráulica / Elétrica?", type: "maintenance", requirePhoto: false }
+            ]
+          }
+        ]
+      }
+    ];
+
+    let users = JSON.parse(localStorage.getItem(STORAGE_KEY_USERS)) || defaultUsers;
+    let currentUser = JSON.parse(sessionStorage.getItem("CB_CURRENT_LOGGED_USER_SESSION")) || null;
+    let allChecklists = JSON.parse(localStorage.getItem(STORAGE_KEY_CHECKLISTS)) || defaultTemplates;
+    let activeChecklistId = localStorage.getItem(STORAGE_KEY_ACTIVE_ID) || allChecklists[0].id;
+    let savedReports = JSON.parse(localStorage.getItem(STORAGE_KEY_REPORTS)) || [];
+    
+    let attachedPhotos = {};
+    let actionPlans = {};
+    let customAnswers = {};
+    let maintenanceOrders = {};
+
+    function updateLogos() {
+      document.getElementById("login-logo-img").src = currentLogo;
+      document.getElementById("header-logo-img").src = currentLogo;
+      const prev = document.getElementById("preview-config-logo");
+      if (prev) prev.src = currentLogo;
+    }
+
+    function switchMainTab(tab) {
+      const auditView = document.getElementById("audit-view");
+      const historyView = document.getElementById("history-view");
+      const auditFooter = document.getElementById("audit-footer");
+      const tabAudit = document.getElementById("main-tab-audit");
+      const tabHistory = document.getElementById("main-tab-history");
+
+      if (tab === 'audit') {
+        auditView.classList.remove("hidden");
+        historyView.classList.add("hidden");
+        auditFooter.classList.remove("hidden");
+        tabAudit.className = "flex-1 py-2.5 border-b-2 border-cb-gold text-cb-gold transition flex items-center justify-center gap-1.5 font-bold";
+        tabHistory.className = "flex-1 py-2.5 border-b-2 border-transparent text-stone-300 hover:text-white transition flex items-center justify-center gap-1.5 font-bold";
+      } else if (tab === 'history') {
+        auditView.classList.add("hidden");
+        historyView.classList.remove("hidden");
+        auditFooter.classList.add("hidden");
+        tabAudit.className = "flex-1 py-2.5 border-b-2 border-transparent text-stone-300 hover:text-white transition flex items-center justify-center gap-1.5 font-bold";
+        tabHistory.className = "flex-1 py-2.5 border-b-2 border-cb-gold text-cb-gold transition flex items-center justify-center gap-1.5 font-bold";
+        renderHistoryList();
+      }
+    }
+
+    function updateHistoryBadge() {
+      const badge = document.getElementById("history-badge-count");
+      if (badge) badge.innerText = savedReports.length;
+    }
+
+    function saveReportToHistory(reportData) {
+      savedReports.unshift(reportData);
+      localStorage.setItem(STORAGE_KEY_REPORTS, JSON.stringify(savedReports));
+      updateHistoryBadge();
+    }
+
+    function renderHistoryList() {
+      const container = document.getElementById("history-list-container");
+      container.innerHTML = "";
+      updateHistoryBadge();
+
+      if (savedReports.length === 0) {
+        container.innerHTML = `
+          <div class="p-8 text-center bg-white rounded-xl border border-stone-200 text-stone-400 text-xs font-semibold">
+            Nenhum relatório realizado e salvo até o momento.<br>Os relatórios são arquivados automaticamente ao gerar o PDF ou compartilhar.
+          </div>
+        `;
+        return;
+      }
+
+      savedReports.forEach((rep, idx) => {
+        const itemCard = document.createElement("div");
+        itemCard.className = "bg-white p-4 rounded-xl border border-stone-200 shadow-sm space-y-3";
+        
+        let ncListHtml = "";
+        if (rep.nonConformities && rep.nonConformities.length > 0) {
+          ncListHtml = rep.nonConformities.map(nc => `
+            <div class="p-2 bg-rose-50 border border-rose-200 rounded-lg text-xs">
+              <span class="font-bold text-rose-800 block">❌ ${nc.title}</span>
+              <span class="text-stone-700 block">↳ Ação: ${nc.action || 'Não descrita'}</span>
+              <span class="text-stone-500 text-[11px] block">↳ Prazo: ${nc.date || 'Não definida'}</span>
+            </div>
+          `).join("");
+        } else {
+          ncListHtml = `<div class="text-xs text-emerald-700 font-semibold">✓ Nenhuma não conformidade operacional.</div>`;
+        }
+
+        let omListHtml = "";
+        if (rep.maintenanceOrders && rep.maintenanceOrders.length > 0) {
+          omListHtml = rep.maintenanceOrders.map(om => `
+            <div class="p-2 bg-amber-50 border border-amber-300 rounded-lg text-xs">
+              <span class="font-bold text-amber-900 block">🔧 ${om.equipment || 'Equipamento não especificado'}</span>
+              <span class="text-stone-700 block">↳ Motivo/Ação: ${om.action || 'Não descrito'}</span>
+              <span class="text-stone-600 text-[11px] block">↳ Prazo para Conclusão: ${om.date || 'Não definida'}</span>
+            </div>
+          `).join("");
+        }
+
+        itemCard.innerHTML = `
+          <div class="flex justify-between items-start border-b pb-2">
+            <div>
+              <span class="text-xs font-black text-cb-bordo uppercase tracking-wide block">${rep.unit}</span>
+              <span class="text-[11px] text-stone-500">${rep.checklistName} • ${rep.date}</span>
+            </div>
+            <div class="text-right">
+              <span class="text-xs font-bold text-stone-400 uppercase block text-[10px]">Conformidade</span>
+              <span class="text-lg font-black text-cb-bordo">${rep.score}%</span>
+            </div>
+          </div>
+
+          <div class="text-xs text-stone-600 space-y-1">
+            <div><strong>Supervisor:</strong> ${rep.supervisor}</div>
+            <div><strong>Avaliados:</strong> ${rep.total} itens</div>
+            ${rep.notes ? `<div><strong>Observações:</strong> <span class="italic text-stone-700">${rep.notes}</span></div>` : ''}
+          </div>
+
+          <div class="space-y-1.5 pt-1">
+            <span class="text-[11px] font-bold text-cb-bordo uppercase tracking-wider block">Não Conformidades:</span>
+            ${ncListHtml}
+          </div>
+
+          ${omListHtml ? `
+            <div class="space-y-1.5 pt-1">
+              <span class="text-[11px] font-bold text-amber-800 uppercase tracking-wider block">Ordens de Manutenção Abertas:</span>
+              ${omListHtml}
+            </div>
+          ` : ''}
+
+          <div class="pt-2 border-t flex justify-end gap-2 text-xs">
+            <button onclick="reopenPDFFromHistory(${idx})" class="px-3 py-1.5 bg-cb-bordo text-white font-bold rounded-lg hover:bg-cb-bordo-dark transition">
+              📄 Visualizar / Imprimir PDF
+            </button>
+            <button onclick="deleteReportFromHistory(${idx})" class="px-2.5 py-1.5 text-rose-600 font-bold hover:bg-rose-50 rounded-lg transition">
+              Excluir
+            </button>
+          </div>
+        `;
+        container.appendChild(itemCard);
+      });
+    }
+
+    function deleteReportFromHistory(idx) {
+      if (confirm("Excluir este relatório do histórico?")) {
+        savedReports.splice(idx, 1);
+        localStorage.setItem(STORAGE_KEY_REPORTS, JSON.stringify(savedReports));
+        renderHistoryList();
+      }
+    }
+
+    function clearAllHistory() {
+      if (confirm("Tem certeza que deseja apagar todo o histórico de relatórios?")) {
+        savedReports = [];
+        localStorage.setItem(STORAGE_KEY_REPORTS, JSON.stringify(savedReports));
+        renderHistoryList();
+      }
+    }
+
+    function reopenPDFFromHistory(idx) {
+      const rep = savedReports[idx];
+      openPrintWindow(rep.htmlContent, rep.checklistName, rep.unit);
+    }
+
+    function switchConfigTab(tab) {
+      document.getElementById("tab-content-items").classList.add("hidden");
+      document.getElementById("tab-content-models").classList.add("hidden");
+      document.getElementById("tab-content-logo").classList.add("hidden");
+
+      document.getElementById("tab-btn-items").className = "flex-1 py-3 border-b-2 border-transparent text-stone-500 hover:text-cb-bordo transition";
+      document.getElementById("tab-btn-models").className = "flex-1 py-3 border-b-2 border-transparent text-stone-500 hover:text-cb-bordo transition";
+      document.getElementById("tab-btn-logo").className = "flex-1 py-3 border-b-2 border-transparent text-stone-500 hover:text-cb-bordo transition";
+
+      if (tab === 'items') {
+        document.getElementById("tab-content-items").classList.remove("hidden");
+        document.getElementById("tab-btn-items").className = "flex-1 py-3 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition";
+        renderModalItems();
+      } else if (tab === 'models') {
+        document.getElementById("tab-content-models").classList.remove("hidden");
+        document.getElementById("tab-btn-models").className = "flex-1 py-3 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition";
+      } else if (tab === 'logo') {
+        document.getElementById("tab-content-logo").classList.remove("hidden");
+        document.getElementById("tab-btn-logo").className = "flex-1 py-3 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition";
+        updateLogos();
+      }
+    }
+
+    function toggleNewCategoryInput() {
+      const box = document.getElementById("new-cat-box");
+      box.classList.toggle("hidden");
+    }
+
+    function uploadCustomLogo(event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          currentLogo = e.target.result;
+          localStorage.setItem(STORAGE_KEY_LOGO, currentLogo);
+          updateLogos();
+          alert("Logotipo atualizado com sucesso!");
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    function resetLogoToDefault() {
+      currentLogo = DEFAULT_EMBEDDED_LOGO;
+      localStorage.removeItem(STORAGE_KEY_LOGO);
+      updateLogos();
+      alert("Logotipo restaurado para o padrão!");
+    }
+
+    function saveAllChecklists() {
+      localStorage.setItem(STORAGE_KEY_CHECKLISTS, JSON.stringify(allChecklists));
+      localStorage.setItem(STORAGE_KEY_ACTIVE_ID, activeChecklistId);
+    }
+
+    function getCurrentChecklist() {
+      let found = allChecklists.find(c => c.id === activeChecklistId);
+      if (!found) {
+        activeChecklistId = allChecklists[0].id;
+        found = allChecklists[0];
+      }
+      return found;
+    }
+
+    function updateSelectorUI() {
+      const select = document.getElementById("checklist-selector");
+      select.innerHTML = "";
+      allChecklists.forEach(c => {
+        const opt = document.createElement("option");
+        opt.value = c.id;
+        opt.innerText = c.name;
+        if (c.id === activeChecklistId) opt.selected = true;
+        select.appendChild(opt);
+      });
+      document.getElementById("edit-checklist-title").value = getCurrentChecklist().name;
+      document.getElementById("header-app-title").innerText = getCurrentChecklist().name;
+    }
+
+    function changeChecklistModel(newId) {
+      activeChecklistId = newId;
+      attachedPhotos = {};
+      actionPlans = {};
+      customAnswers = {};
+      maintenanceOrders = {};
+      saveAllChecklists();
+      updateSelectorUI();
+      renderChecklist();
+    }
+
+    function saveChecklistTitle() {
+      const newTitle = document.getElementById("edit-checklist-title").value.trim();
+      if (!newTitle) return alert("O título não pode estar vazio.");
+      const current = getCurrentChecklist();
+      current.name = newTitle;
+      saveAllChecklists();
+      updateSelectorUI();
+      renderChecklist();
+      alert("Nome do checklist atualizado com sucesso!");
+    }
+
+    function createNewChecklistType() {
+      const name = document.getElementById("new-checklist-name").value.trim();
+      if (!name) return alert("Digite o nome do novo checklist.");
+
+      const newId = "checklist-" + Date.now();
+      allChecklists.push({
+        id: newId,
+        name: name,
+        categories: [{ category: "1. Itens Gerais", items: [] }]
+      });
+      activeChecklistId = newId;
+      saveAllChecklists();
+      document.getElementById("new-checklist-name").value = "";
+      updateSelectorUI();
+      switchConfigTab('items');
+      renderChecklist();
+      alert(`Checklist "${name}" criado com sucesso! Adicione agora as perguntas.`);
+    }
+
+    function deleteCurrentChecklist() {
+      if (allChecklists.length <= 1) return alert("Mantenha ao menos um checklist ativo no sistema.");
+      if (confirm(`Excluir o checklist "${getCurrentChecklist().name}"?`)) {
+        allChecklists = allChecklists.filter(c => c.id !== activeChecklistId);
+        activeChecklistId = allChecklists[0].id;
+        saveAllChecklists();
+        updateSelectorUI();
+        renderModalItems();
+        renderChecklist();
+      }
+    }
+
+    function addNewCategory() {
+      const catText = document.getElementById("new-cat-text").value.trim();
+      if (!catText) return alert("Digite o nome da categoria.");
+      getCurrentChecklist().categories.push({ category: catText, items: [] });
+      saveAllChecklists();
+      document.getElementById("new-cat-text").value = "";
+      document.getElementById("new-cat-box").classList.add("hidden");
+      renderModalItems();
+      renderChecklist();
+    }
+
+    function editCategory(sIdx) {
+      const current = getCurrentChecklist();
+      const currentName = current.categories[sIdx].category;
+      const newName = prompt("Editar nome da categoria / setor:", currentName);
+      if (newName !== null && newName.trim() !== "") {
+        current.categories[sIdx].category = newName.trim();
+        saveAllChecklists();
+        renderModalItems();
+        renderChecklist();
+      }
+    }
+
+    function toggleEditItemBox(sIdx, iIdx) {
+      const editBox = document.getElementById(`edit-item-box-${sIdx}-${iIdx}`);
+      if (editBox) {
+        editBox.classList.toggle("hidden");
+      }
+    }
+
+    function saveItemEdit(sIdx, iIdx) {
+      const current = getCurrentChecklist();
+      const newTitle = document.getElementById(`edit-item-title-input-${sIdx}-${iIdx}`).value.trim();
+      const newType = document.getElementById(`edit-item-type-input-${sIdx}-${iIdx}`).value;
+
+      if (!newTitle) return alert("O título da pergunta não pode estar vazio.");
+
+      current.categories[sIdx].items[iIdx].title = newTitle;
+      current.categories[sIdx].items[iIdx].type = newType;
+
+      saveAllChecklists();
+      renderModalItems();
+      renderChecklist();
+    }
+
+    function handleLogin() {
+      const u = document.getElementById("login-user").value.trim().toLowerCase();
+      const p = document.getElementById("login-pass").value.trim();
+      const found = users.find(item => item.username.toLowerCase() === u && item.pass === p);
+      if (found) {
+        currentUser = found;
+        sessionStorage.setItem("CB_CURRENT_LOGGED_USER_SESSION", JSON.stringify(found));
+        document.getElementById("login-screen").classList.add("hidden");
+        document.getElementById("login-error").classList.add("hidden");
+        initApp();
+      } else {
+        document.getElementById("login-error").classList.remove("hidden");
+      }
+    }
+
+    function handleLogout() {
+      sessionStorage.removeItem("CB_CURRENT_LOGGED_USER_SESSION");
+      location.reload();
+    }
+
+    function initApp() {
+      updateLogos();
+      updateHistoryBadge();
+      if (!currentUser) {
+        document.getElementById("login-screen").classList.remove("hidden");
+        return;
+      }
+      document.getElementById("login-screen").classList.add("hidden");
+      document.getElementById("current-user-badge").innerText = currentUser.name + (currentUser.role === 'admin' ? ' (Admin)' : '');
+      document.getElementById("supervisor-name").value = currentUser.name;
+
+      if (currentUser.role === "admin") {
+        document.getElementById("btn-admin-users").classList.remove("hidden");
+      } else {
+        document.getElementById("btn-admin-users").classList.add("hidden");
+      }
+
+      updateSelectorUI();
+      renderChecklist();
+    }
+
+    function toggleUsersModal() {
+      const m = document.getElementById("users-modal");
+      m.classList.toggle("hidden");
+      if (!m.classList.contains("hidden")) renderUsersList();
+    }
+
+    function renderUsersList() {
+      const list = document.getElementById("users-list");
+      list.innerHTML = "";
+      users.forEach((u, idx) => {
+        const item = document.createElement("div");
+        item.className = "flex justify-between items-center bg-white border p-2.5 rounded-lg text-xs";
+        item.innerHTML = `
+          <div>
+            <span class="font-bold text-cb-bordo">${u.name}</span>
+            <span class="text-stone-500 block">Login: ${u.username} | Senha: ${u.pass} (${u.role})</span>
+          </div>
+          ${u.username !== 'alcides' ? `<button onclick="removeUser(${idx})" class="text-rose-600 font-bold hover:bg-rose-50 px-2 py-1 rounded">Excluir</button>` : '<span class="text-[10px] text-stone-400 font-bold">Principal</span>'}
+        `;
+        list.appendChild(item);
+      });
+    }
+
+    function addNewUser() {
+      const u = document.getElementById("new-user-name").value.trim().toLowerCase();
+      const p = document.getElementById("new-user-pass").value.trim();
+      const name = document.getElementById("new-user-fullname").value.trim();
+
+      if (!u || !p || !name) return alert("Preencha todos os campos.");
+      if (users.some(item => item.username === u)) return alert("Login já existente!");
+
+      users.push({ username: u, pass: p, name: name, role: "supervisor" });
+      localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(users));
+      document.getElementById("new-user-name").value = "";
+      document.getElementById("new-user-pass").value = "";
+      document.getElementById("new-user-fullname").value = "";
+      renderUsersList();
+    }
+
+    function removeUser(idx) {
+      if (confirm("Excluir este acesso?")) {
+        users.splice(idx, 1);
+        localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(users));
+        renderUsersList();
+      }
+    }
+
+    function handleEvaluationChange(itemKey, value) {
+      const planBox = document.getElementById(`plan-box-${itemKey}`);
+      if (value === "nao-conforme") {
+        if (planBox) planBox.classList.remove("hidden");
+      } else {
+        if (planBox) planBox.classList.add("hidden");
+      }
+      calculateScore();
+    }
+
+    function handleMaintenanceChange(itemKey, value) {
+      const omBox = document.getElementById(`maintenance-box-${itemKey}`);
+      if (value === "abrir") {
+        if (omBox) omBox.classList.remove("hidden");
+      } else {
+        if (omBox) omBox.classList.add("hidden");
+      }
+      calculateScore();
+    }
+
+    function updateMaintenanceOrder(itemKey, field, val) {
+      if (!maintenanceOrders[itemKey]) maintenanceOrders[itemKey] = { equipment: '', action: '', date: '' };
+      maintenanceOrders[itemKey][field] = val;
+    }
+
+    function setStarRating(itemKey, stars) {
+      customAnswers[itemKey] = stars;
+      for (let i = 1; i <= 5; i++) {
+        const starBtn = document.getElementById(`star-${itemKey}-${i}`);
+        if (starBtn) {
+          if (i <= stars) {
+            starBtn.className = "text-xl text-amber-400 scale-110 transition";
+          } else {
+            starBtn.className = "text-xl text-stone-300 hover:text-amber-200 transition";
+          }
+        }
+      }
+      const label = document.getElementById(`star-label-${itemKey}`);
+      if (label) label.innerText = `${stars} de 5 estrelas`;
+      calculateScore();
+    }
+
+    function updateTextInput(itemKey, val) {
+      customAnswers[itemKey] = val;
+    }
+
+    function updateActionPlan(itemKey, field, val) {
+      if (!actionPlans[itemKey]) actionPlans[itemKey] = { action: '', date: '' };
+      actionPlans[itemKey][field] = val;
+    }
+
+    function calculateScore() {
+      let totalQuestionsEvaluated = 0;
+      let pointsEarned = 0;
+      const current = getCurrentChecklist();
+
+      current.categories.forEach((sec, sIdx) => {
+        sec.items.forEach((item, iIdx) => {
+          const itemKey = `${sIdx}-${iIdx}`;
+          const itemType = item.type || "boolean";
+
+          if (itemType === "boolean") {
+            const selected = document.querySelector(`input[name="item-${itemKey}"]:checked`);
+            if (selected) {
+              if (selected.value === "conforme") {
+                pointsEarned += 1.0;
+                totalQuestionsEvaluated += 1.0;
+              } else if (selected.value === "nao-conforme") {
+                pointsEarned += 0.0;
+                totalQuestionsEvaluated += 1.0;
+              }
+            }
+          } else if (itemType === "maintenance") {
+            const selected = document.querySelector(`input[name="item-${itemKey}"]:checked`);
+            if (selected) {
+              if (selected.value === "regular") {
+                pointsEarned += 1.0;
+                totalQuestionsEvaluated += 1.0;
+              } else if (selected.value === "abrir") {
+                pointsEarned += 0.0;
+                totalQuestionsEvaluated += 1.0;
+              }
+            }
+          } else if (itemType === "stars") {
+            const rating = parseInt(customAnswers[itemKey]) || 0;
+            if (rating > 0) {
+              pointsEarned += (rating / 5);
+              totalQuestionsEvaluated += 1.0;
+            }
+          }
+        });
+      });
+
+      const score = totalQuestionsEvaluated > 0 ? Math.round((pointsEarned / totalQuestionsEvaluated) * 100) : 100;
+      
+      const scoreDisplay = document.getElementById("score-display");
+      scoreDisplay.innerText = score + "%";
+      scoreDisplay.className = `text-2xl font-black ${score >= 90 ? 'text-cb-gold' : score >= 75 ? 'text-amber-400' : 'text-rose-400'}`;
+
+      const evalDisplay = document.getElementById("evaluated-count-display");
+      if (evalDisplay) {
+        evalDisplay.innerText = `${Math.round(totalQuestionsEvaluated)} item(ns) avaliado(s)`;
+      }
+
+      return { score, conformes: Math.round(pointsEarned), total: Math.round(totalQuestionsEvaluated) };
+    }
+
+    function renderChecklist() {
+      const container = document.getElementById("checklist-container");
+      const current = getCurrentChecklist();
+      container.innerHTML = "";
+
+      if (current.categories.length === 0 || current.categories.every(cat => cat.items.length === 0)) {
+        container.innerHTML = `<div class="p-8 text-center bg-white rounded-xl border text-stone-400 text-xs font-semibold">Nenhum item cadastrado neste checklist.<br>Clique em ⚙️ Configurar para adicionar perguntas.</div>`;
+        calculateScore();
+        return;
+      }
+
+      current.categories.forEach((sec, sIdx) => {
+        if (sec.items.length === 0) return;
+        const secEl = document.createElement("div");
+        secEl.className = "bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden";
+        
+        let itemsHtml = sec.items.map((item, iIdx) => {
+          const itemKey = `${sIdx}-${iIdx}`;
+          const itemType = item.type || "boolean";
+          const isPhotoReq = item.requirePhoto;
+          const photoData = attachedPhotos[itemKey];
+          const planData = actionPlans[itemKey] || { action: '', date: '' };
+          const omData = maintenanceOrders[itemKey] || { equipment: '', action: '', date: '' };
+          const savedAnswer = customAnswers[itemKey];
+
+          let controlHtml = "";
+
+          if (itemType === "boolean") {
+            controlHtml = `
+              <div class="flex gap-2 text-xs">
+                <label class="flex-1 cursor-pointer">
+                  <input type="radio" name="item-${itemKey}" value="conforme" class="hidden peer" onchange="handleEvaluationChange('${itemKey}', this.value)">
+                  <div class="text-center py-2 rounded-md border border-stone-200 text-stone-600 peer-checked:bg-emerald-600 peer-checked:text-white peer-checked:border-emerald-600 font-bold transition shadow-sm">
+                    Sim
+                  </div>
+                </label>
+                <label class="flex-1 cursor-pointer">
+                  <input type="radio" name="item-${itemKey}" value="nao-conforme" class="hidden peer" onchange="handleEvaluationChange('${itemKey}', this.value)">
+                  <div class="text-center py-2 rounded-md border border-stone-200 text-stone-600 peer-checked:bg-rose-700 peer-checked:text-white peer-checked:border-rose-700 font-bold transition shadow-sm">
+                    Não
+                  </div>
+                </label>
+                <label class="flex-1 cursor-pointer">
+                  <input type="radio" name="item-${itemKey}" value="na" class="hidden peer" onchange="handleEvaluationChange('${itemKey}', this.value)">
+                  <div class="text-center py-2 rounded-md border border-stone-200 text-stone-600 peer-checked:bg-stone-500 peer-checked:text-white peer-checked:border-stone-500 font-bold transition shadow-sm">
+                    N/A
+                  </div>
+                </label>
+              </div>
+
+              <div id="plan-box-${itemKey}" class="hidden p-3 bg-rose-50 border border-rose-200 rounded-lg space-y-2 text-xs">
+                <span class="block font-bold text-rose-800 uppercase tracking-wider text-[10px]">⚠️ Plano de Ação para Não Conformidade</span>
+                <div>
+                  <label class="block text-stone-600 font-semibold mb-1">O que deve ser realizado?</label>
+                  <input type="text" value="${planData.action}" placeholder="Ação corretiva necessária..." oninput="updateActionPlan('${itemKey}', 'action', this.value)" class="w-full border border-rose-300 rounded-md p-2 bg-white text-xs focus:outline-none focus:ring-1 focus:ring-rose-500">
+                </div>
+                <div>
+                  <label class="block text-stone-600 font-semibold mb-1">Data limite de entrega:</label>
+                  <input type="date" value="${planData.date}" oninput="updateActionPlan('${itemKey}', 'date', this.value)" class="w-full border border-rose-300 rounded-md p-2 bg-white text-xs focus:outline-none focus:ring-1 focus:ring-rose-500">
+                </div>
+              </div>
+            `;
+          } else if (itemType === "maintenance") {
+            controlHtml = `
+              <div class="flex gap-2 text-xs">
+                <label class="flex-1 cursor-pointer">
+                  <input type="radio" name="item-${itemKey}" value="abrir" class="hidden peer" onchange="handleMaintenanceChange('${itemKey}', this.value)">
+                  <div class="text-center py-2 rounded-md border border-stone-200 text-stone-600 peer-checked:bg-amber-600 peer-checked:text-white peer-checked:border-amber-600 font-bold transition shadow-sm flex items-center justify-center gap-1">
+                    <span>🔧 Abrir</span>
+                  </div>
+                </label>
+                <label class="flex-1 cursor-pointer">
+                  <input type="radio" name="item-${itemKey}" value="regular" class="hidden peer" onchange="handleMaintenanceChange('${itemKey}', this.value)">
+                  <div class="text-center py-2 rounded-md border border-stone-200 text-stone-600 peer-checked:bg-emerald-600 peer-checked:text-white peer-checked:border-emerald-600 font-bold transition shadow-sm">
+                    Regular / Ok
+                  </div>
+                </label>
+                <label class="flex-1 cursor-pointer">
+                  <input type="radio" name="item-${itemKey}" value="na" class="hidden peer" onchange="handleMaintenanceChange('${itemKey}', this.value)">
+                  <div class="text-center py-2 rounded-md border border-stone-200 text-stone-600 peer-checked:bg-stone-500 peer-checked:text-white peer-checked:border-stone-500 font-bold transition shadow-sm">
+                    N/A
+                  </div>
+                </label>
+              </div>
+
+              <div id="maintenance-box-${itemKey}" class="hidden p-3 bg-amber-50 border border-amber-300 rounded-lg space-y-2 text-xs">
+                <span class="block font-bold text-amber-900 uppercase tracking-wider text-[10px]">🔧 Abertura de Ordem de Manutenção</span>
+                <div>
+                  <label class="block text-stone-700 font-semibold mb-1">Qual é o equipamento?</label>
+                  <input type="text" value="${omData.equipment}" placeholder="Ex: Forno Turbo, Geladeira Expositora, Ar Condicionado..." oninput="updateMaintenanceOrder('${itemKey}', 'equipment', this.value)" class="w-full border border-amber-300 rounded-md p-2 bg-white text-xs focus:outline-none focus:ring-1 focus:ring-amber-500">
+                </div>
+                <div>
+                  <label class="block text-stone-700 font-semibold mb-1">Plano de Ação / Descrição do Defeito:</label>
+                  <input type="text" value="${omData.action}" placeholder="Ex: Troca de termostato, acionar assistência técnica autorizada..." oninput="updateMaintenanceOrder('${itemKey}', 'action', this.value)" class="w-full border border-amber-300 rounded-md p-2 bg-white text-xs focus:outline-none focus:ring-1 focus:ring-amber-500">
+                </div>
+                <div>
+                  <label class="block text-stone-700 font-semibold mb-1">Prazo para Conclusão:</label>
+                  <input type="date" value="${omData.date}" oninput="updateMaintenanceOrder('${itemKey}', 'date', this.value)" class="w-full border border-amber-300 rounded-md p-2 bg-white text-xs focus:outline-none focus:ring-1 focus:ring-amber-500">
+                </div>
+              </div>
+            `;
+          } else if (itemType === "stars") {
+            const currentStars = parseInt(savedAnswer) || 0;
+            let starsSpans = "";
+            for (let s = 1; s <= 5; s++) {
+              const isFilled = s <= currentStars;
+              starsSpans += `
+                <button type="button" id="star-${itemKey}-${s}" onclick="setStarRating('${itemKey}', ${s})" class="text-xl ${isFilled ? 'text-amber-400 scale-110' : 'text-stone-300 hover:text-amber-200'} transition focus:outline-none">
+                  ★
+                </button>
+              `;
+            }
+            controlHtml = `
+              <div class="flex items-center justify-between bg-stone-50 p-2.5 rounded-lg border border-stone-200">
+                <div class="flex gap-2 items-center">
+                  ${starsSpans}
+                </div>
+                <span id="star-label-${itemKey}" class="text-xs font-bold text-stone-600">${currentStars > 0 ? currentStars + ' de 5 estrelas' : 'Avalie de 1 a 5'}</span>
+              </div>
+            `;
+          } else if (itemType === "text") {
+            controlHtml = `
+              <div>
+                <textarea rows="2" placeholder="Digite a resposta ou apontamento detalhado..." oninput="updateTextInput('${itemKey}', this.value)" class="w-full border rounded-lg p-2.5 text-xs bg-stone-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-cb-bordo">${savedAnswer || ''}</textarea>
+              </div>
+            `;
+          }
+
+          return `
+          <div class="p-3.5 border-t border-stone-100 flex flex-col gap-2.5">
+            <div class="flex items-start justify-between gap-2">
+              <span class="text-sm text-stone-800 leading-snug font-medium">${item.title}</span>
+              ${isPhotoReq ? '<span class="text-[10px] bg-amber-50 text-amber-800 border border-amber-300 font-bold px-2 py-0.5 rounded-full shrink-0">Foto Obrigatória</span>' : ''}
+            </div>
+
+            ${controlHtml}
+
+            <div class="flex items-center gap-2 pt-1">
+              <label class="cursor-pointer inline-flex items-center gap-1.5 text-xs font-semibold text-cb-bordo bg-cb-cream hover:bg-stone-200 px-3 py-1.5 rounded-md border border-stone-200 transition">
+                📷 <span>${photoData ? 'Alterar Foto' : 'Adicionar Foto'}</span>
+                <input type="file" accept="image/*" class="hidden" onchange="handlePhotoUpload(event, '${itemKey}')">
+              </label>
+              ${photoData ? `
+                <div class="flex items-center gap-1.5 text-xs text-emerald-800 bg-emerald-50 px-2 py-1 rounded border border-emerald-300 font-medium">
+                  <span>✓ Foto anexada</span>
+                  <button onclick="removePhoto('${itemKey}')" class="text-rose-600 font-bold ml-1">✕</button>
+                </div>
+              ` : ''}
+            </div>
+          </div>
+        `;
+        }).join("");
+
+        secEl.innerHTML = `
+          <div class="bg-cb-cream px-4 py-2.5 font-bold text-xs uppercase tracking-wider text-cb-bordo border-b border-stone-200 flex items-center justify-between">
+            <span>${sec.category}</span>
+          </div>
+          <div>${itemsHtml}</div>
+        `;
+        container.appendChild(secEl);
+      });
+
+      calculateScore();
+    }
+
+    function handlePhotoUpload(event, key) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          attachedPhotos[key] = e.target.result;
+          renderChecklist();
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    function removePhoto(key) {
+      delete attachedPhotos[key];
+      renderChecklist();
+    }
+
+    function validatePhotos() {
+      let missingPhotos = [];
+      const current = getCurrentChecklist();
+      current.categories.forEach((sec, sIdx) => {
+        sec.items.forEach((item, iIdx) => {
+          const key = `${sIdx}-${iIdx}`;
+          const selected = document.querySelector(`input[name="item-${key}"]:checked`);
+          if (item.requirePhoto && (!selected || selected.value !== 'na') && !attachedPhotos[key]) {
+            missingPhotos.push(item.title);
+          }
+        });
+      });
+      return missingPhotos;
+    }
+
+    function buildReportData() {
+      const current = getCurrentChecklist();
+      const unit = document.getElementById("unit-name").value || "Unidade Não Informada";
+      const supervisor = document.getElementById("supervisor-name").value || currentUser.name;
+      const notes = document.getElementById("notes").value || "Sem observações registradas.";
+      const { score, total } = calculateScore();
+      const dateStr = new Date().toLocaleString("pt-BR");
+
+      let itemsRows = "";
+      let nonConformitiesRows = "";
+      let maintenanceRows = "";
+      let photoCards = "";
+      let ncCount = 0;
+      let omCount = 0;
+      let nonConformitiesList = [];
+      let maintenanceList = [];
+
+      current.categories.forEach((sec, sIdx) => {
+        if (sec.items.length === 0) return;
+        itemsRows += `
+          <tr style="background-color: #FAF7F2; page-break-inside: avoid;">
+            <td colspan="2" style="padding: 7px 10px; font-size: 11px; font-weight: bold; border: 1px solid #d6d3d1; color: #4A0E17; text-transform: uppercase;">${sec.category}</td>
+          </tr>
+        `;
+
+        sec.items.forEach((item, iIdx) => {
+          const key = `${sIdx}-${iIdx}`;
+          const itemType = item.type || "boolean";
+          let statusBadge = "";
+
+          if (itemType === "boolean") {
+            const selected = document.querySelector(`input[name="item-${key}"]:checked`);
+            const val = selected ? selected.value : "na";
+            
+            if (val === "conforme") statusBadge = `<span style="color: #059669; font-weight: bold;">✓ SIM</span>`;
+            if (val === "na") statusBadge = `<span style="color: #78716c; font-weight: 600;">N/A</span>`;
+            if (val === "nao-conforme") {
+              statusBadge = `<span style="color: #be123c; font-weight: bold;">✕ NÃO</span>`;
+              ncCount++;
+              const plan = actionPlans[key] || { action: '', date: '' };
+              const formattedDate = plan.date ? new Date(plan.date + 'T00:00:00').toLocaleDateString('pt-BR') : 'Não definida';
+
+              nonConformitiesList.push({
+                title: item.title,
+                category: sec.category,
+                action: plan.action,
+                date: formattedDate
+              });
+
+              nonConformitiesRows += `
+                <tr style="page-break-inside: avoid; background-color: ${ncCount % 2 === 0 ? '#ffffff' : '#fff5f5'};">
+                  <td style="padding: 8px 10px; font-size: 10px; vertical-align: top; border: 1px solid #fecdd3; width: 40%;">
+                    <strong style="color: #be123c;">${item.title}</strong>
+                    <div style="font-size: 9px; color: #78716c; margin-top: 2px;">Setor: ${sec.category}</div>
+                  </td>
+                  <td style="padding: 8px 10px; font-size: 10px; vertical-align: top; border: 1px solid #fecdd3; width: 42%; color: #1c1917;">
+                    ${plan.action ? plan.action : '<span style="color: #9ca3af; font-style: italic;">Nenhum plano de ação descrito</span>'}
+                  </td>
+                  <td style="padding: 8px 10px; font-size: 10px; text-align: center; vertical-align: middle; border: 1px solid #fecdd3; font-weight: bold; color: #4A0E17; width: 18%;">
+                    ${formattedDate}
+                  </td>
+                </tr>
+              `;
+            }
+          } else if (itemType === "maintenance") {
+            const selected = document.querySelector(`input[name="item-${key}"]:checked`);
+            const val = selected ? selected.value : "na";
+
+            if (val === "regular") statusBadge = `<span style="color: #059669; font-weight: bold;">✓ REGULAR</span>`;
+            if (val === "na") statusBadge = `<span style="color: #78716c; font-weight: 600;">N/A</span>`;
+            if (val === "abrir") {
+              statusBadge = `<span style="color: #d97706; font-weight: bold;">🔧 ABERTO</span>`;
+              omCount++;
+              const om = maintenanceOrders[key] || { equipment: '', action: '', date: '' };
+              const formattedDate = om.date ? new Date(om.date + 'T00:00:00').toLocaleDateString('pt-BR') : 'Não definida';
+
+              maintenanceList.push({
+                equipment: om.equipment,
+                action: om.action,
+                date: formattedDate
+              });
+
+              maintenanceRows += `
+                <tr style="page-break-inside: avoid; background-color: ${omCount % 2 === 0 ? '#ffffff' : '#fffbeb'};">
+                  <td style="padding: 8px 10px; font-size: 10px; vertical-align: top; border: 1px solid #fde68a; width: 35%;">
+                    <strong style="color: #92400e;">${om.equipment ? om.equipment : 'Não especificado'}</strong>
+                    <div style="font-size: 9px; color: #78716c; margin-top: 2px;">Setor: ${sec.category}</div>
+                  </td>
+                  <td style="padding: 8px 10px; font-size: 10px; vertical-align: top; border: 1px solid #fde68a; width: 45%; color: #1c1917;">
+                    ${om.action ? om.action : '<span style="color: #9ca3af; font-style: italic;">Nenhum plano descrito</span>'}
+                  </td>
+                  <td style="padding: 8px 10px; font-size: 10px; text-align: center; vertical-align: middle; border: 1px solid #fde68a; font-weight: bold; color: #4A0E17; width: 20%;">
+                    ${formattedDate}
+                  </td>
+                </tr>
+              `;
+            }
+          } else if (itemType === "stars") {
+            const stars = customAnswers[key] || 0;
+            statusBadge = `<span style="color: #d97706; font-weight: bold;">${'★'.repeat(stars)}${'☆'.repeat(5 - stars)} (${stars}/5)</span>`;
+          } else if (itemType === "text") {
+            const txt = customAnswers[key] || "—";
+            statusBadge = `<span style="color: #44403c; font-size: 10px;">${txt}</span>`;
+          }
+
+          itemsRows += `
+            <tr style="page-break-inside: avoid;">
+              <td style="padding: 6px 10px; font-size: 10px; border: 1px solid #e7e5e4; color: #292524; width: 75%;">${item.title}</td>
+              <td style="padding: 6px 10px; font-size: 10px; text-align: center; border: 1px solid #e7e5e4; width: 25%;">${statusBadge}</td>
+            </tr>
+          `;
+
+          if (attachedPhotos[key]) {
+            photoCards += `
+              <div style="page-break-inside: avoid; border: 1px solid #e7e5e4; border-radius: 6px; padding: 6px; background-color: #FAF7F2; width: 48%; box-sizing: border-box; margin-bottom: 8px;">
+                <p style="font-size: 9px; font-weight: bold; margin: 0 0 4px 0; color: #4A0E17; height: 24px; overflow: hidden;">${item.title}</p>
+                <img src="${attachedPhotos[key]}" style="width: 100%; height: 130px; object-fit: cover; border-radius: 4px; display: block;" />
+              </div>
+            `;
+          }
+        });
+      });
+
+      const fullHtml = `
+        <table style="border-bottom: 3px solid #4A0E17; margin-bottom: 12px; width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="width: 70px; padding-bottom: 8px; vertical-align: middle;">
+              <img src="${currentLogo}" style="height: 48px; width: auto; object-fit: contain;" />
+            </td>
+            <td style="padding-bottom: 8px; vertical-align: middle; padding-left: 10px;">
+              <div style="font-size: 14px; font-weight: bold; color: #4A0E17; text-transform: uppercase;">${current.name}</div>
+              <div style="font-size: 10px; color: #78716c; margin-top: 2px;">Data da Auditoria: ${dateStr}</div>
+            </td>
+            <td style="width: 120px; padding-bottom: 8px; text-align: right; vertical-align: middle;">
+              <div style="font-size: 9px; color: #78716c; text-transform: uppercase; font-weight: bold;">Conformidade</div>
+              <div style="font-size: 20px; font-weight: 900; color: #4A0E17;">${score}%</div>
+            </td>
+          </tr>
+        </table>
+
+        <table style="background-color: #FAF7F2; border: 1px solid #D4AF37; border-radius: 4px; margin-bottom: 14px; width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="padding: 6px 8px; font-size: 10px; width: 40%;"><strong>Unidade:</strong> ${unit}</td>
+            <td style="padding: 6px 8px; font-size: 10px; width: 35%;"><strong>Supervisor:</strong> ${supervisor}</td>
+            <td style="padding: 6px 8px; font-size: 10px; width: 25%; text-align: right;"><strong>Avaliados:</strong> ${total} itens</td>
+          </tr>
+        </table>
+
+        <table style="margin-bottom: 14px; table-layout: fixed; width: 100%; border-collapse: collapse;">
+          <thead>
+            <tr style="background-color: #4A0E17; color: white;">
+              <th style="padding: 6px 8px; font-size: 10px; text-align: left; width: 75%;">Item Avaliado</th>
+              <th style="padding: 6px 8px; font-size: 10px; text-align: center; width: 25%;">Resultado</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${itemsRows}
+          </tbody>
+        </table>
+
+        <div style="page-break-inside: avoid; border: 1px solid #e7e5e4; border-radius: 4px; padding: 8px; background-color: #FAF7F2; margin-bottom: 14px;">
+          <div style="font-size: 10px; text-transform: uppercase; font-weight: bold; color: #4A0E17; margin-bottom: 4px;">Observações Gerais</div>
+          <div style="font-size: 10px; color: #44403c; line-height: 1.3;">${notes}</div>
+        </div>
+
+        <div style="page-break-inside: avoid; margin-top: 14px; margin-bottom: 14px;">
+          <table style="border-bottom: 2px solid #be123c; margin-bottom: 6px; width: 100%; border-collapse: collapse;">
+            <tr>
+              <td style="font-size: 11px; text-transform: uppercase; font-weight: bold; color: #be123c; padding-bottom: 4px;">
+                Quadro de Não Conformidades & Planos de Ação
+              </td>
+              <td style="font-size: 9px; font-weight: bold; color: #78716c; text-align: right; padding-bottom: 4px;">
+                Total: ${ncCount} apontamentos
+              </td>
+            </tr>
+          </table>
+
+          ${ncCount > 0 ? `
+            <table style="table-layout: fixed; width: 100%; border-collapse: collapse;">
+              <thead>
+                <tr style="background-color: #be123c; color: white;">
+                  <th style="padding: 6px 8px; font-size: 9px; text-align: left; width: 40%;">Item Não Conforme</th>
+                  <th style="padding: 6px 8px; font-size: 9px; text-align: left; width: 42%;">Plano de Ação Sugerido</th>
+                  <th style="padding: 6px 8px; font-size: 9px; text-align: center; width: 18%;">Data de Entrega</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${nonConformitiesRows}
+              </tbody>
+            </table>
+          ` : `
+            <div style="padding: 8px; background-color: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 4px; text-align: center; color: #065f46; font-size: 10px; font-weight: bold;">
+              ✓ Nenhuma não conformidade operacional registrada.
+            </div>
+          `}
+        </div>
+
+        ${omCount > 0 ? `
+          <div style="page-break-inside: avoid; margin-top: 14px; margin-bottom: 14px;">
+            <table style="border-bottom: 2px solid #d97706; margin-bottom: 6px; width: 100%; border-collapse: collapse;">
+              <tr>
+                <td style="font-size: 11px; text-transform: uppercase; font-weight: bold; color: #d97706; padding-bottom: 4px;">
+                  🔧 Ordens de Manutenção Abertas
+                </td>
+                <td style="font-size: 9px; font-weight: bold; color: #78716c; text-align: right; padding-bottom: 4px;">
+                  Total: ${omCount} ordem(ns)
+                </td>
+              </tr>
+            </table>
+
+            <table style="table-layout: fixed; width: 100%; border-collapse: collapse;">
+              <thead>
+                <tr style="background-color: #d97706; color: white;">
+                  <th style="padding: 6px 8px; font-size: 9px; text-align: left; width: 35%;">Equipamento / Item</th>
+                  <th style="padding: 6px 8px; font-size: 9px; text-align: left; width: 45%;">Plano de Ação / Defeito</th>
+                  <th style="padding: 6px 8px; font-size: 9px; text-align: center; width: 20%;">Prazo Conclusão</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${maintenanceRows}
+              </tbody>
+            </table>
+          </div>
+        ` : ''}
+
+        ${photoCards ? `
+          <div style="page-break-before: auto; margin-top: 14px;">
+            <div style="font-size: 11px; text-transform: uppercase; font-weight: bold; border-bottom: 2px solid #4A0E17; padding-bottom: 4px; color: #4A0E17; margin-bottom: 8px;">
+              Evidências Fotográficas Anexadas
+            </div>
+            <div style="display: flex; flex-wrap: wrap; justify-content: space-between;">
+              ${photoCards}
+            </div>
+          </div>
+        ` : ''}
+      `;
+
+      return {
+        unit,
+        supervisor,
+        notes,
+        score,
+        total,
+        date: dateStr,
+        checklistName: current.name,
+        nonConformities: nonConformitiesList,
+        maintenanceOrders: maintenanceList,
+        htmlContent: fullHtml
+      };
+    }
+
+    function openPrintWindow(htmlContent, checklistName, unit) {
+      const printWindow = window.open('', '_blank');
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>${checklistName} - ${unit}</title>
+          <style>
+            @page { size: A4 portrait; margin: 12mm 10mm 12mm 10mm; }
+            body { font-family: Arial, sans-serif; margin: 0; padding: 0; color: #1c1917; background: #ffffff; }
+            table { width: 100%; border-collapse: collapse; }
+          </style>
+        </head>
+        <body>
+          ${htmlContent}
+        </body>
+        </html>
+      `);
+
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(() => {
+        printWindow.print();
+      }, 500);
+    }
+
+    function generatePDF() {
+      const missingPhotos = validatePhotos();
+      if (missingPhotos.length > 0) {
+        alert("Atenção! Fotos obrigatórias pendentes:\n\n• " + missingPhotos.join("\n• "));
+        return;
+      }
+
+      const report = buildReportData();
+      saveReportToHistory(report);
+      openPrintWindow(report.htmlContent, report.checklistName, report.unit);
+    }
+
+    function shareWhatsApp() {
+      const missingPhotos = validatePhotos();
+      if (missingPhotos.length > 0) {
+        alert("Atenção! Fotos obrigatórias pendentes:\n\n• " + missingPhotos.join("\n• "));
+        return;
+      }
+
+      const report = buildReportData();
+      saveReportToHistory(report);
+
+      const current = getCurrentChecklist();
+      const unit = document.getElementById("unit-name").value || "Não informada";
+      const supervisor = document.getElementById("supervisor-name").value || currentUser.name;
+      const notes = document.getElementById("notes").value || "Sem observações.";
+      const { score, total } = calculateScore();
+      const totalPhotos = Object.keys(attachedPhotos).length;
+
+      let text = `*CASA BAUDUCCO - RELATÓRIO OPERACIONAL*\n`;
+      text += `📋 *Checklist:* ${current.name}\n`;
+      text += `📍 *Unidade:* ${unit}\n`;
+      text += `👤 *Supervisor:* ${supervisor}\n`;
+      text += `📊 *Conformidade:* ${score}% (${total} avaliados)\n`;
+      text += `📸 *Evidências Registradas:* ${totalPhotos} fotos\n\n`;
+
+      let hasNC = false;
+      let ncText = `*QUADRO DE NÃO CONFORMIDADES & PLANOS DE AÇÃO:*\n`;
+
+      let hasOM = false;
+      let omText = `*🔧 ORDENS DE MANUTENÇÃO ABERTAS:*\n`;
+
+      current.categories.forEach((sec, sIdx) => {
+        sec.items.forEach((item, iIdx) => {
+          const key = `${sIdx}-${iIdx}`;
+          const itemType = item.type || "boolean";
+
+          if (itemType === "boolean") {
+            const selected = document.querySelector(`input[name="item-${key}"]:checked`);
+            if (selected && selected.value === "nao-conforme") {
+              hasNC = true;
+              const plan = actionPlans[key] || { action: '', date: '' };
+              const formattedDate = plan.date ? new Date(plan.date + 'T00:00:00').toLocaleDateString('pt-BR') : 'Não definida';
+
+              ncText += `❌ *${item.title}*\n`;
+              ncText += `   ↳ _Plano de Ação:_ ${plan.action ? plan.action : 'Não descrito'}\n`;
+              ncText += `   ↳ _Data de Entrega:_ ${formattedDate}\n`;
+              if (attachedPhotos[key]) ncText += `   ↳ [Foto Anexada]\n`;
+              ncText += `\n`;
+            }
+          } else if (itemType === "maintenance") {
+            const selected = document.querySelector(`input[name="item-${key}"]:checked`);
+            if (selected && selected.value === "abrir") {
+              hasOM = true;
+              const om = maintenanceOrders[key] || { equipment: '', action: '', date: '' };
+              const formattedDate = om.date ? new Date(om.date + 'T00:00:00').toLocaleDateString('pt-BR') : 'Não definida';
+
+              omText += `🔧 *Equipamento:* ${om.equipment ? om.equipment : 'Não especificado'}\n`;
+              omText += `   ↳ _Plano de Ação/Defeito:_ ${om.action ? om.action : 'Não descrito'}\n`;
+              omText += `   ↳ _Prazo para Conclusão:_ ${formattedDate}\n`;
+              if (attachedPhotos[key]) omText += `   ↳ [Foto Anexada]\n`;
+              omText += `\n`;
+            }
+          }
+        });
+      });
+
+      if (hasNC) {
+        text += ncText;
+      } else {
+        text += `✅ *Nenhuma não conformidade operacional registrada.*\n\n`;
+      }
+
+      if (hasOM) {
+        text += omText;
+      }
+
+      let otherFeedback = "";
+      current.categories.forEach((sec, sIdx) => {
+        sec.items.forEach((item, iIdx) => {
+          const key = `${sIdx}-${iIdx}`;
+          const itemType = item.type || "boolean";
+          if (itemType === "stars" && customAnswers[key]) {
+            otherFeedback += `⭐ *${item.title}*: ${customAnswers[key]}/5 estrelas\n`;
+          } else if (itemType === "text" && customAnswers[key]) {
+            otherFeedback += `📝 *${item.title}*: ${customAnswers[key]}\n`;
+          }
+        });
+      });
+
+      if (otherFeedback) {
+        text += `*AVALIAÇÕES & APONTAMENTOS GERAIS:*\n${otherFeedback}\n`;
+      }
+
+      text += `📝 *Observações Gerais:* \n${notes}`;
+
+      window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, "_blank");
+    }
+
+    function toggleConfigModal() {
+      const modal = document.getElementById("config-modal");
+      modal.classList.toggle("hidden");
+      if (!modal.classList.contains("hidden")) {
+        switchConfigTab('items');
+      }
+    }
+
+    function renderModalItems() {
+      const container = document.getElementById("modal-item-list");
+      const catSelect = document.getElementById("new-item-category");
+      const current = getCurrentChecklist();
+      
+      container.innerHTML = "";
+      catSelect.innerHTML = "";
+
+      current.categories.forEach((sec, sIdx) => {
+        const opt = document.createElement("option");
+        opt.value = sIdx;
+        opt.innerText = sec.category.split(".")[1] ? sec.category.split(".")[1].trim() : sec.category;
+        catSelect.appendChild(opt);
+
+        const secBox = document.createElement("div");
+        secBox.className = "border border-stone-200 rounded-xl p-3.5 bg-white shadow-sm space-y-2.5";
+        secBox.innerHTML = `
+          <div class="flex justify-between items-center border-b pb-2">
+            <div class="flex items-center gap-2">
+              <h4 class="font-bold text-xs text-cb-bordo uppercase">${sec.category}</h4>
+              <button onclick="editCategory(${sIdx})" class="text-stone-500 hover:text-cb-bordo text-[11px] font-bold underline">✏️ Editar</button>
+            </div>
+            <button onclick="removeCategory(${sIdx})" class="text-rose-600 hover:text-rose-800 text-xs font-bold">Excluir Setor</button>
+          </div>
+        `;
+
+        sec.items.forEach((item, iIdx) => {
+          let typeLabel = "🔘 Sim / Não / N/A";
+          if (item.type === "maintenance") typeLabel = "🔧 Ordem de Manutenção";
+          if (item.type === "stars") typeLabel = "⭐ 1 a 5 Estrelas";
+          if (item.type === "text") typeLabel = "📝 Texto Livre";
+
+          const row = document.createElement("div");
+          row.className = "flex flex-col bg-stone-50 p-2.5 rounded-lg border text-xs text-stone-800 gap-2";
+          row.innerHTML = `
+            <div class="flex justify-between items-start gap-2">
+              <div class="flex-1">
+                <span class="font-semibold leading-snug">${item.title}</span>
+                <span class="inline-block text-[10px] bg-stone-200 text-stone-700 px-2 py-0.5 rounded font-bold ml-1.5">${typeLabel}</span>
+              </div>
+              <div class="flex items-center gap-2 shrink-0">
+                <button onclick="toggleEditItemBox(${sIdx}, ${iIdx})" class="text-stone-600 hover:text-cb-bordo font-bold px-2 py-0.5 hover:bg-stone-200 rounded transition">✏️ Editar</button>
+                <button onclick="removeItem(${sIdx}, ${iIdx})" class="text-rose-600 font-bold px-2 py-0.5 hover:bg-rose-50 rounded transition">Remover</button>
+              </div>
+            </div>
+
+            <!-- Painel Expansível de Edição da Pergunta -->
+            <div id="edit-item-box-${sIdx}-${iIdx}" class="hidden p-2.5 bg-white border border-cb-gold/40 rounded-lg space-y-2 mt-1 shadow-sm">
+              <span class="block text-[10px] font-bold text-cb-bordo uppercase">Editar Item / Pergunta</span>
+              <div>
+                <label class="block text-[10px] text-stone-500 font-semibold mb-0.5">Título da pergunta:</label>
+                <input type="text" id="edit-item-title-input-${sIdx}-${iIdx}" value="${item.title}" class="w-full text-xs border rounded p-1.5 bg-stone-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-cb-bordo">
+              </div>
+              <div>
+                <label class="block text-[10px] text-stone-500 font-semibold mb-0.5">Tipo de Resposta:</label>
+                <select id="edit-item-type-input-${sIdx}-${iIdx}" class="w-full text-xs border rounded p-1.5 bg-stone-50 font-medium">
+                  <option value="boolean" ${item.type === 'boolean' ? 'selected' : ''}>🔘 Sim / Não / N/A (Conformidade)</option>
+                  <option value="maintenance" ${item.type === 'maintenance' ? 'selected' : ''}>🔧 Ordem de Manutenção (Abrir / Regular / N/A)</option>
+                  <option value="stars" ${item.type === 'stars' ? 'selected' : ''}>⭐ Avaliação (1 a 5 Estrelas)</option>
+                  <option value="text" ${item.type === 'text' ? 'selected' : ''}>📝 Resposta Aberta (Texto Livre)</option>
+                </select>
+              </div>
+              <div class="flex justify-end gap-1.5 pt-1">
+                <button onclick="toggleEditItemBox(${sIdx}, ${iIdx})" class="px-2 py-1 bg-stone-200 text-stone-700 text-[11px] font-bold rounded">Cancelar</button>
+                <button onclick="saveItemEdit(${sIdx}, ${iIdx})" class="px-2.5 py-1 bg-cb-bordo text-white text-[11px] font-bold rounded hover:bg-cb-bordo-dark">Salvar Alterações</button>
+              </div>
+            </div>
+
+            <label class="flex items-center gap-1.5 cursor-pointer text-stone-600 font-medium">
+              <input type="checkbox" ${item.requirePhoto ? 'checked' : ''} onchange="toggleItemPhotoReq(${sIdx}, ${iIdx})" class="rounded text-cb-bordo focus:ring-0">
+              <span>Exigir Foto Obrigatória</span>
+            </label>
+          `;
+          secBox.appendChild(row);
+        });
+
+        container.appendChild(secBox);
+      });
+    }
+
+    function removeCategory(sIdx) {
+      if (confirm("Excluir esta categoria e todas as suas perguntas?")) {
+        getCurrentChecklist().categories.splice(sIdx, 1);
+        saveAllChecklists();
+        renderModalItems();
+        renderChecklist();
+      }
+    }
+
+    function toggleItemPhotoReq(sIdx, iIdx) {
+      getCurrentChecklist().categories[sIdx].items[iIdx].requirePhoto = !getCurrentChecklist().categories[sIdx].items[iIdx].requirePhoto;
+      saveAllChecklists();
+      renderChecklist();
+    }
+
+    function addNewItem() {
+      const current = getCurrentChecklist();
+      if (current.categories.length === 0) return alert("Crie pelo menos uma categoria.");
+      
+      const catIdx = document.getElementById("new-item-category").value;
+      const itemType = document.getElementById("new-item-type").value;
+      const itemText = document.getElementById("new-item-text").value.trim();
+      const reqPhoto = document.getElementById("new-item-req-photo").checked;
+
+      if (!itemText) return alert("Digite o texto do item.");
+
+      current.categories[catIdx].items.push({
+        title: itemText,
+        type: itemType,
+        requirePhoto: reqPhoto
+      });
+
+      saveAllChecklists();
+      document.getElementById("new-item-text").value = "";
+      document.getElementById("new-item-req-photo").checked = false;
+      renderModalItems();
+      renderChecklist();
+    }
+
+    function removeItem(sIdx, iIdx) {
+      getCurrentChecklist().categories[sIdx].items.splice(iIdx, 1);
+      saveAllChecklists();
+      renderModalItems();
+      renderChecklist();
+    }
+
+    function restoreDefaultChecklist() {
+      if (confirm("Restaurar os modelos padrões da Casa Bauducco?")) {
+        allChecklists = JSON.parse(JSON.stringify(defaultTemplates));
+        activeChecklistId = allChecklists[0].id;
+        saveAllChecklists();
+        updateSelectorUI();
+        renderModalItems();
+        renderChecklist();
+      }
+    }
+
+    function resetChecklist() {
+      if (confirm("Zerar todas as respostas, ordens de manutenção e fotos deste checklist?")) {
+        document.querySelectorAll('input[type="radio"]').forEach(r => r.checked = false);
+        document.getElementById("notes").value = "";
+        attachedPhotos = {};
+        actionPlans = {};
+        customAnswers = {};
+        maintenanceOrders = {};
+        renderChecklist();
+      }
+    }
+
+    initApp();
+  </script>
+</body>
+</html>
