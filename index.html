@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Auditoria Operacional - Casa Bauducco</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- SDKs do Firebase Compat -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
   <style>
     :root {
       --cb-bordo: #4A0E17;
@@ -21,6 +24,12 @@
   </style>
 </head>
 <body class="bg-cb-cream text-stone-800 antialiased pb-36 font-sans">
+
+  <!-- Status de Conexão em Tempo Real -->
+  <div id="cloud-sync-status" class="bg-stone-900 text-[10px] text-stone-300 px-3 py-1 flex justify-between items-center z-50">
+    <span id="sync-indicator">🟢 Sincronizado na Nuvem</span>
+    <span id="sync-time" class="text-stone-400 font-mono">Conectando...</span>
+  </div>
 
   <!-- Tela de Login -->
   <div id="login-screen" class="fixed inset-0 bg-cb-bordo-dark z-50 flex items-center justify-center p-4">
@@ -141,7 +150,7 @@
     <div class="bg-white p-4 rounded-xl shadow-sm border border-stone-200 flex justify-between items-center">
       <div>
         <h2 class="font-bold text-cb-bordo text-sm uppercase tracking-wider">Histórico de Relatórios</h2>
-        <p class="text-xs text-stone-500">Auditorias concluídas e arquivadas no dispositivo</p>
+        <p class="text-xs text-stone-500">Auditorias concluídas sincronizadas na nuvem</p>
       </div>
       <button onclick="clearAllHistory()" class="text-xs text-rose-600 font-bold hover:underline">
         Limpar Histórico
@@ -172,7 +181,7 @@
       <div class="p-4 border-b border-stone-200 flex justify-between items-center bg-cb-cream">
         <div>
           <h3 class="font-bold text-cb-bordo text-sm">Gerenciar Usuários</h3>
-          <p class="text-xs text-stone-500">Crie ou remova logins de acesso</p>
+          <p class="text-xs text-stone-500">Crie ou remova logins de acesso (Nuvem)</p>
         </div>
         <button onclick="toggleUsersModal()" class="text-stone-400 hover:text-stone-700 text-lg font-bold p-1">✕</button>
       </div>
@@ -200,27 +209,21 @@
       <div class="p-3.5 border-b border-stone-200 flex justify-between items-center bg-cb-bordo text-white">
         <div>
           <h3 class="font-bold text-sm text-cb-gold">Painel de Configuração</h3>
-          <p class="text-[11px] text-stone-200">Gerencie lojas, perguntas, setores, modelos, backup e logotipo</p>
+          <p class="text-[11px] text-stone-200">Alterações são sincronizadas automaticamente em todos os aparelhos</p>
         </div>
         <button onclick="toggleConfigModal()" class="text-stone-300 hover:text-white text-xl font-bold px-2 py-0.5">✕</button>
       </div>
 
       <!-- Abas de Navegação -->
       <div class="flex border-b border-stone-200 bg-stone-100 text-xs font-bold overflow-x-auto">
-        <button id="tab-btn-units" onclick="switchConfigTab('units')" class="flex-1 min-w-[110px] py-3 border-b-2 border-cb-bordo text-cb-bordo bg-white transition">
+        <button id="tab-btn-units" onclick="switchConfigTab('units')" class="flex-1 min-w-[120px] py-3 border-b-2 border-cb-bordo text-cb-bordo bg-white transition">
           🏢 Lojas
         </button>
         <button id="tab-btn-items" onclick="switchConfigTab('items')" class="flex-1 min-w-[130px] py-3 border-b-2 border-transparent text-stone-500 hover:text-cb-bordo transition">
           📝 Perguntas & Setores
         </button>
-        <button id="tab-btn-models" onclick="switchConfigTab('models')" class="flex-1 min-w-[100px] py-3 border-b-2 border-transparent text-stone-500 hover:text-cb-bordo transition">
+        <button id="tab-btn-models" onclick="switchConfigTab('models')" class="flex-1 min-w-[120px] py-3 border-b-2 border-transparent text-stone-500 hover:text-cb-bordo transition">
           📂 Modelos
-        </button>
-        <button id="tab-btn-sync" onclick="switchConfigTab('sync')" class="flex-1 min-w-[110px] py-3 border-b-2 border-transparent text-stone-500 hover:text-cb-bordo transition">
-          🔄 Backup / Sync
-        </button>
-        <button id="tab-btn-logo" onclick="switchConfigTab('logo')" class="flex-1 min-w-[80px] py-3 border-b-2 border-transparent text-stone-500 hover:text-cb-bordo transition">
-          🖼️ Logo
         </button>
       </div>
 
@@ -312,46 +315,6 @@
         </div>
       </div>
 
-      <!-- Aba: Sincronização / Backup -->
-      <div id="tab-content-sync" class="hidden p-5 space-y-4 overflow-y-auto flex-1 bg-stone-50 text-sm">
-        <div class="bg-white p-4 rounded-xl border border-stone-200 space-y-3 shadow-sm">
-          <span class="block text-xs font-bold text-cb-bordo uppercase tracking-wider">1. Exportar Configurações deste Aparelho</span>
-          <p class="text-xs text-stone-600">Copie o código abaixo ou baixe o arquivo de backup para transferir para outros celulares ou computadores.</p>
-          <button onclick="exportSettings()" class="w-full py-2.5 bg-cb-bordo hover:bg-cb-bordo-dark text-white text-xs font-bold rounded-lg transition">
-            📥 Gerar Código de Backup
-          </button>
-          <textarea id="sync-export-area" readonly rows="3" class="w-full text-[11px] font-mono border rounded p-2 bg-stone-50" placeholder="O código de exportação aparecerá aqui..."></textarea>
-        </div>
-
-        <div class="bg-white p-4 rounded-xl border border-stone-200 space-y-3 shadow-sm">
-          <span class="block text-xs font-bold text-cb-bordo uppercase tracking-wider">2. Importar Configurações no Novo Aparelho</span>
-          <p class="text-xs text-stone-600">Cole aqui o código gerado no outro dispositivo para sincronizar todas as lojas, perguntas e modelos instantaneamente.</p>
-          <textarea id="sync-import-area" rows="3" class="w-full text-[11px] font-mono border rounded p-2 bg-stone-50 focus:bg-white" placeholder="Cole o código de backup aqui..."></textarea>
-          <button onclick="importSettings()" class="w-full py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-lg transition">
-            📤 Aplicar Configurações Importadas
-          </button>
-        </div>
-      </div>
-
-      <!-- Aba: Logotipo -->
-      <div id="tab-content-logo" class="hidden p-5 space-y-4 overflow-y-auto flex-1 bg-stone-50 text-sm">
-        <div class="bg-white p-5 rounded-xl border border-stone-200 space-y-4 shadow-sm text-center">
-          <span class="block text-xs font-bold text-cb-bordo uppercase tracking-wider">Logotipo Atual em Uso</span>
-          <div class="flex justify-center p-3 bg-stone-50 rounded-lg border border-dashed border-stone-300">
-            <img id="preview-config-logo" class="h-20 w-auto object-contain">
-          </div>
-          <div class="flex flex-col sm:flex-row justify-center gap-3 pt-2">
-            <label class="cursor-pointer bg-cb-bordo hover:bg-cb-bordo-dark text-white px-4 py-2.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm">
-              📁 <span>Carregar Nova Imagem</span>
-              <input type="file" accept="image/*" class="hidden" onchange="uploadCustomLogo(event)">
-            </label>
-            <button onclick="resetLogoToDefault()" class="px-4 py-2.5 border border-stone-300 bg-white hover:bg-stone-50 text-stone-700 text-xs font-bold rounded-lg transition">
-              Restaurar Padrão
-            </button>
-          </div>
-        </div>
-      </div>
-
       <div class="p-3 border-t flex justify-between bg-white text-xs items-center">
         <button onclick="restoreDefaultChecklist()" class="text-rose-600 font-semibold hover:underline">
           Restaurar Padrões da Casa Bauducco
@@ -365,16 +328,32 @@
   </div>
 
   <script>
+    // ==========================================
+    // CONFIGURAÇÃO DO FIREBASE (PROJETO CHECKLISTCB)
+    // ==========================================
+    const firebaseConfig = {
+      apiKey: "AIzaSyAII60fmHrt6myJd7PdviKPeCk5PKL4VYo",
+      authDomain: "checklistcb.firebaseapp.com",
+      projectId: "checklistcb",
+      storageBucket: "checklistcb.firebasestorage.app",
+      messagingSenderId: "984641991406",
+      appId: "1:984641991406:web:b161bab70afdfaa084b9ff",
+      measurementId: "G-RLC8M1D788"
+    };
+
+    let db = null;
+    let isFirebaseReady = false;
+
+    try {
+      firebase.initializeApp(firebaseConfig);
+      db = firebase.firestore();
+      isFirebaseReady = true;
+    } catch (err) {
+      console.warn("Erro ao iniciar Firebase:", err);
+    }
+
     const DEFAULT_EMBEDDED_LOGO = "./logo.png";
-
-    const STORAGE_KEY_USERS = "CB_AUDITORIA_APP_USERS_PROD";
-    const STORAGE_KEY_CHECKLISTS = "CB_AUDITORIA_APP_CHECKLISTS_PROD";
-    const STORAGE_KEY_ACTIVE_ID = "CB_AUDITORIA_APP_ACTIVE_ID_PROD";
-    const STORAGE_KEY_REPORTS = "CB_AUDITORIA_APP_REPORTS_PROD";
-    const STORAGE_KEY_LOGO = "CB_AUDITORIA_APP_LOGO_PROD";
-    const STORAGE_KEY_UNITS = "CB_AUDITORIA_APP_UNITS_PRESETS_PROD";
-
-    let currentLogo = localStorage.getItem(STORAGE_KEY_LOGO) || DEFAULT_EMBEDDED_LOGO;
+    let currentLogo = DEFAULT_EMBEDDED_LOGO;
 
     const defaultUsers = [
       { username: "alcides", pass: "12345678", name: "Alcides Ramos", role: "admin" }
@@ -460,23 +439,112 @@
       }
     ];
 
-    let users = JSON.parse(localStorage.getItem(STORAGE_KEY_USERS)) || defaultUsers;
-    let presetUnits = JSON.parse(localStorage.getItem(STORAGE_KEY_UNITS)) || defaultUnits;
-    let currentUser = JSON.parse(sessionStorage.getItem("CB_CURRENT_LOGGED_USER_SESSION")) || null;
-    let allChecklists = JSON.parse(localStorage.getItem(STORAGE_KEY_CHECKLISTS)) || defaultTemplates;
-    let activeChecklistId = localStorage.getItem(STORAGE_KEY_ACTIVE_ID) || allChecklists[0].id;
-    let savedReports = JSON.parse(localStorage.getItem(STORAGE_KEY_REPORTS)) || [];
+    let users = JSON.parse(localStorage.getItem("CB_LOCAL_USERS")) || defaultUsers;
+    let presetUnits = JSON.parse(localStorage.getItem("CB_LOCAL_UNITS")) || defaultUnits;
+    let currentUser = JSON.parse(sessionStorage.getItem("CB_LOCAL_LOGGED_USER")) || null;
+    let allChecklists = JSON.parse(localStorage.getItem("CB_LOCAL_CHECKLISTS")) || defaultTemplates;
+    let activeChecklistId = localStorage.getItem("CB_LOCAL_ACTIVE_ID") || allChecklists[0].id;
+    let savedReports = JSON.parse(localStorage.getItem("CB_LOCAL_REPORTS")) || [];
     
     let attachedPhotos = {};
     let actionPlans = {};
     let customAnswers = {};
     let maintenanceOrders = {};
 
+    function updateSyncUI(status, text) {
+      const ind = document.getElementById("sync-indicator");
+      const time = document.getElementById("sync-time");
+      if (ind) ind.innerText = status;
+      if (time) time.innerText = text;
+    }
+
+    // ==========================================
+    // SINCRONIZAÇÃO EM TEMPO REAL COM O FIRESTORE
+    // ==========================================
+    function setupCloudListeners() {
+      if (!isFirebaseReady) {
+        updateSyncUI("🟡 Modo Local", "Sem conexão");
+        return;
+      }
+
+      updateSyncUI("🟢 Conectando...", "Sincronizando");
+
+      // 1. Ouvinte para Lojas, Modelos e Usuários
+      db.collection("app_config").doc("main").onSnapshot(doc => {
+        if (doc.exists) {
+          const data = doc.data();
+          if (data.checklists) {
+            allChecklists = data.checklists;
+            localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
+          }
+          if (data.units) {
+            presetUnits = data.units;
+            localStorage.setItem("CB_LOCAL_UNITS", JSON.stringify(presetUnits));
+          }
+          if (data.users) {
+            users = data.users;
+            localStorage.setItem("CB_LOCAL_USERS", JSON.stringify(users));
+          }
+          renderPresetUnits();
+          updateSelectorUI();
+          renderChecklist();
+          updateSyncUI("🟢 Sincronizado na Nuvem", new Date().toLocaleTimeString('pt-BR'));
+        } else {
+          syncConfigToCloud();
+        }
+      }, err => {
+        updateSyncUI("🔴 Modo Offline", "Usando memória local");
+      });
+
+      // 2. Ouvinte para Relatórios Salvos
+      db.collection("reports").orderBy("createdAt", "desc").onSnapshot(snapshot => {
+        savedReports = [];
+        snapshot.forEach(doc => {
+          savedReports.push(doc.data());
+        });
+        localStorage.setItem("CB_LOCAL_REPORTS", JSON.stringify(savedReports));
+        updateHistoryBadge();
+        if (!document.getElementById("history-view").classList.contains("hidden")) {
+          renderHistoryList();
+        }
+      });
+    }
+
+    function syncConfigToCloud() {
+      if (!isFirebaseReady) return;
+      db.collection("app_config").doc("main").set({
+        checklists: allChecklists,
+        units: presetUnits,
+        users: users,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }).then(() => {
+        updateSyncUI("🟢 Sincronizado na Nuvem", new Date().toLocaleTimeString('pt-BR'));
+      }).catch(err => {
+        console.error("Erro ao sincronizar na nuvem:", err);
+      });
+    }
+
+    function saveReportToCloud(reportData) {
+      if (!isFirebaseReady) {
+        savedReports.unshift(reportData);
+        localStorage.setItem("CB_LOCAL_REPORTS", JSON.stringify(savedReports));
+        updateHistoryBadge();
+        return;
+      }
+
+      reportData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+      db.collection("reports").add(reportData).then(() => {
+        updateSyncUI("🟢 Relatório Salvo na Nuvem", new Date().toLocaleTimeString('pt-BR'));
+      }).catch(err => {
+        savedReports.unshift(reportData);
+        localStorage.setItem("CB_LOCAL_REPORTS", JSON.stringify(savedReports));
+        updateHistoryBadge();
+      });
+    }
+
     function updateLogos() {
       document.getElementById("login-logo-img").src = currentLogo;
       document.getElementById("header-logo-img").src = currentLogo;
-      const prev = document.getElementById("preview-config-logo");
-      if (prev) prev.src = currentLogo;
     }
 
     function renderPresetUnits() {
@@ -520,7 +588,8 @@
       if (presetUnits.includes(val)) return alert("Esta loja já está cadastrada.");
 
       presetUnits.push(val);
-      localStorage.setItem(STORAGE_KEY_UNITS, JSON.stringify(presetUnits));
+      localStorage.setItem("CB_LOCAL_UNITS", JSON.stringify(presetUnits));
+      syncConfigToCloud();
       input.value = "";
       renderPresetUnits();
     }
@@ -530,7 +599,8 @@
       const newName = prompt("Editar nome da unidade:", current);
       if (newName !== null && newName.trim() !== "") {
         presetUnits[idx] = newName.trim();
-        localStorage.setItem(STORAGE_KEY_UNITS, JSON.stringify(presetUnits));
+        localStorage.setItem("CB_LOCAL_UNITS", JSON.stringify(presetUnits));
+        syncConfigToCloud();
         renderPresetUnits();
       }
     }
@@ -539,7 +609,8 @@
       if (presetUnits.length <= 1) return alert("Mantenha ao menos uma unidade cadastrada.");
       if (confirm(`Excluir a unidade "${presetUnits[idx]}"?`)) {
         presetUnits.splice(idx, 1);
-        localStorage.setItem(STORAGE_KEY_UNITS, JSON.stringify(presetUnits));
+        localStorage.setItem("CB_LOCAL_UNITS", JSON.stringify(presetUnits));
+        syncConfigToCloud();
         renderPresetUnits();
       }
     }
@@ -547,50 +618,6 @@
     function openUnitsConfigTab() {
       toggleConfigModal();
       switchConfigTab('units');
-    }
-
-    function exportSettings() {
-      const bundle = {
-        checklists: allChecklists,
-        units: presetUnits,
-        users: users
-      };
-      const jsonStr = btoa(unescape(encodeURIComponent(JSON.stringify(bundle))));
-      const area = document.getElementById("sync-export-area");
-      area.value = jsonStr;
-      area.select();
-      navigator.clipboard.writeText(jsonStr).then(() => {
-        alert("Código de backup copiado para a área de transferência! Envie pelo WhatsApp para o outro dispositivo.");
-      });
-    }
-
-    function importSettings() {
-      const code = document.getElementById("sync-import-area").value.trim();
-      if (!code) return alert("Cole o código de backup antes de importar.");
-      try {
-        const decoded = decodeURIComponent(escape(atob(code)));
-        const parsed = JSON.parse(decoded);
-
-        if (parsed.checklists) {
-          allChecklists = parsed.checklists;
-          localStorage.setItem(STORAGE_KEY_CHECKLISTS, JSON.stringify(allChecklists));
-        }
-        if (parsed.units) {
-          presetUnits = parsed.units;
-          localStorage.setItem(STORAGE_KEY_UNITS, JSON.stringify(presetUnits));
-        }
-        if (parsed.users) {
-          users = parsed.users;
-          localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(users));
-        }
-
-        renderPresetUnits();
-        updateSelectorUI();
-        renderChecklist();
-        alert("Configurações sincronizadas com sucesso neste dispositivo!");
-      } catch (err) {
-        alert("Código de backup inválido.");
-      }
     }
 
     function switchMainTab(tab) {
@@ -621,12 +648,6 @@
       if (badge) badge.innerText = savedReports.length;
     }
 
-    function saveReportToHistory(reportData) {
-      savedReports.unshift(reportData);
-      localStorage.setItem(STORAGE_KEY_REPORTS, JSON.stringify(savedReports));
-      updateHistoryBadge();
-    }
-
     function renderHistoryList() {
       const container = document.getElementById("history-list-container");
       container.innerHTML = "";
@@ -635,7 +656,7 @@
       if (savedReports.length === 0) {
         container.innerHTML = `
           <div class="p-8 text-center bg-white rounded-xl border border-stone-200 text-stone-400 text-xs font-semibold">
-            Nenhum relatório realizado e salvo até o momento.<br>Os relatórios são arquivados automaticamente ao gerar o PDF ou compartilhar.
+            Nenhum relatório realizado até o momento.<br>Todas as auditorias feitas em qualquer celular aparecem aqui automaticamente.
           </div>
         `;
         return;
@@ -715,7 +736,7 @@
     function deleteReportFromHistory(idx) {
       if (confirm("Excluir este relatório do histórico?")) {
         savedReports.splice(idx, 1);
-        localStorage.setItem(STORAGE_KEY_REPORTS, JSON.stringify(savedReports));
+        localStorage.setItem("CB_LOCAL_REPORTS", JSON.stringify(savedReports));
         renderHistoryList();
       }
     }
@@ -723,7 +744,7 @@
     function clearAllHistory() {
       if (confirm("Tem certeza que deseja apagar todo o histórico de relatórios?")) {
         savedReports = [];
-        localStorage.setItem(STORAGE_KEY_REPORTS, JSON.stringify(savedReports));
+        localStorage.setItem("CB_LOCAL_REPORTS", JSON.stringify(savedReports));
         renderHistoryList();
       }
     }
@@ -737,18 +758,14 @@
       document.getElementById("tab-content-units").classList.add("hidden");
       document.getElementById("tab-content-items").classList.add("hidden");
       document.getElementById("tab-content-models").classList.add("hidden");
-      document.getElementById("tab-content-sync").classList.add("hidden");
-      document.getElementById("tab-content-logo").classList.add("hidden");
 
-      document.getElementById("tab-btn-units").className = "flex-1 min-w-[110px] py-3 border-b-2 border-transparent text-stone-500 hover:text-cb-bordo transition";
+      document.getElementById("tab-btn-units").className = "flex-1 min-w-[120px] py-3 border-b-2 border-transparent text-stone-500 hover:text-cb-bordo transition";
       document.getElementById("tab-btn-items").className = "flex-1 min-w-[130px] py-3 border-b-2 border-transparent text-stone-500 hover:text-cb-bordo transition";
-      document.getElementById("tab-btn-models").className = "flex-1 min-w-[100px] py-3 border-b-2 border-transparent text-stone-500 hover:text-cb-bordo transition";
-      document.getElementById("tab-btn-sync").className = "flex-1 min-w-[110px] py-3 border-b-2 border-transparent text-stone-500 hover:text-cb-bordo transition";
-      document.getElementById("tab-btn-logo").className = "flex-1 min-w-[80px] py-3 border-b-2 border-transparent text-stone-500 hover:text-cb-bordo transition";
+      document.getElementById("tab-btn-models").className = "flex-1 min-w-[120px] py-3 border-b-2 border-transparent text-stone-500 hover:text-cb-bordo transition";
 
       if (tab === 'units') {
         document.getElementById("tab-content-units").classList.remove("hidden");
-        document.getElementById("tab-btn-units").className = "flex-1 min-w-[110px] py-3 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition";
+        document.getElementById("tab-btn-units").className = "flex-1 min-w-[120px] py-3 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition";
         renderPresetUnits();
       } else if (tab === 'items') {
         document.getElementById("tab-content-items").classList.remove("hidden");
@@ -756,46 +773,13 @@
         renderModalItems();
       } else if (tab === 'models') {
         document.getElementById("tab-content-models").classList.remove("hidden");
-        document.getElementById("tab-btn-models").className = "flex-1 min-w-[100px] py-3 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition";
-      } else if (tab === 'sync') {
-        document.getElementById("tab-content-sync").classList.remove("hidden");
-        document.getElementById("tab-btn-sync").className = "flex-1 min-w-[110px] py-3 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition";
-      } else if (tab === 'logo') {
-        document.getElementById("tab-content-logo").classList.remove("hidden");
-        document.getElementById("tab-btn-logo").className = "flex-1 min-w-[80px] py-3 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition";
-        updateLogos();
+        document.getElementById("tab-btn-models").className = "flex-1 min-w-[120px] py-3 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition";
       }
     }
 
     function toggleNewCategoryInput() {
       const box = document.getElementById("new-cat-box");
       box.classList.toggle("hidden");
-    }
-
-    function uploadCustomLogo(event) {
-      const file = event.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          currentLogo = e.target.result;
-          localStorage.setItem(STORAGE_KEY_LOGO, currentLogo);
-          updateLogos();
-          alert("Logotipo atualizado com sucesso!");
-        };
-        reader.readAsDataURL(file);
-      }
-    }
-
-    function resetLogoToDefault() {
-      currentLogo = DEFAULT_EMBEDDED_LOGO;
-      localStorage.removeItem(STORAGE_KEY_LOGO);
-      updateLogos();
-      alert("Logotipo restaurado para o padrão!");
-    }
-
-    function saveAllChecklists() {
-      localStorage.setItem(STORAGE_KEY_CHECKLISTS, JSON.stringify(allChecklists));
-      localStorage.setItem(STORAGE_KEY_ACTIVE_ID, activeChecklistId);
     }
 
     function getCurrentChecklist() {
@@ -827,7 +811,7 @@
       actionPlans = {};
       customAnswers = {};
       maintenanceOrders = {};
-      saveAllChecklists();
+      localStorage.setItem("CB_LOCAL_ACTIVE_ID", activeChecklistId);
       updateSelectorUI();
       renderChecklist();
     }
@@ -837,7 +821,8 @@
       if (!newTitle) return alert("O título não pode estar vazio.");
       const current = getCurrentChecklist();
       current.name = newTitle;
-      saveAllChecklists();
+      localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
+      syncConfigToCloud();
       updateSelectorUI();
       renderChecklist();
       alert("Nome do checklist atualizado com sucesso!");
@@ -854,12 +839,14 @@
         categories: [{ category: "1. Itens Gerais", items: [] }]
       });
       activeChecklistId = newId;
-      saveAllChecklists();
+      localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
+      localStorage.setItem("CB_LOCAL_ACTIVE_ID", activeChecklistId);
+      syncConfigToCloud();
       document.getElementById("new-checklist-name").value = "";
       updateSelectorUI();
       switchConfigTab('items');
       renderChecklist();
-      alert(`Checklist "${name}" criado com sucesso! Adicione agora as perguntas.`);
+      alert(`Checklist "${name}" criado com sucesso!`);
     }
 
     function deleteCurrentChecklist() {
@@ -867,7 +854,9 @@
       if (confirm(`Excluir o checklist "${getCurrentChecklist().name}"?`)) {
         allChecklists = allChecklists.filter(c => c.id !== activeChecklistId);
         activeChecklistId = allChecklists[0].id;
-        saveAllChecklists();
+        localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
+        localStorage.setItem("CB_LOCAL_ACTIVE_ID", activeChecklistId);
+        syncConfigToCloud();
         updateSelectorUI();
         renderModalItems();
         renderChecklist();
@@ -878,7 +867,8 @@
       const catText = document.getElementById("new-cat-text").value.trim();
       if (!catText) return alert("Digite o nome da categoria.");
       getCurrentChecklist().categories.push({ category: catText, items: [] });
-      saveAllChecklists();
+      localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
+      syncConfigToCloud();
       document.getElementById("new-cat-text").value = "";
       document.getElementById("new-cat-box").classList.add("hidden");
       renderModalItems();
@@ -891,7 +881,8 @@
       const newName = prompt("Editar nome da categoria / setor:", currentName);
       if (newName !== null && newName.trim() !== "") {
         current.categories[sIdx].category = newName.trim();
-        saveAllChecklists();
+        localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
+        syncConfigToCloud();
         renderModalItems();
         renderChecklist();
       }
@@ -914,7 +905,8 @@
       current.categories[sIdx].items[iIdx].title = newTitle;
       current.categories[sIdx].items[iIdx].type = newType;
 
-      saveAllChecklists();
+      localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
+      syncConfigToCloud();
       renderModalItems();
       renderChecklist();
     }
@@ -925,7 +917,7 @@
       const found = users.find(item => item.username.toLowerCase() === u && item.pass === p);
       if (found) {
         currentUser = found;
-        sessionStorage.setItem("CB_CURRENT_LOGGED_USER_SESSION", JSON.stringify(found));
+        sessionStorage.setItem("CB_LOCAL_LOGGED_USER", JSON.stringify(found));
         document.getElementById("login-screen").classList.add("hidden");
         document.getElementById("login-error").classList.add("hidden");
         initApp();
@@ -935,7 +927,7 @@
     }
 
     function handleLogout() {
-      sessionStorage.removeItem("CB_CURRENT_LOGGED_USER_SESSION");
+      sessionStorage.removeItem("CB_LOCAL_LOGGED_USER");
       location.reload();
     }
 
@@ -943,6 +935,8 @@
       updateLogos();
       renderPresetUnits();
       updateHistoryBadge();
+      setupCloudListeners();
+
       if (!currentUser) {
         document.getElementById("login-screen").classList.remove("hidden");
         return;
@@ -993,7 +987,8 @@
       if (users.some(item => item.username === u)) return alert("Login já existente!");
 
       users.push({ username: u, pass: p, name: name, role: "supervisor" });
-      localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(users));
+      localStorage.setItem("CB_LOCAL_USERS", JSON.stringify(users));
+      syncConfigToCloud();
       document.getElementById("new-user-name").value = "";
       document.getElementById("new-user-pass").value = "";
       document.getElementById("new-user-fullname").value = "";
@@ -1003,7 +998,8 @@
     function removeUser(idx) {
       if (confirm("Excluir este acesso?")) {
         users.splice(idx, 1);
-        localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(users));
+        localStorage.setItem("CB_LOCAL_USERS", JSON.stringify(users));
+        syncConfigToCloud();
         renderUsersList();
       }
     }
@@ -1597,7 +1593,7 @@
       }
 
       const report = buildReportData();
-      saveReportToHistory(report);
+      saveReportToCloud(report);
       openPrintWindow(report.htmlContent, report.checklistName, report.unit);
     }
 
@@ -1609,7 +1605,7 @@
       }
 
       const report = buildReportData();
-      saveReportToHistory(report);
+      saveReportToCloud(report);
 
       const current = getCurrentChecklist();
       const unit = document.getElementById("unit-selector").value || "Não informada";
@@ -1752,7 +1748,7 @@
               </div>
             </div>
 
-            <!-- Painel Expansível de Edição da Pergunta -->
+            <!-- Painel de Edição da Pergunta -->
             <div id="edit-item-box-${sIdx}-${iIdx}" class="hidden p-2.5 bg-white border border-cb-gold/40 rounded-lg space-y-2 mt-1 shadow-sm">
               <span class="block text-[10px] font-bold text-cb-bordo uppercase">Editar Item / Pergunta</span>
               <div>
@@ -1789,7 +1785,8 @@
     function removeCategory(sIdx) {
       if (confirm("Excluir esta categoria e todas as suas perguntas?")) {
         getCurrentChecklist().categories.splice(sIdx, 1);
-        saveAllChecklists();
+        localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
+        syncConfigToCloud();
         renderModalItems();
         renderChecklist();
       }
@@ -1797,7 +1794,8 @@
 
     function toggleItemPhotoReq(sIdx, iIdx) {
       getCurrentChecklist().categories[sIdx].items[iIdx].requirePhoto = !getCurrentChecklist().categories[sIdx].items[iIdx].requirePhoto;
-      saveAllChecklists();
+      localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
+      syncConfigToCloud();
       renderChecklist();
     }
 
@@ -1818,7 +1816,8 @@
         requirePhoto: reqPhoto
       });
 
-      saveAllChecklists();
+      localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
+      syncConfigToCloud();
       document.getElementById("new-item-text").value = "";
       document.getElementById("new-item-req-photo").checked = false;
       renderModalItems();
@@ -1827,7 +1826,8 @@
 
     function removeItem(sIdx, iIdx) {
       getCurrentChecklist().categories[sIdx].items.splice(iIdx, 1);
-      saveAllChecklists();
+      localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
+      syncConfigToCloud();
       renderModalItems();
       renderChecklist();
     }
@@ -1836,7 +1836,9 @@
       if (confirm("Restaurar os modelos padrões da Casa Bauducco?")) {
         allChecklists = JSON.parse(JSON.stringify(defaultTemplates));
         activeChecklistId = allChecklists[0].id;
-        saveAllChecklists();
+        localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
+        localStorage.setItem("CB_LOCAL_ACTIVE_ID", activeChecklistId);
+        syncConfigToCloud();
         updateSelectorUI();
         renderModalItems();
         renderChecklist();
