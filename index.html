@@ -200,28 +200,31 @@
       <div class="p-3.5 border-b border-stone-200 flex justify-between items-center bg-cb-bordo text-white">
         <div>
           <h3 class="font-bold text-sm text-cb-gold">Painel de Configuração</h3>
-          <p class="text-[11px] text-stone-200">Gerencie lojas, perguntas, setores, modelos e logotipo</p>
+          <p class="text-[11px] text-stone-200">Gerencie lojas, perguntas, setores, modelos, backup e logotipo</p>
         </div>
         <button onclick="toggleConfigModal()" class="text-stone-300 hover:text-white text-xl font-bold px-2 py-0.5">✕</button>
       </div>
 
       <!-- Abas de Navegação -->
       <div class="flex border-b border-stone-200 bg-stone-100 text-xs font-bold overflow-x-auto">
-        <button id="tab-btn-units" onclick="switchConfigTab('units')" class="flex-1 min-w-[120px] py-3 border-b-2 border-cb-bordo text-cb-bordo bg-white transition">
-          🏢 Unidades / Lojas
+        <button id="tab-btn-units" onclick="switchConfigTab('units')" class="flex-1 min-w-[110px] py-3 border-b-2 border-cb-bordo text-cb-bordo bg-white transition">
+          🏢 Lojas
         </button>
         <button id="tab-btn-items" onclick="switchConfigTab('items')" class="flex-1 min-w-[130px] py-3 border-b-2 border-transparent text-stone-500 hover:text-cb-bordo transition">
           📝 Perguntas & Setores
         </button>
-        <button id="tab-btn-models" onclick="switchConfigTab('models')" class="flex-1 min-w-[120px] py-3 border-b-2 border-transparent text-stone-500 hover:text-cb-bordo transition">
+        <button id="tab-btn-models" onclick="switchConfigTab('models')" class="flex-1 min-w-[100px] py-3 border-b-2 border-transparent text-stone-500 hover:text-cb-bordo transition">
           📂 Modelos
         </button>
-        <button id="tab-btn-logo" onclick="switchConfigTab('logo')" class="flex-1 min-w-[90px] py-3 border-b-2 border-transparent text-stone-500 hover:text-cb-bordo transition">
-          🖼️ Logotipo
+        <button id="tab-btn-sync" onclick="switchConfigTab('sync')" class="flex-1 min-w-[110px] py-3 border-b-2 border-transparent text-stone-500 hover:text-cb-bordo transition">
+          🔄 Backup / Sync
+        </button>
+        <button id="tab-btn-logo" onclick="switchConfigTab('logo')" class="flex-1 min-w-[80px] py-3 border-b-2 border-transparent text-stone-500 hover:text-cb-bordo transition">
+          🖼️ Logo
         </button>
       </div>
 
-      <!-- Aba: Unidades Pré-estabelecidas -->
+      <!-- Aba: Unidades -->
       <div id="tab-content-units" class="p-4 space-y-4 overflow-y-auto flex-1 bg-stone-50 text-sm">
         <div class="bg-white p-4 rounded-xl border border-stone-200 space-y-3 shadow-sm">
           <span class="block text-xs font-bold text-cb-bordo uppercase tracking-wider">Adicionar Nova Loja / Unidade</span>
@@ -306,6 +309,27 @@
               + Criar
             </button>
           </div>
+        </div>
+      </div>
+
+      <!-- Aba: Sincronização / Backup -->
+      <div id="tab-content-sync" class="hidden p-5 space-y-4 overflow-y-auto flex-1 bg-stone-50 text-sm">
+        <div class="bg-white p-4 rounded-xl border border-stone-200 space-y-3 shadow-sm">
+          <span class="block text-xs font-bold text-cb-bordo uppercase tracking-wider">1. Exportar Configurações deste Aparelho</span>
+          <p class="text-xs text-stone-600">Copie o código abaixo ou baixe o arquivo de backup para transferir para outros celulares ou computadores.</p>
+          <button onclick="exportSettings()" class="w-full py-2.5 bg-cb-bordo hover:bg-cb-bordo-dark text-white text-xs font-bold rounded-lg transition">
+            📥 Gerar Código de Backup
+          </button>
+          <textarea id="sync-export-area" readonly rows="3" class="w-full text-[11px] font-mono border rounded p-2 bg-stone-50" placeholder="O código de exportação aparecerá aqui..."></textarea>
+        </div>
+
+        <div class="bg-white p-4 rounded-xl border border-stone-200 space-y-3 shadow-sm">
+          <span class="block text-xs font-bold text-cb-bordo uppercase tracking-wider">2. Importar Configurações no Novo Aparelho</span>
+          <p class="text-xs text-stone-600">Cole aqui o código gerado no outro dispositivo para sincronizar todas as lojas, perguntas e modelos instantaneamente.</p>
+          <textarea id="sync-import-area" rows="3" class="w-full text-[11px] font-mono border rounded p-2 bg-stone-50 focus:bg-white" placeholder="Cole o código de backup aqui..."></textarea>
+          <button onclick="importSettings()" class="w-full py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-lg transition">
+            📤 Aplicar Configurações Importadas
+          </button>
         </div>
       </div>
 
@@ -525,6 +549,50 @@
       switchConfigTab('units');
     }
 
+    function exportSettings() {
+      const bundle = {
+        checklists: allChecklists,
+        units: presetUnits,
+        users: users
+      };
+      const jsonStr = btoa(unescape(encodeURIComponent(JSON.stringify(bundle))));
+      const area = document.getElementById("sync-export-area");
+      area.value = jsonStr;
+      area.select();
+      navigator.clipboard.writeText(jsonStr).then(() => {
+        alert("Código de backup copiado para a área de transferência! Envie pelo WhatsApp para o outro dispositivo.");
+      });
+    }
+
+    function importSettings() {
+      const code = document.getElementById("sync-import-area").value.trim();
+      if (!code) return alert("Cole o código de backup antes de importar.");
+      try {
+        const decoded = decodeURIComponent(escape(atob(code)));
+        const parsed = JSON.parse(decoded);
+
+        if (parsed.checklists) {
+          allChecklists = parsed.checklists;
+          localStorage.setItem(STORAGE_KEY_CHECKLISTS, JSON.stringify(allChecklists));
+        }
+        if (parsed.units) {
+          presetUnits = parsed.units;
+          localStorage.setItem(STORAGE_KEY_UNITS, JSON.stringify(presetUnits));
+        }
+        if (parsed.users) {
+          users = parsed.users;
+          localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(users));
+        }
+
+        renderPresetUnits();
+        updateSelectorUI();
+        renderChecklist();
+        alert("Configurações sincronizadas com sucesso neste dispositivo!");
+      } catch (err) {
+        alert("Código de backup inválido.");
+      }
+    }
+
     function switchMainTab(tab) {
       const auditView = document.getElementById("audit-view");
       const historyView = document.getElementById("history-view");
@@ -669,16 +737,18 @@
       document.getElementById("tab-content-units").classList.add("hidden");
       document.getElementById("tab-content-items").classList.add("hidden");
       document.getElementById("tab-content-models").classList.add("hidden");
+      document.getElementById("tab-content-sync").classList.add("hidden");
       document.getElementById("tab-content-logo").classList.add("hidden");
 
-      document.getElementById("tab-btn-units").className = "flex-1 min-w-[120px] py-3 border-b-2 border-transparent text-stone-500 hover:text-cb-bordo transition";
+      document.getElementById("tab-btn-units").className = "flex-1 min-w-[110px] py-3 border-b-2 border-transparent text-stone-500 hover:text-cb-bordo transition";
       document.getElementById("tab-btn-items").className = "flex-1 min-w-[130px] py-3 border-b-2 border-transparent text-stone-500 hover:text-cb-bordo transition";
-      document.getElementById("tab-btn-models").className = "flex-1 min-w-[120px] py-3 border-b-2 border-transparent text-stone-500 hover:text-cb-bordo transition";
-      document.getElementById("tab-btn-logo").className = "flex-1 min-w-[90px] py-3 border-b-2 border-transparent text-stone-500 hover:text-cb-bordo transition";
+      document.getElementById("tab-btn-models").className = "flex-1 min-w-[100px] py-3 border-b-2 border-transparent text-stone-500 hover:text-cb-bordo transition";
+      document.getElementById("tab-btn-sync").className = "flex-1 min-w-[110px] py-3 border-b-2 border-transparent text-stone-500 hover:text-cb-bordo transition";
+      document.getElementById("tab-btn-logo").className = "flex-1 min-w-[80px] py-3 border-b-2 border-transparent text-stone-500 hover:text-cb-bordo transition";
 
       if (tab === 'units') {
         document.getElementById("tab-content-units").classList.remove("hidden");
-        document.getElementById("tab-btn-units").className = "flex-1 min-w-[120px] py-3 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition";
+        document.getElementById("tab-btn-units").className = "flex-1 min-w-[110px] py-3 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition";
         renderPresetUnits();
       } else if (tab === 'items') {
         document.getElementById("tab-content-items").classList.remove("hidden");
@@ -686,10 +756,13 @@
         renderModalItems();
       } else if (tab === 'models') {
         document.getElementById("tab-content-models").classList.remove("hidden");
-        document.getElementById("tab-btn-models").className = "flex-1 min-w-[120px] py-3 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition";
+        document.getElementById("tab-btn-models").className = "flex-1 min-w-[100px] py-3 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition";
+      } else if (tab === 'sync') {
+        document.getElementById("tab-content-sync").classList.remove("hidden");
+        document.getElementById("tab-btn-sync").className = "flex-1 min-w-[110px] py-3 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition";
       } else if (tab === 'logo') {
         document.getElementById("tab-content-logo").classList.remove("hidden");
-        document.getElementById("tab-btn-logo").className = "flex-1 min-w-[90px] py-3 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition";
+        document.getElementById("tab-btn-logo").className = "flex-1 min-w-[80px] py-3 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition";
         updateLogos();
       }
     }
