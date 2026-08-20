@@ -126,7 +126,6 @@
         </div>
       </div>
       <div class="flex items-center gap-2">
-        <!-- Ícone de Sino de Notificação -->
         <button onclick="selectModule('actions')" class="relative p-1.5 bg-cb-bordo-dark border border-cb-gold/40 rounded-lg text-stone-200 hover:text-white transition text-sm">
           🔔
           <span id="global-notification-dot" class="absolute -top-1 -right-1 w-3 h-3 bg-rose-500 rounded-full border-2 border-cb-bordo hidden"></span>
@@ -248,7 +247,7 @@
     </main>
   </div>
 
-  <!-- MÓDULO 2: PLANOS DE AÇÃO & MANUTENÇÃO (Em Linha + Abas Pendentes / Concluídos) -->
+  <!-- MÓDULO 2: PLANOS DE AÇÃO & MANUTENÇÃO -->
   <main id="module-actions-container" class="max-w-xl mx-auto p-4 space-y-4 hidden">
     <div class="bg-white p-4 rounded-xl shadow-sm border border-stone-200 space-y-3">
       <h2 class="font-bold text-cb-bordo text-xs uppercase tracking-wider">Agenda de Planos de Ação</h2>
@@ -870,6 +869,11 @@
     }
 
     function selectModule(mod) {
+      if (mod === 'users') {
+        toggleUsersModal();
+        return;
+      }
+
       document.getElementById("modules-screen").classList.add("hidden");
       const checklistsMod = document.getElementById("module-checklists-container");
       const actionsMod = document.getElementById("module-actions-container");
@@ -1060,20 +1064,8 @@
       renderCentralizedActions();
     }
 
-    let unreadChats = {}; // Armazena estado de mensagens não lidas
-
     function checkGlobalNotifications() {
       if (!isFirebaseReady) return;
-      let allowedUnits = getAllowedUnits();
-      let countUnread = 0;
-
-      savedReports.forEach(rep => {
-        if (!allowedUnits.includes(rep.unit)) return;
-        rep.nonConformities?.forEach((nc, i) => {
-          let actId = `${rep.id}_nc_${i}`;
-          // Verifica se há mensagens não vistas
-        });
-      });
     }
 
     function renderCentralizedActions() {
@@ -1124,7 +1116,6 @@
         else return act.status !== 'Concluído';
       });
 
-      // Ordenar por data crescente (o que vence antes aparece primeiro)
       filteredActions.sort((a, b) => new Date(a.rawDate || '2099-12-31') - new Date(b.rawDate || '2099-12-31'));
 
       if (filteredActions.length === 0) {
@@ -1146,7 +1137,6 @@
         }
 
         let statusOptions = actionStatuses.map(st => `<option value="${st.name}" ${act.status === st.name ? 'selected' : ''}>${st.name}</option>`).join("");
-        
         let currentStatusObj = actionStatuses.find(s => s.name === act.status) || { color: 'bg-stone-100 text-stone-800 border-stone-300' };
 
         const card = document.createElement("div");
@@ -1172,7 +1162,6 @@
           </div>`;
         container.appendChild(card);
         
-        // Verificar indicador de mensagem não vista
         if (isFirebaseReady) {
           db.collection("chats").doc(act.chatId).collection("messages").orderBy("createdAt", "desc").limit(1).get().then(snap => {
             if (!snap.empty) {
@@ -1215,7 +1204,6 @@
           const m = doc.data();
           const isMe = m.sender === currentUser.name;
           
-          // Marcar como vista se for do outro usuário
           if (!isMe && !m.seen) {
             db.collection("chats").doc(chatId).collection("messages").doc(doc.id).update({ seen: true });
           }
@@ -1244,6 +1232,123 @@
       db.collection("chats").doc(activeChatActionId).collection("messages").add({
         text: text, sender: currentUser.name, seen: false, time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }), createdAt: firebase.firestore.FieldValue.serverTimestamp()
       }).then(() => input.value = "");
+    }
+
+    // GERENCIAMENTO DE USUÁRIOS
+    function toggleUsersModal() {
+      if (currentUser.role !== 'admin') return alert("Acesso restrito a administradores.");
+      const m = document.getElementById("users-modal");
+      m.classList.toggle("hidden");
+      if (!m.classList.contains("hidden")) {
+        renderUsersList();
+        renderPresetUnits();
+        switchAdminTab('units');
+      }
+    }
+
+    function switchAdminTab(tab) {
+      const uContent = document.getElementById("admin-content-units");
+      const uUsers = document.getElementById("admin-content-users");
+      const uStatus = document.getElementById("admin-content-status");
+      const btnU = document.getElementById("admin-tab-units");
+      const btnUs = document.getElementById("admin-tab-users");
+      const btnSt = document.getElementById("admin-tab-status");
+
+      uContent.classList.add("hidden");
+      uUsers.classList.add("hidden");
+      uStatus.classList.add("hidden");
+      btnU.className = "flex-1 py-2.5 border-b-2 border-transparent text-stone-500 transition";
+      btnUs.className = "flex-1 py-2.5 border-b-2 border-transparent text-stone-500 transition";
+      btnSt.className = "flex-1 py-2.5 border-b-2 border-transparent text-stone-500 transition";
+
+      if (tab === 'units') {
+        uContent.classList.remove("hidden");
+        btnU.className = "flex-1 py-2.5 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition";
+        renderPresetUnits();
+      } else if (tab === 'users') {
+        uUsers.classList.remove("hidden");
+        btnUs.className = "flex-1 py-2.5 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition";
+        renderUsersList();
+        renderUserUnitsCheckboxes();
+      } else if (tab === 'status') {
+        uStatus.classList.remove("hidden");
+        btnSt.className = "flex-1 py-2.5 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition";
+        renderAdminStatusList();
+      }
+    }
+
+    function toggleUnitSelectionBox() {
+      const role = document.getElementById("new-user-role").value;
+      const box = document.getElementById("new-user-units-box");
+      if (role === 'admin') box.classList.add("hidden");
+      else box.classList.remove("hidden");
+    }
+
+    function renderUserUnitsCheckboxes() {
+      const select = document.getElementById("new-user-units");
+      if (!select) return;
+      select.innerHTML = "";
+      presetUnits.forEach(u => {
+        const opt = document.createElement("option");
+        opt.value = u;
+        opt.innerText = u;
+        select.appendChild(opt);
+      });
+    }
+
+    function renderUsersList() {
+      const list = document.getElementById("users-list");
+      list.innerHTML = "";
+      users.forEach((u, idx) => {
+        const item = document.createElement("div");
+        item.className = "bg-stone-50 border p-2.5 rounded-xl text-xs space-y-1";
+        let unitsText = u.units && u.units.length > 0 ? u.units.join(", ") : "Todas as Lojas";
+        item.innerHTML = `
+          <div class="flex justify-between items-center">
+            <span class="font-bold text-cb-bordo text-sm">${u.name} (${u.role})</span>
+            ${u.username !== 'alcides' ? `<button onclick="removeUser(${idx})" class="text-rose-600 font-bold hover:underline">Excluir</button>` : '<span class="text-[10px] text-stone-400 font-bold">Principal</span>'}
+          </div>
+          <div class="text-stone-500">Login: ${u.username} | Senha: ${u.pass}</div>
+          <div class="text-stone-600"><strong>Lojas Vinculadas:</strong> ${unitsText}</div>`;
+        list.appendChild(item);
+      });
+    }
+
+    function addNewUser() {
+      const username = document.getElementById("new-user-name").value.trim().toLowerCase();
+      const pass = document.getElementById("new-user-pass").value.trim();
+      const name = document.getElementById("new-user-fullname").value.trim();
+      const role = document.getElementById("new-user-role").value;
+      
+      let assignedUnits = [];
+      if (role !== 'admin') {
+        const select = document.getElementById("new-user-units");
+        for (let opt of select.selectedOptions) {
+          assignedUnits.push(opt.value);
+        }
+      }
+
+      if (!username || !pass || !name) return alert("Preencha todos os campos obrigatórios.");
+      if (users.some(item => item.username === username)) return alert("Login já existente!");
+
+      users.push({ username, pass, name, role, units: assignedUnits });
+      localStorage.setItem("CB_LOCAL_USERS", JSON.stringify(users));
+      syncConfigToCloud();
+
+      document.getElementById("new-user-name").value = "";
+      document.getElementById("new-user-pass").value = "";
+      document.getElementById("new-user-fullname").value = "";
+      renderUsersList();
+      alert("Usuário criado com sucesso!");
+    }
+
+    function removeUser(idx) {
+      if (confirm("Excluir este acesso?")) {
+        users.splice(idx, 1);
+        localStorage.setItem("CB_LOCAL_USERS", JSON.stringify(users));
+        syncConfigToCloud();
+        renderUsersList();
+      }
     }
 
     function switchConfigTab(tab) {
