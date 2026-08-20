@@ -287,11 +287,11 @@
           </div>
         </div>
       </div>
-      <div id="centralized-actions-list" class="space-y-2"></div>
+      <div id="centralized-actions-list" class="space-y-3"></div>
     </main>
   </div>
 
-  <!-- Modal de Chat com Descrição Completa, Foto e Anexo -->
+  <!-- Modal de Chat com Descrição Completa e Foto -->
   <div id="chat-modal" class="fixed inset-0 bg-black/70 z-50 hidden flex items-center justify-center p-2 sm:p-4">
     <div class="bg-white w-full max-w-lg h-[90vh] rounded-2xl flex flex-col shadow-2xl overflow-hidden border border-cb-gold/30">
       <div class="p-3.5 border-b border-stone-200 flex justify-between items-center bg-cb-bordo text-white">
@@ -307,7 +307,6 @@
 
       <div id="chat-messages-container" class="flex-1 p-4 overflow-y-auto space-y-3 bg-stone-50 text-xs"></div>
 
-      <!-- Barra de Envio com Opção de Anexar Arquivo/Foto -->
       <div class="p-3 border-t bg-white flex items-center gap-2">
         <label class="cursor-pointer p-2 text-stone-500 hover:text-cb-bordo transition rounded-lg border bg-stone-50" title="Anexar Foto ou Arquivo">
           📎
@@ -332,10 +331,11 @@
         <button onclick="toggleUsersModal()" class="text-stone-400 hover:text-stone-700 text-lg font-bold p-1">✕</button>
       </div>
 
-      <div class="flex border-b border-stone-200 bg-stone-100 text-xs font-bold">
-        <button id="admin-tab-units" onclick="switchAdminTab('units')" class="flex-1 py-2.5 border-b-2 border-cb-bordo text-cb-bordo bg-white transition">🏢 Lojas da Rede</button>
-        <button id="admin-tab-users" onclick="switchAdminTab('users')" class="flex-1 py-2.5 border-b-2 border-transparent text-stone-500 transition">👥 Usuários & Vínculos</button>
-        <button id="admin-tab-status" onclick="switchAdminTab('status')" class="flex-1 py-2.5 border-b-2 border-transparent text-stone-500 transition">🏷️ Tipos de Status</button>
+      <div class="flex border-b border-stone-200 bg-stone-100 text-xs font-bold overflow-x-auto">
+        <button id="admin-tab-units" onclick="switchAdminTab('units')" class="flex-1 py-2.5 border-b-2 border-cb-bordo text-cb-bordo bg-white transition whitespace-nowrap">🏢 Lojas da Rede</button>
+        <button id="admin-tab-users" onclick="switchAdminTab('users')" class="flex-1 py-2.5 border-b-2 border-transparent text-stone-500 transition whitespace-nowrap">👥 Usuários & Vínculos</button>
+        <button id="admin-tab-status" onclick="switchAdminTab('status')" class="flex-1 py-2.5 border-b-2 border-transparent text-stone-500 transition whitespace-nowrap">🏷️ Tipos de Status</button>
+        <button id="admin-tab-priorities" onclick="switchAdminTab('priorities')" class="flex-1 py-2.5 border-b-2 border-transparent text-stone-500 transition whitespace-nowrap">⚡ Tarjas / Prioridade</button>
       </div>
 
       <!-- Aba Lojas (Admin) -->
@@ -405,6 +405,31 @@
         <div class="bg-white p-3 rounded-xl border space-y-2 shadow-sm">
           <span class="block font-bold text-cb-bordo uppercase">Status Cadastrados</span>
           <div id="admin-status-list" class="space-y-1.5 max-h-48 overflow-y-auto"></div>
+        </div>
+      </div>
+
+      <!-- Aba Tarjas / Prioridades (Admin) -->
+      <div id="admin-content-priorities" class="hidden p-4 overflow-y-auto space-y-4 flex-1 bg-stone-50 text-xs">
+        <div class="bg-white p-3 rounded-xl border space-y-3 shadow-sm">
+          <span class="block font-bold text-cb-bordo uppercase">Cadastrar Nova Tarja de Prioridade</span>
+          <div class="space-y-2">
+            <input type="text" id="admin-new-priority-input" placeholder="Ex: Urgente, Importante, Não Urgente..." class="w-full border rounded p-2 bg-stone-50 font-semibold">
+            <div class="flex items-center gap-2">
+              <label class="font-bold text-stone-600">Estilo da Tarja:</label>
+              <select id="admin-new-priority-style" class="border rounded p-1.5 bg-stone-50 font-semibold">
+                <option value="bg-rose-600 text-white font-black animate-pulse">Vermelho Destaque (Urgente)</option>
+                <option value="bg-amber-500 text-white font-bold">Laranja/Amarelo (Importante)</option>
+                <option value="bg-stone-200 text-stone-800 font-semibold">Cinza (Não Urgente)</option>
+                <option value="bg-purple-600 text-white font-bold">Roxo</option>
+                <option value="bg-blue-600 text-white font-bold">Azul</option>
+              </select>
+            </div>
+            <button onclick="adminAddNewPriority()" class="w-full py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded">Adicionar Tarja</button>
+          </div>
+        </div>
+        <div class="bg-white p-3 rounded-xl border space-y-2 shadow-sm">
+          <span class="block font-bold text-cb-bordo uppercase">Tarjas Cadastradas</span>
+          <div id="admin-priorities-list" class="space-y-1.5 max-h-48 overflow-y-auto"></div>
         </div>
       </div>
 
@@ -560,6 +585,12 @@
       { name: "Concluído", color: "bg-emerald-100 border-emerald-300" }
     ];
 
+    const defaultPriorities = [
+      { name: "Urgente", style: "bg-rose-600 text-white font-black" },
+      { name: "Importante", style: "bg-amber-500 text-white font-bold" },
+      { name: "Não Urgente", style: "bg-stone-200 text-stone-800 font-semibold" }
+    ];
+
     const defaultTemplates = [
       {
         id: "cb-supervisao",
@@ -636,7 +667,9 @@
     let users = JSON.parse(localStorage.getItem("CB_LOCAL_USERS")) || defaultUsers;
     let presetUnits = JSON.parse(localStorage.getItem("CB_LOCAL_UNITS")) || defaultUnits;
     let actionStatuses = JSON.parse(localStorage.getItem("CB_LOCAL_STATUSES")) || defaultStatuses;
+    let actionPriorities = JSON.parse(localStorage.getItem("CB_LOCAL_PRIORITIES")) || defaultPriorities;
     let actionCustomStatus = JSON.parse(localStorage.getItem("CB_LOCAL_CUSTOM_STATUS")) || {};
+    let actionCustomPriority = JSON.parse(localStorage.getItem("CB_LOCAL_CUSTOM_PRIORITY")) || {};
     let currentUser = JSON.parse(sessionStorage.getItem("CB_LOCAL_LOGGED_USER")) || null;
     let allChecklists = JSON.parse(localStorage.getItem("CB_LOCAL_CHECKLISTS")) || defaultTemplates;
     let activeChecklistId = localStorage.getItem("CB_LOCAL_ACTIVE_ID") || allChecklists[0].id;
@@ -675,7 +708,9 @@
           if (data.units) { presetUnits = data.units; localStorage.setItem("CB_LOCAL_UNITS", JSON.stringify(presetUnits)); }
           if (data.users) { users = data.users; localStorage.setItem("CB_LOCAL_USERS", JSON.stringify(users)); }
           if (data.statuses) { actionStatuses = data.statuses; localStorage.setItem("CB_LOCAL_STATUSES", JSON.stringify(actionStatuses)); }
+          if (data.priorities) { actionPriorities = data.priorities; localStorage.setItem("CB_LOCAL_PRIORITIES", JSON.stringify(actionPriorities)); }
           if (data.customStatus) { actionCustomStatus = data.customStatus; localStorage.setItem("CB_LOCAL_CUSTOM_STATUS", JSON.stringify(actionCustomStatus)); }
+          if (data.customPriority) { actionCustomPriority = data.customPriority; localStorage.setItem("CB_LOCAL_CUSTOM_PRIORITY", JSON.stringify(actionCustomPriority)); }
 
           renderPresetUnits();
           renderHomeChecklistSelect();
@@ -754,7 +789,9 @@
         units: presetUnits,
         users: users,
         statuses: actionStatuses,
+        priorities: actionPriorities,
         customStatus: actionCustomStatus,
+        customPriority: actionCustomPriority,
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       }).catch(err => console.error(err));
     }
@@ -827,6 +864,7 @@
         });
       }
       renderAdminStatusList();
+      renderAdminPrioritiesList();
     }
 
     function adminAddNewUnit() {
@@ -889,6 +927,38 @@
       });
     }
 
+    function adminAddNewPriority() {
+      const input = document.getElementById("admin-new-priority-input");
+      const val = input.value.trim();
+      const style = document.getElementById("admin-new-priority-style").value;
+      if (!val) return alert("Digite o nome da tarja.");
+      if (actionPriorities.some(p => p.name.toLowerCase() === val.toLowerCase())) return alert("Tarja já cadastrada.");
+      actionPriorities.push({ name: val, style });
+      localStorage.setItem("CB_LOCAL_PRIORITIES", JSON.stringify(actionPriorities));
+      syncConfigToCloud(); input.value = ""; renderAdminPrioritiesList();
+    }
+
+    function adminDeletePriority(idx) {
+      if (actionPriorities.length <= 1) return alert("Mantenha ao menos uma tarja.");
+      if (confirm("Excluir esta tarja?")) {
+        actionPriorities.splice(idx, 1);
+        localStorage.setItem("CB_LOCAL_PRIORITIES", JSON.stringify(actionPriorities));
+        syncConfigToCloud(); renderAdminPrioritiesList();
+      }
+    }
+
+    function renderAdminPrioritiesList() {
+      const container = document.getElementById("admin-priorities-list");
+      if (!container) return;
+      container.innerHTML = "";
+      actionPriorities.forEach((pr, idx) => {
+        const item = document.createElement("div");
+        item.className = "flex justify-between items-center p-2 bg-stone-50 rounded border text-xs";
+        item.innerHTML = `<span class="font-bold px-2 py-0.5 rounded ${pr.style}">${pr.name}</span><button onclick="adminDeletePriority(${idx})" class="text-rose-600 font-bold">Excluir</button>`;
+        container.appendChild(item);
+      });
+    }
+
     function handleLogin() {
       const u = document.getElementById("login-user").value.trim().toLowerCase();
       const p = document.getElementById("login-pass").value.trim();
@@ -900,6 +970,7 @@
         document.getElementById("login-error").classList.add("hidden");
         openModulesScreen();
       } else {
+        document.getElementById("login-error").classList.add("hidden"); // Evita exibição incorreta
         document.getElementById("login-error").classList.remove("hidden");
       }
     }
@@ -1139,6 +1210,13 @@
       updateNotificationBadgeCount();
     }
 
+    function updateActionPriority(actionId, newPriority) {
+      actionCustomPriority[actionId] = newPriority;
+      localStorage.setItem("CB_LOCAL_CUSTOM_PRIORITY", JSON.stringify(actionCustomPriority));
+      syncConfigToCloud();
+      renderCentralizedActions();
+    }
+
     // 🔔 Atualização do Contador Numérico no Sino
     function updateNotificationBadgeCount() {
       let unreadCount = 0;
@@ -1243,6 +1321,7 @@
           }
           let actId = `${rep.id}_nc_${i}`;
           let statusObj = actionCustomStatus[actId] || 'Pendente';
+          let priorityObj = actionCustomPriority[actId] || 'Urgente';
           if (matchDate) {
             allActions.push({ 
               unit: rep.unit, 
@@ -1252,6 +1331,7 @@
               rawDate: dueDate, 
               chatId: actId, 
               status: statusObj,
+              priority: priorityObj,
               fullReportId: rep.id,
               type: 'nc',
               index: i
@@ -1269,6 +1349,7 @@
           }
           let actId = `${rep.id}_om_${i}`;
           let statusObj = actionCustomStatus[actId] || 'Pendente';
+          let priorityObj = actionCustomPriority[actId] || 'Urgente';
           if (matchDate) {
             allActions.push({ 
               unit: rep.unit, 
@@ -1278,6 +1359,7 @@
               rawDate: dueDate, 
               chatId: actId, 
               status: statusObj,
+              priority: priorityObj,
               fullReportId: rep.id,
               type: 'om',
               index: i
@@ -1321,25 +1403,33 @@
         let statusOptions = actionStatuses.map(st => `<option value="${st.name}" ${act.status === st.name ? 'selected' : ''}>${st.name}</option>`).join("");
         let currentStatusObj = actionStatuses.find(s => s.name === act.status) || { color: 'bg-white border-stone-200' };
 
+        let priorityOptions = actionPriorities.map(pr => `<option value="${pr.name}" ${act.priority === pr.name ? 'selected' : ''}>${pr.name}</option>`).join("");
+        let currentPriorityObj = actionPriorities.find(p => p.name === act.priority) || { style: 'bg-stone-200 text-stone-800 font-semibold' };
+
         const card = document.createElement("div");
-        card.className = `p-3 rounded-xl border shadow-sm flex action-card-row items-center justify-between gap-3 text-xs ${currentStatusObj.color}`;
+        card.className = `p-4 rounded-xl border shadow-sm flex flex-col gap-2.5 text-xs ${currentStatusObj.color}`;
         card.innerHTML = `
-          <div class="flex-1 min-w-0 space-y-1">
+          <div class="flex items-center justify-between gap-2 flex-wrap">
             <div class="flex items-center gap-2 flex-wrap">
-              <span class="font-bold uppercase">${act.unit}</span>
-              <span class="text-stone-500">📅 ${act.date}</span>
+              <span class="font-bold text-sm text-cb-bordo uppercase">${act.unit}</span>
+              <span class="text-stone-500 font-medium">📅 ${act.date}</span>
+              <select onchange="updateActionPriority('${act.chatId}', this.value)" class="border rounded px-2 py-0.5 text-[10px] ${currentPriorityObj.style} focus:outline-none cursor-pointer">
+                ${priorityOptions}
+              </select>
               ${atrasoHtml}
             </div>
-            <div class="truncate"><strong class="text-stone-900">${act.title}</strong> — <span class="text-stone-700">${act.action}</span></div>
+            <div class="flex items-center gap-2">
+              <select onchange="updateActionStatus('${act.chatId}', this.value)" class="border rounded px-2.5 py-1 text-xs font-bold bg-white shadow-sm cursor-pointer">
+                ${statusOptions}
+              </select>
+              <button id="btn-chat-${act.chatId}" onclick="openChatModal('${act.chatId}', '${act.fullReportId}', '${act.type}', ${act.index})" class="relative px-3 py-1 bg-white text-cb-bordo font-bold rounded shadow-sm border border-stone-200 hover:bg-stone-50 transition">
+                💬 Chat & Detalhes
+                <span id="chat-dot-${act.chatId}" class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-white hidden"></span>
+              </button>
+            </div>
           </div>
-          <div class="flex items-center gap-2 shrink-0 action-card-controls">
-            <select onchange="updateActionStatus('${act.chatId}', this.value)" class="border rounded p-1.5 text-xs font-semibold bg-white">
-              ${statusOptions}
-            </select>
-            <button id="btn-chat-${act.chatId}" onclick="openChatModal('${act.chatId}', '${act.fullReportId}', '${act.type}', ${act.index})" class="relative px-2.5 py-1.5 bg-white text-cb-bordo font-bold rounded shadow-sm">
-              💬 Chat & Detalhes
-              <span id="chat-dot-${act.chatId}" class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-white hidden"></span>
-            </button>
+          <div class="text-stone-800 text-sm leading-relaxed pt-1 border-t border-stone-200/60">
+            <strong>${act.title}</strong> — <span class="text-stone-700">${act.action}</span>
           </div>`;
         container.appendChild(card);
         
@@ -1407,7 +1497,7 @@
           time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }), 
           createdAt: firebase.firestore.FieldValue.serverTimestamp()
         }).then(() => {
-          event.target.value = ''; // Limpa input
+          event.target.value = '';
         });
       };
       reader.readAsDataURL(file);
@@ -1498,30 +1588,38 @@
       const uContent = document.getElementById("admin-content-units");
       const uUsers = document.getElementById("admin-content-users");
       const uStatus = document.getElementById("admin-content-status");
+      const uPriorities = document.getElementById("admin-content-priorities");
       const btnU = document.getElementById("admin-tab-units");
       const btnUs = document.getElementById("admin-tab-users");
       const btnSt = document.getElementById("admin-tab-status");
+      const btnPr = document.getElementById("admin-tab-priorities");
 
       uContent.classList.add("hidden");
       uUsers.classList.add("hidden");
       uStatus.classList.add("hidden");
-      btnU.className = "flex-1 py-2.5 border-b-2 border-transparent text-stone-500 transition";
-      btnUs.className = "flex-1 py-2.5 border-b-2 border-transparent text-stone-500 transition";
-      btnSt.className = "flex-1 py-2.5 border-b-2 border-transparent text-stone-500 transition";
+      uPriorities.classList.add("hidden");
+      btnU.className = "flex-1 py-2.5 border-b-2 border-transparent text-stone-500 transition whitespace-nowrap";
+      btnUs.className = "flex-1 py-2.5 border-b-2 border-transparent text-stone-500 transition whitespace-nowrap";
+      btnSt.className = "flex-1 py-2.5 border-b-2 border-transparent text-stone-500 transition whitespace-nowrap";
+      btnPr.className = "flex-1 py-2.5 border-b-2 border-transparent text-stone-500 transition whitespace-nowrap";
 
       if (tab === 'units') {
         uContent.classList.remove("hidden");
-        btnU.className = "flex-1 py-2.5 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition";
+        btnU.className = "flex-1 py-2.5 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition whitespace-nowrap";
         renderPresetUnits();
       } else if (tab === 'users') {
         uUsers.classList.remove("hidden");
-        btnUs.className = "flex-1 py-2.5 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition";
+        btnUs.className = "flex-1 py-2.5 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition whitespace-nowrap";
         renderUsersList();
         renderUserUnitsCheckboxes();
       } else if (tab === 'status') {
         uStatus.classList.remove("hidden");
-        btnSt.className = "flex-1 py-2.5 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition";
+        btnSt.className = "flex-1 py-2.5 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition whitespace-nowrap";
         renderAdminStatusList();
+      } else if (tab === 'priorities') {
+        uPriorities.classList.remove("hidden");
+        btnPr.className = "flex-1 py-2.5 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition whitespace-nowrap";
+        renderAdminPrioritiesList();
       }
     }
 
