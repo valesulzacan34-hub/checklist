@@ -1137,25 +1137,25 @@
         }
 
         let statusOptions = actionStatuses.map(st => `<option value="${st.name}" ${act.status === st.name ? 'selected' : ''}>${st.name}</option>`).join("");
-        let currentStatusObj = actionStatuses.find(s => s.name === act.status) || { color: 'bg-stone-100 text-stone-800 border-stone-300' };
+        let currentStatusObj = actionStatuses.find(s => s.name === act.status) || { color: 'bg-white border-stone-200' };
 
         const card = document.createElement("div");
-        card.className = "bg-white p-3 rounded-xl border border-stone-200 shadow-sm flex items-center justify-between gap-3 text-xs";
+        // A linha inteira agora assume a cor definida no status
+        card.className = `p-3 rounded-xl border shadow-sm flex items-center justify-between gap-3 text-xs ${currentStatusObj.color}`;
         card.innerHTML = `
           <div class="flex-1 min-w-0 space-y-1">
             <div class="flex items-center gap-2">
-              <span class="font-bold text-cb-bordo uppercase">${act.unit}</span>
-              <span class="px-1.5 py-0.5 rounded border font-semibold text-[10px] ${currentStatusObj.color}">${act.status}</span>
-              <span class="text-stone-400">📅 ${act.date}</span>
+              <span class="font-bold uppercase">${act.unit}</span>
+              <span class="text-stone-500">📅 ${act.date}</span>
               ${atrasoHtml}
             </div>
-            <div class="truncate"><strong class="text-stone-900">${act.title}</strong> — <span class="text-stone-600">${act.action}</span></div>
+            <div class="truncate"><strong class="text-stone-900">${act.title}</strong> — <span class="text-stone-700">${act.action}</span></div>
           </div>
           <div class="flex items-center gap-2 shrink-0">
-            <select onchange="updateActionStatus('${act.chatId}', this.value)" class="border rounded p-1.5 text-xs font-semibold bg-stone-50">
+            <select onchange="updateActionStatus('${act.chatId}', this.value)" class="border rounded p-1.5 text-xs font-semibold bg-white">
               ${statusOptions}
             </select>
-            <button id="btn-chat-${act.chatId}" onclick="openChatModal('${act.chatId}', '${act.title}', '${act.unit}', '${act.date}')" class="relative px-2.5 py-1.5 bg-stone-100 hover:bg-stone-200 text-cb-bordo font-bold rounded">
+            <button id="btn-chat-${act.chatId}" onclick="openChatModal('${act.chatId}', '${act.title}', '${act.unit}', '${act.date}')" class="relative px-2.5 py-1.5 bg-white text-cb-bordo font-bold rounded shadow-sm">
               💬 Chat
               <span id="chat-dot-${act.chatId}" class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-white hidden"></span>
             </button>
