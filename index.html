@@ -147,18 +147,17 @@
   <!-- MÓDULO 1: CHECKLISTS -->
   <div id="module-checklists-container">
     
-    <!-- Tela Inicial de Escolha de Checklists -->
+    <!-- Tela Inicial com Menu de Seleção Limpo -->
     <main id="checklist-home-view" class="max-w-xl mx-auto p-4 space-y-4">
-      <div class="bg-white p-4 rounded-xl shadow-sm border border-stone-200 space-y-3">
-        <h2 class="font-bold text-cb-bordo text-xs uppercase tracking-wider">Modelos de Checklists</h2>
-        <div id="home-checklist-cards" class="grid grid-cols-1 gap-2 pt-1"></div>
-      </div>
-
-      <div class="bg-white p-4 rounded-xl shadow-sm border border-stone-200 space-y-3">
-        <h2 class="font-bold text-cb-bordo text-xs uppercase tracking-wider">Ações Rápidas</h2>
-        <button onclick="toggleConfigModal()" class="w-full py-2.5 bg-cb-bordo hover:bg-cb-bordo-dark text-white text-xs font-bold rounded-lg transition uppercase tracking-wider">
-          Configurações Gerais
-        </button>
+      <div class="bg-white p-5 rounded-xl shadow-sm border border-stone-200 space-y-4">
+        <h2 class="font-bold text-cb-bordo text-xs uppercase tracking-wider">Selecione o Checklist</h2>
+        
+        <div class="space-y-3">
+          <select id="home-checklist-select" class="w-full text-xs font-semibold bg-stone-50 border rounded-lg p-3 focus:outline-none focus:ring-1 focus:ring-cb-bordo text-stone-800"></select>
+          <button type="button" onclick="startSelectedChecklist()" class="w-full py-3 bg-cb-bordo hover:bg-cb-bordo-dark text-white font-bold text-xs rounded-lg transition uppercase tracking-wider border border-cb-gold/40 shadow-md">
+            Iniciar Auditoria
+          </button>
+        </div>
       </div>
     </main>
 
@@ -577,7 +576,7 @@
           if (data.users) { users = data.users; localStorage.setItem("CB_LOCAL_USERS", JSON.stringify(users)); }
 
           renderPresetUnits();
-          renderHomeChecklistCards();
+          renderHomeChecklistSelect();
           updateSyncUI("🟢 Sincronizado na Nuvem", new Date().toLocaleTimeString('pt-BR'));
         } else {
           syncConfigToCloud();
@@ -735,7 +734,7 @@
 
       if (mod === 'checklists') {
         checklistsMod.classList.remove("hidden"); actionsMod.classList.add("hidden");
-        auditFooter.classList.add("hidden"); // Mantém oculto até clicar em Iniciar
+        auditFooter.classList.add("hidden");
         subNav.classList.remove("hidden");
         badgeMod.innerText = "Checklists";
         switchChecklistTab('home');
@@ -764,10 +763,10 @@
         homeView.classList.remove("hidden");
         tabHome.className = "flex-1 py-2.5 border-b-2 border-cb-gold text-cb-gold font-bold transition flex items-center justify-center";
         tabHistory.className = "flex-1 py-2.5 border-b-2 border-transparent text-stone-300 font-bold transition flex items-center justify-center";
-        renderHomeChecklistCards();
+        renderHomeChecklistSelect();
       } else if (tab === 'audit') {
         auditView.classList.remove("hidden");
-        footer.classList.remove("hidden"); // Exibe barra inferior apenas no formulário ativo
+        footer.classList.remove("hidden");
         tabHome.className = "flex-1 py-2.5 border-b-2 border-cb-gold text-cb-gold font-bold transition flex items-center justify-center";
         tabHistory.className = "flex-1 py-2.5 border-b-2 border-transparent text-stone-300 font-bold transition flex items-center justify-center";
       } else if (tab === 'history') {
@@ -778,33 +777,27 @@
       }
     }
 
-    function renderHomeChecklistCards() {
-      const container = document.getElementById("home-checklist-cards");
-      container.innerHTML = "";
+    function renderHomeChecklistSelect() {
+      const select = document.getElementById("home-checklist-select");
+      if (!select) return;
+      select.innerHTML = "";
       allChecklists.forEach(c => {
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.onclick = () => startChecklistModel(c.id);
-        btn.className = "p-3.5 bg-stone-50 hover:bg-stone-100 border border-stone-200 rounded-xl transition shadow-sm text-left flex justify-between items-center group w-full";
-        btn.innerHTML = `
-          <div>
-            <h3 class="font-bold text-cb-bordo text-xs uppercase tracking-wider">${c.name}</h3>
-            <p class="text-[11px] text-stone-500 mt-0.5">${c.categories.length} setores configurados</p>
-          </div>
-          <span class="text-cb-bordo font-bold text-sm group-hover:translate-x-1 transition">Iniciar →</span>
-        `;
-        container.appendChild(btn);
+        const opt = document.createElement("option");
+        opt.value = c.id;
+        opt.innerText = c.name;
+        select.appendChild(opt);
       });
     }
 
-    function startChecklistModel(id) {
-      activeChecklistId = id;
+    function startSelectedChecklist() {
+      const select = document.getElementById("home-checklist-select");
+      if (!select || !select.value) return alert("Selecione um checklist.");
+      activeChecklistId = select.value;
       attachedPhotos = {};
       actionPlans = {};
       customAnswers = {};
       maintenanceOrders = {};
       localStorage.setItem("CB_LOCAL_ACTIVE_ID", activeChecklistId);
-      document.getElementById("active-model-title-badge").innerText = getCurrentChecklist().name;
       renderChecklist();
       
       document.getElementById("checklist-home-view").classList.add("hidden");
@@ -1012,6 +1005,7 @@
         localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
         syncConfigToCloud();
         renderModelsListInConfig();
+        renderHomeChecklistSelect();
       }
     }
 
@@ -1027,7 +1021,7 @@
       localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
       localStorage.setItem("CB_LOCAL_ACTIVE_ID", activeChecklistId);
       syncConfigToCloud(); document.getElementById("new-checklist-name").value = "";
-      renderModelsListInConfig(); switchConfigTab('items'); alert("Modelo criado com sucesso!");
+      renderModelsListInConfig(); renderHomeChecklistSelect(); switchConfigTab('items'); alert("Modelo criado com sucesso!");
     }
 
     function addNewCategory() {
@@ -1086,7 +1080,7 @@
       if (confirm("Restaurar padrões?")) {
         allChecklists = JSON.parse(JSON.stringify(defaultTemplates));
         localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
-        syncConfigToCloud(); renderModelsListInConfig(); alert("Restaurado!");
+        syncConfigToCloud(); renderModelsListInConfig(); renderHomeChecklistSelect(); alert("Restaurado!");
       }
     }
 
