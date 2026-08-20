@@ -67,14 +67,7 @@
         <h2 class="text-xs font-bold text-cb-bordo uppercase tracking-wider">Módulos do Sistema</h2>
       </div>
 
-      <div class="grid grid-cols-1 gap-2">
-        <button onclick="selectModule('checklists')" class="p-3 bg-stone-50 hover:bg-stone-100 border border-stone-200 rounded-xl transition font-bold text-cb-bordo text-xs uppercase tracking-wider">
-          Checklists
-        </button>
-        <button onclick="selectModule('actions')" class="p-3 bg-stone-50 hover:bg-stone-100 border border-stone-200 rounded-xl transition font-bold text-amber-900 text-xs uppercase tracking-wider">
-          Planos de Ação
-        </button>
-      </div>
+      <div id="modules-grid" class="grid grid-cols-1 gap-2"></div>
 
       <button onclick="handleLogout()" class="text-xs text-rose-600 font-bold hover:underline pt-2 block mx-auto">
         Sair
@@ -104,7 +97,7 @@
       <button id="sidebar-btn-users" onclick="toggleUsersModal(); toggleSidebar();" class="hidden w-full text-left px-3 py-2.5 rounded-lg hover:bg-cb-bordo transition">
         👥 Gerenciar Usuários
       </button>
-      <button onclick="toggleConfigModal(); toggleSidebar();" class="w-full text-left px-3 py-2.5 rounded-lg hover:bg-cb-bordo transition">
+      <button id="sidebar-btn-config" onclick="toggleConfigModal(); toggleSidebar();" class="hidden w-full text-left px-3 py-2.5 rounded-lg hover:bg-cb-bordo transition">
         ⚙️ Configurações Gerais
       </button>
     </div>
@@ -139,12 +132,9 @@
 
   <!-- MÓDULO 1: CHECKLISTS -->
   <div id="module-checklists-container">
-    
-    <!-- Tela Inicial com Seleção de Checklist e Menus Integrados -->
     <main id="checklist-home-view" class="max-w-xl mx-auto p-4 space-y-4">
       <div class="bg-white p-5 rounded-xl shadow-sm border border-stone-200 space-y-4">
         <h2 class="font-bold text-cb-bordo text-xs uppercase tracking-wider">Selecione o Checklist</h2>
-        
         <div class="space-y-3">
           <select id="home-checklist-select" class="w-full text-xs font-semibold bg-stone-50 border rounded-lg p-3 focus:outline-none focus:ring-1 focus:ring-cb-bordo text-stone-800"></select>
           <button type="button" onclick="startSelectedChecklist()" class="w-full py-3 bg-cb-bordo hover:bg-cb-bordo-dark text-white font-bold text-xs rounded-lg transition uppercase tracking-wider border border-cb-gold/40 shadow-md">
@@ -153,20 +143,17 @@
         </div>
       </div>
 
-      <!-- Menus Adicionais na Tela Inicial -->
       <div class="grid grid-cols-1 gap-2.5">
         <button onclick="switchChecklistTab('history')" class="p-3.5 bg-white hover:bg-stone-50 border border-stone-200 rounded-xl shadow-sm transition flex justify-between items-center text-xs font-bold text-cb-bordo uppercase tracking-wider">
           <span>📂 Relatórios Salvos</span>
           <span id="history-badge-count" class="bg-cb-gold text-cb-bordo-dark px-2 py-0.5 rounded-full text-[10px] font-black">0</span>
         </button>
-
-        <button onclick="toggleConfigModal()" class="p-3.5 bg-white hover:bg-stone-50 border border-stone-200 rounded-xl shadow-sm transition text-left text-xs font-bold text-cb-bordo uppercase tracking-wider">
+        <button id="home-btn-config" onclick="toggleConfigModal()" class="hidden p-3.5 bg-white hover:bg-stone-50 border border-stone-200 rounded-xl shadow-sm transition text-left text-xs font-bold text-cb-bordo uppercase tracking-wider">
           ⚙️ Configurações Gerais dos Checklists
         </button>
       </div>
     </main>
 
-    <!-- Tela de Execução do Checklist -->
     <main id="audit-view" class="max-w-xl mx-auto p-4 space-y-4 hidden">
       <div class="flex items-center justify-between bg-white p-3 rounded-xl shadow-sm border">
         <button onclick="switchChecklistTab('home')" class="text-xs font-bold text-cb-bordo hover:underline">
@@ -186,7 +173,7 @@
       <div class="bg-white p-4 rounded-xl shadow-sm border border-stone-200 space-y-3">
         <div class="flex justify-between items-center border-b pb-2">
           <h2 class="font-bold text-cb-bordo text-xs uppercase tracking-wider">Unidade</h2>
-          <button onclick="openUnitsConfigTab()" class="text-[11px] text-cb-bordo font-bold hover:underline">
+          <button id="audit-btn-units" onclick="openUnitsConfigTab()" class="hidden text-[11px] text-cb-bordo font-bold hover:underline">
             Gerenciar Lojas
           </button>
         </div>
@@ -211,7 +198,6 @@
       </div>
     </main>
 
-    <!-- Tela de Relatórios Salvos (Com Filtro entre Datas) -->
     <main id="history-view" class="max-w-xl mx-auto p-4 space-y-4 hidden">
       <div class="flex items-center justify-between bg-white p-3 rounded-xl shadow-sm border">
         <button onclick="switchChecklistTab('home')" class="text-xs font-bold text-cb-bordo hover:underline">
@@ -259,11 +245,11 @@
     </main>
   </div>
 
-  <!-- MÓDULO 2: PLANOS DE AÇÃO & MANUTENÇÃO (Com Filtro por Data e Ordem Crescente) -->
+  <!-- MÓDULO 2: PLANOS DE AÇÃO & MANUTENÇÃO -->
   <main id="module-actions-container" class="max-w-xl mx-auto p-4 space-y-4 hidden">
     <div class="bg-white p-4 rounded-xl shadow-sm border border-stone-200 space-y-3">
       <h2 class="font-bold text-cb-bordo text-xs uppercase tracking-wider">Agenda de Planos de Ação</h2>
-      <p class="text-xs text-stone-500">Acompanhamento e chat com os responsáveis (ordenado por vencimento)</p>
+      <p class="text-xs text-stone-500">Acompanhamento e chat com os responsáveis</p>
 
       <div class="grid grid-cols-2 gap-2 text-xs pt-1 border-t pt-3">
         <div>
@@ -279,7 +265,7 @@
     <div id="centralized-actions-list" class="space-y-3"></div>
   </main>
 
-  <!-- Modal de Chat do Plano de Ação -->
+  <!-- Modal de Chat -->
   <div id="chat-modal" class="fixed inset-0 bg-black/70 z-50 hidden flex items-center justify-center p-2 sm:p-4">
     <div class="bg-white w-full max-w-lg h-[85vh] rounded-2xl flex flex-col shadow-2xl overflow-hidden border border-cb-gold/30">
       <div class="p-3.5 border-b border-stone-200 flex justify-between items-center bg-cb-bordo text-white">
@@ -303,24 +289,37 @@
 
   <!-- Modal de Usuários -->
   <div id="users-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white w-full max-w-md rounded-2xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden border border-cb-gold/30">
+    <div class="bg-white w-full max-w-lg rounded-2xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden border border-cb-gold/30">
       <div class="p-4 border-b border-stone-200 flex justify-between items-center bg-cb-cream">
         <div>
-          <h3 class="font-bold text-cb-bordo text-sm">Gerenciar Usuários</h3>
+          <h3 class="font-bold text-cb-bordo text-sm">Gerenciar Usuários & Unidades Vinculadas</h3>
         </div>
         <button onclick="toggleUsersModal()" class="text-stone-400 hover:text-stone-700 text-lg font-bold p-1">✕</button>
       </div>
 
-      <div id="users-list" class="p-4 overflow-y-auto space-y-2 flex-1 text-sm"></div>
+      <div id="users-list" class="p-4 overflow-y-auto space-y-3 flex-1 text-sm bg-stone-50"></div>
 
-      <div class="p-4 border-t border-stone-200 bg-cb-cream space-y-2">
-        <span class="block text-xs font-bold text-cb-bordo uppercase">Novo Usuário</span>
+      <div class="p-4 border-t border-stone-200 bg-white space-y-3">
+        <span class="block text-xs font-bold text-cb-bordo uppercase">Cadastrar Novo Usuário</span>
         <div class="grid grid-cols-2 gap-2">
-          <input type="text" id="new-user-name" placeholder="Login" class="text-xs border rounded-lg p-2 bg-white">
-          <input type="text" id="new-user-pass" placeholder="Senha" class="text-xs border rounded-lg p-2 bg-white">
+          <input type="text" id="new-user-name" placeholder="Login (ex: gerente_valesul)" class="text-xs border rounded-lg p-2 bg-stone-50">
+          <input type="text" id="new-user-pass" placeholder="Senha" class="text-xs border rounded-lg p-2 bg-stone-50">
         </div>
-        <input type="text" id="new-user-fullname" placeholder="Nome Completo" class="w-full text-xs border rounded-lg p-2 bg-white">
-        <button onclick="addNewUser()" class="w-full py-2 bg-cb-bordo hover:bg-cb-bordo-dark text-white text-xs font-bold rounded-lg transition uppercase tracking-wider">
+        <div class="grid grid-cols-2 gap-2">
+          <input type="text" id="new-user-fullname" placeholder="Nome Completo" class="text-xs border rounded-lg p-2 bg-stone-50">
+          <select id="new-user-role" onchange="toggleUnitSelectionBox()" class="text-xs border rounded-lg p-2 bg-stone-50 font-semibold">
+            <option value="admin">Admin (Todos acessos)</option>
+            <option value="gerente">Gerente (Checklists + Planos)</option>
+            <option value="operador">Operador (Apenas Checklists)</option>
+          </select>
+        </div>
+        
+        <div id="new-user-units-box" class="hidden space-y-1">
+          <label class="block text-[11px] font-bold text-stone-600">Unidades Vinculadas (Segure Ctrl para selecionar mais de uma):</label>
+          <select id="new-user-units" multiple class="w-full text-xs border rounded-lg p-2 bg-stone-50 h-20"></select>
+        </div>
+
+        <button onclick="addNewUser()" class="w-full py-2.5 bg-cb-bordo hover:bg-cb-bordo-dark text-white text-xs font-bold rounded-lg transition uppercase tracking-wider">
           + Criar Acesso
         </button>
       </div>
@@ -483,7 +482,7 @@
     let currentLogo = DEFAULT_EMBEDDED_LOGO;
 
     const defaultUsers = [
-      { username: "alcides", pass: "12345678", name: "Alcides Ramos", role: "admin" }
+      { username: "alcides", pass: "12345678", name: "Alcides Ramos", role: "admin", units: [] }
     ];
 
     const defaultUnits = [
@@ -665,25 +664,33 @@
       if (modLogo) modLogo.src = DEFAULT_EMBEDDED_LOGO;
     }
 
+    function getAllowedUnits() {
+      if (!currentUser || currentUser.role === 'admin' || !currentUser.units || currentUser.units.length === 0) {
+        return presetUnits;
+      }
+      return presetUnits.filter(u => currentUser.units.includes(u));
+    }
+
     function renderPresetUnits() {
       const select = document.getElementById("unit-selector");
       const filterStore = document.getElementById("filter-store");
       const listContainer = document.getElementById("units-list-container");
       const badge = document.getElementById("units-count-badge");
+      const allowedUnits = getAllowedUnits();
 
       if (select) {
         const currentVal = select.value;
         select.innerHTML = "";
-        presetUnits.forEach(u => {
+        allowedUnits.forEach(u => {
           const opt = document.createElement("option"); opt.value = u; opt.innerText = u; select.appendChild(opt);
         });
-        if (currentVal && presetUnits.includes(currentVal)) select.value = currentVal;
+        if (currentVal && allowedUnits.includes(currentVal)) select.value = currentVal;
       }
 
       if (filterStore) {
         const currentFilter = filterStore.value;
-        filterStore.innerHTML = `<option value="">Todas as Lojas</option>`;
-        presetUnits.forEach(u => {
+        filterStore.innerHTML = `<option value="">Todas as Lojas Permitidas</option>`;
+        allowedUnits.forEach(u => {
           const opt = document.createElement("option"); opt.value = u; opt.innerText = u; filterStore.appendChild(opt);
         });
         filterStore.value = currentFilter;
@@ -708,7 +715,7 @@
       if (presetUnits.includes(val)) return alert("Já cadastrada.");
       presetUnits.push(val);
       localStorage.setItem("CB_LOCAL_UNITS", JSON.stringify(presetUnits));
-      syncConfigToCloud(); input.value = ""; renderPresetUnits();
+      syncConfigToCloud(); input.value = ""; renderPresetUnits(); renderUserUnitsCheckboxes();
     }
 
     function editPresetUnit(idx) {
@@ -716,7 +723,7 @@
       if (newName && newName.trim()) {
         presetUnits[idx] = newName.trim();
         localStorage.setItem("CB_LOCAL_UNITS", JSON.stringify(presetUnits));
-        syncConfigToCloud(); renderPresetUnits();
+        syncConfigToCloud(); renderPresetUnits(); renderUserUnitsCheckboxes();
       }
     }
 
@@ -725,7 +732,7 @@
       if (confirm("Excluir unidade?")) {
         presetUnits.splice(idx, 1);
         localStorage.setItem("CB_LOCAL_UNITS", JSON.stringify(presetUnits));
-        syncConfigToCloud(); renderPresetUnits();
+        syncConfigToCloud(); renderPresetUnits(); renderUserUnitsCheckboxes();
       }
     }
 
@@ -751,6 +758,24 @@
     function openModulesScreen() {
       document.getElementById("modules-screen").classList.remove("hidden");
       document.getElementById("current-user-badge").innerText = currentUser.name;
+      
+      const grid = document.getElementById("modules-grid");
+      grid.innerHTML = "";
+
+      if (currentUser.role === 'admin' || currentUser.role === 'gerente') {
+        grid.innerHTML += `
+          <button onclick="selectModule('checklists')" class="p-3 bg-stone-50 hover:bg-stone-100 border border-stone-200 rounded-xl transition font-bold text-cb-bordo text-xs uppercase tracking-wider">
+            Checklists
+          </button>
+          <button onclick="selectModule('actions')" class="p-3 bg-stone-50 hover:bg-stone-100 border border-stone-200 rounded-xl transition font-bold text-amber-900 text-xs uppercase tracking-wider">
+            Planos de Ação
+          </button>`;
+      } else if (currentUser.role === 'operador') {
+        grid.innerHTML += `
+          <button onclick="selectModule('checklists')" class="p-3 bg-stone-50 hover:bg-stone-100 border border-stone-200 rounded-xl transition font-bold text-cb-bordo text-xs uppercase tracking-wider">
+            Checklists
+          </button>`;
+      }
     }
 
     function selectModule(mod) {
@@ -760,12 +785,30 @@
       const auditFooter = document.getElementById("audit-footer");
       const badgeMod = document.getElementById("current-module-badge");
 
+      const btnConfig = document.getElementById("home-btn-config");
+      const sideBtnConfig = document.getElementById("sidebar-btn-config");
+      const sideBtnUsers = document.getElementById("sidebar-btn-users");
+      const auditBtnUnits = document.getElementById("audit-btn-units");
+
+      if (currentUser.role === 'admin') {
+        if (btnConfig) btnConfig.classList.remove("hidden");
+        if (sideBtnConfig) sideBtnConfig.classList.remove("hidden");
+        if (sideBtnUsers) sideBtnUsers.classList.remove("hidden");
+        if (auditBtnUnits) auditBtnUnits.classList.remove("hidden");
+      } else {
+        if (btnConfig) btnConfig.classList.add("hidden");
+        if (sideBtnConfig) sideBtnConfig.classList.add("hidden");
+        if (sideBtnUsers) sideBtnUsers.classList.add("hidden");
+        if (auditBtnUnits) auditBtnUnits.classList.add("hidden");
+      }
+
       if (mod === 'checklists') {
         checklistsMod.classList.remove("hidden"); actionsMod.classList.add("hidden");
         auditFooter.classList.add("hidden");
         badgeMod.innerText = "Checklists";
         switchChecklistTab('home');
       } else if (mod === 'actions') {
+        if (currentUser.role === 'operador') return alert("Acesso não autorizado para operadores.");
         checklistsMod.classList.add("hidden"); actionsMod.classList.remove("hidden");
         auditFooter.classList.add("hidden");
         badgeMod.innerText = "Planos de Ação";
@@ -836,8 +879,10 @@
       const storeFilter = document.getElementById("filter-store").value;
       const startFilter = document.getElementById("filter-date-start").value;
       const endFilter = document.getElementById("filter-date-end").value;
+      const allowedUnits = getAllowedUnits();
 
       let filtered = savedReports.filter(rep => {
+        if (!allowedUnits.includes(rep.unit)) return false;
         let matchStore = !storeFilter || rep.unit === storeFilter;
         let matchDate = true;
         if (rep.date) {
@@ -911,10 +956,12 @@
       container.innerHTML = "";
       const startFilter = document.getElementById("action-date-start").value;
       const endFilter = document.getElementById("action-date-end").value;
+      const allowedUnits = getAllowedUnits();
 
       let allActions = [];
 
       savedReports.forEach(rep => {
+        if (!allowedUnits.includes(rep.unit)) return;
         rep.nonConformities?.forEach((nc, i) => {
           let dueDate = nc.date || '';
           let matchDate = true;
@@ -943,7 +990,6 @@
         });
       });
 
-      // Ordenação crescente por data (o que vence antes aparece primeiro)
       allActions.sort((a, b) => new Date(a.rawDate || '2099-12-31') - new Date(b.rawDate || '2099-12-31'));
 
       if (allActions.length === 0) {
@@ -1003,6 +1049,91 @@
       db.collection("chats").doc(activeChatActionId).collection("messages").add({
         text: text, sender: currentUser.name, time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }), createdAt: firebase.firestore.FieldValue.serverTimestamp()
       }).then(() => input.value = "");
+    }
+
+    // GERENCIAMENTO DE USUÁRIOS
+    function toggleUsersModal() {
+      if (currentUser.role !== 'admin') return alert("Acesso restrito a administradores.");
+      const m = document.getElementById("users-modal");
+      m.classList.toggle("hidden");
+      if (!m.classList.contains("hidden")) {
+        renderUsersList();
+        renderUserUnitsCheckboxes();
+      }
+    }
+
+    function toggleUnitSelectionBox() {
+      const role = document.getElementById("new-user-role").value;
+      const box = document.getElementById("new-user-units-box");
+      if (role === 'admin') box.classList.add("hidden");
+      else box.classList.remove("hidden");
+    }
+
+    function renderUserUnitsCheckboxes() {
+      const select = document.getElementById("new-user-units");
+      if (!select) return;
+      select.innerHTML = "";
+      presetUnits.forEach(u => {
+        const opt = document.createElement("option");
+        opt.value = u;
+        opt.innerText = u;
+        select.appendChild(opt);
+      });
+    }
+
+    function renderUsersList() {
+      const list = document.getElementById("users-list");
+      list.innerHTML = "";
+      users.forEach((u, idx) => {
+        const item = document.createElement("div");
+        item.className = "bg-white border p-3 rounded-xl text-xs space-y-1 shadow-sm";
+        let unitsText = u.units && u.units.length > 0 ? u.units.join(", ") : "Todas as Lojas";
+        item.innerHTML = `
+          <div class="flex justify-between items-center">
+            <span class="font-bold text-cb-bordo text-sm">${u.name} (${u.role})</span>
+            ${u.username !== 'alcides' ? `<button onclick="removeUser(${idx})" class="text-rose-600 font-bold hover:underline">Excluir</button>` : '<span class="text-[10px] text-stone-400 font-bold">Principal</span>'}
+          </div>
+          <div class="text-stone-500">Login: ${u.username} | Senha: ${u.pass}</div>
+          <div class="text-stone-600"><strong>Lojas Vinculadas:</strong> ${unitsText}</div>`;
+        list.appendChild(item);
+      });
+    }
+
+    function addNewUser() {
+      const username = document.getElementById("new-user-name").value.trim().toLowerCase();
+      const pass = document.getElementById("new-user-pass").value.trim();
+      const name = document.getElementById("new-user-fullname").value.trim();
+      const role = document.getElementById("new-user-role").value;
+      
+      let assignedUnits = [];
+      if (role !== 'admin') {
+        const select = document.getElementById("new-user-units");
+        for (let opt of select.selectedOptions) {
+          assignedUnits.push(opt.value);
+        }
+      }
+
+      if (!username || !pass || !name) return alert("Preencha todos os campos obrigatórios.");
+      if (users.some(item => item.username === username)) return alert("Login já existente!");
+
+      users.push({ username, pass, name, role, units: assignedUnits });
+      localStorage.setItem("CB_LOCAL_USERS", JSON.stringify(users));
+      syncConfigToCloud();
+
+      document.getElementById("new-user-name").value = "";
+      document.getElementById("new-user-pass").value = "";
+      document.getElementById("new-user-fullname").value = "";
+      renderUsersList();
+      alert("Usuário criado com sucesso!");
+    }
+
+    function removeUser(idx) {
+      if (confirm("Excluir este acesso?")) {
+        users.splice(idx, 1);
+        localStorage.setItem("CB_LOCAL_USERS", JSON.stringify(users));
+        syncConfigToCloud();
+        renderUsersList();
+      }
     }
 
     function switchConfigTab(tab) {
@@ -1147,9 +1278,20 @@
       }
       
       document.getElementById("login-screen").classList.add("hidden");
-      document.getElementById("sidebar-user-name").innerText = currentUser.name;
+      document.getElementById("sidebar-user-name").innerText = `${currentUser.name} (${currentUser.role})`;
       document.getElementById("supervisor-name").value = currentUser.name;
-      if (currentUser.role === "admin") document.getElementById("sidebar-btn-users").classList.remove("hidden");
+      
+      if (currentUser.role === "admin") {
+        document.getElementById("sidebar-btn-users").classList.remove("hidden");
+        document.getElementById("sidebar-btn-config").classList.remove("hidden");
+        document.getElementById("home-btn-config").classList.remove("hidden");
+        document.getElementById("audit-btn-units").classList.remove("hidden");
+      } else {
+        document.getElementById("sidebar-btn-users").classList.add("hidden");
+        document.getElementById("sidebar-btn-config").classList.add("hidden");
+        document.getElementById("home-btn-config").classList.add("hidden");
+        document.getElementById("audit-btn-units").classList.add("hidden");
+      }
       
       openModulesScreen();
     }
