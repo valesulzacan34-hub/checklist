@@ -277,20 +277,34 @@
         <h2 class="font-bold text-cb-bordo text-xs uppercase tracking-wider">Agenda de Planos de Ação</h2>
         <p class="text-xs text-stone-500">Acompanhamento e chat com os responsáveis</p>
 
+        <!-- 📊 Cards de Contagem de Status (Respeitam o filtro por loja) -->
+        <div class="grid grid-cols-3 gap-2 pt-1 text-center">
+          <div class="bg-rose-50 border border-rose-200 p-2.5 rounded-xl shadow-sm">
+            <span class="block text-[10px] font-bold text-rose-800 uppercase">Pendentes</span>
+            <span id="counter-pending" class="text-lg font-black text-rose-700">0</span>
+          </div>
+          <div class="bg-amber-50 border border-amber-200 p-2.5 rounded-xl shadow-sm">
+            <span class="block text-[10px] font-bold text-amber-900 uppercase">Em Andamento</span>
+            <span id="counter-progress" class="text-lg font-black text-amber-700">0</span>
+          </div>
+          <div class="bg-emerald-50 border border-emerald-200 p-2.5 rounded-xl shadow-sm">
+            <span class="block text-[10px] font-bold text-emerald-800 uppercase">Concluídos</span>
+            <span id="counter-completed" class="text-lg font-black text-emerald-700">0</span>
+          </div>
+        </div>
+
         <div class="flex border-b border-stone-200 text-xs font-bold pt-2">
           <button id="actions-tab-pending" onclick="switchActionsTab('pending')" class="flex-1 py-2 border-b-2 border-cb-bordo text-cb-bordo transition">📋 Pendentes</button>
           <button id="actions-tab-completed" onclick="switchActionsTab('completed')" class="flex-1 py-2 border-b-2 border-transparent text-stone-400 transition">✅ Concluídos</button>
         </div>
 
-        <!-- Filtros Adicionais de Status e Prioridade (Tarja) -->
-        <div class="grid grid-cols-1 sm:grid-cols-4 gap-2 text-xs pt-1">
+        <!-- Filtros Adicionais: Loja, Status, Tarja e Datas -->
+        <div class="grid grid-cols-1 sm:grid-cols-5 gap-2 text-xs pt-1">
           <div>
-            <label class="block font-bold text-stone-600 mb-1">A partir de:</label>
-            <input type="date" id="action-date-start" onchange="renderCentralizedActions()" class="w-full border rounded p-2 bg-stone-50">
-          </div>
-          <div>
-            <label class="block font-bold text-stone-600 mb-1">Até:</label>
-            <input type="date" id="action-date-end" onchange="renderCentralizedActions()" class="w-full border rounded p-2 bg-stone-50">
+            <label class="block font-bold text-stone-600 mb-1">Filtrar Loja:</label>
+            <select id="filter-action-store" onchange="renderCentralizedActions()" class="w-full border rounded p-2 bg-stone-50 font-semibold">
+              <option value="">Todas as Lojas</option>
+            </select>
           </div>
           <div>
             <label class="block font-bold text-stone-600 mb-1">Filtrar Status:</label>
@@ -303,6 +317,14 @@
             <select id="filter-priority" onchange="renderCentralizedActions()" class="w-full border rounded p-2 bg-stone-50 font-semibold">
               <option value="">Todas as Tarjas</option>
             </select>
+          </div>
+          <div>
+            <label class="block font-bold text-stone-600 mb-1">A partir de:</label>
+            <input type="date" id="action-date-start" onchange="renderCentralizedActions()" class="w-full border rounded p-2 bg-stone-50">
+          </div>
+          <div>
+            <label class="block font-bold text-stone-600 mb-1">Até:</label>
+            <input type="date" id="action-date-end" onchange="renderCentralizedActions()" class="w-full border rounded p-2 bg-stone-50">
           </div>
         </div>
       </div>
@@ -852,6 +874,7 @@
     function renderPresetUnits() {
       const select = document.getElementById("unit-selector");
       const filterStore = document.getElementById("filter-store");
+      const filterActionStore = document.getElementById("filter-action-store");
       const listContainer = document.getElementById("admin-units-list");
       const allowedUnits = getAllowedUnits();
 
@@ -871,6 +894,15 @@
           const opt = document.createElement("option"); opt.value = u; opt.innerText = u; filterStore.appendChild(opt);
         });
         filterStore.value = currentFilter;
+      }
+
+      if (filterActionStore) {
+        const currentFilterAct = filterActionStore.value;
+        filterActionStore.innerHTML = `<option value="">Todas as Lojas</option>`;
+        allowedUnits.forEach(u => {
+          const opt = document.createElement("option"); opt.value = u; opt.innerText = u; filterActionStore.appendChild(opt);
+        });
+        filterActionStore.value = currentFilterAct;
       }
 
       if (listContainer) {
@@ -1322,6 +1354,7 @@
       container.innerHTML = "";
       const startFilter = document.getElementById("action-date-start").value;
       const endFilter = document.getElementById("action-date-end").value;
+      const storeFilter = document.getElementById("filter-action-store").value;
       const statusFilter = document.getElementById("filter-status").value;
       const priorityFilter = document.getElementById("filter-priority").value;
       const allowedUnits = getAllowedUnits();
@@ -1350,9 +1383,14 @@
       }
 
       let allActions = [];
+      let counts = { pending: 0, progress: 0, completed: 0 };
 
       savedReports.forEach(rep => {
         if (!allowedUnits.includes(rep.unit)) return;
+        
+        // Aplica contagem baseada na loja selecionada no filtro
+        let storeMatchForCounters = !storeFilter || rep.unit === storeFilter;
+
         rep.nonConformities?.forEach((nc, i) => {
           let dueDate = nc.date || '';
           let matchDate = true;
@@ -1365,7 +1403,16 @@
           let actId = `${rep.id}_nc_${i}`;
           let statusObj = actionCustomStatus[actId] || 'Pendente';
           let priorityObj = actionCustomPriority[actId] || 'Urgente';
-          if (matchDate) {
+
+          if (storeMatchForCounters) {
+            let sLower = statusObj.toLowerCase();
+            if (sLower.includes('concluído')) counts.completed++;
+            else if (sLower.includes('andamento')) counts.progress++;
+            else counts.pending++;
+          }
+
+          let storeMatchCard = !storeFilter || rep.unit === storeFilter;
+          if (matchDate && storeMatchCard) {
             allActions.push({ 
               unit: rep.unit, 
               title: nc.title, 
@@ -1381,6 +1428,7 @@
             });
           }
         });
+
         rep.maintenanceOrders?.forEach((om, i) => {
           let dueDate = om.date || '';
           let matchDate = true;
@@ -1393,7 +1441,16 @@
           let actId = `${rep.id}_om_${i}`;
           let statusObj = actionCustomStatus[actId] || 'Pendente';
           let priorityObj = actionCustomPriority[actId] || 'Urgente';
-          if (matchDate) {
+
+          if (storeMatchForCounters) {
+            let sLower = statusObj.toLowerCase();
+            if (sLower.includes('concluído')) counts.completed++;
+            else if (sLower.includes('andamento')) counts.progress++;
+            else counts.pending++;
+          }
+
+          let storeMatchCard = !storeFilter || rep.unit === storeFilter;
+          if (matchDate && storeMatchCard) {
             allActions.push({ 
               unit: rep.unit, 
               title: `Manutenção: ${om.equipment}`, 
@@ -1410,6 +1467,11 @@
           }
         });
       });
+
+      // Atualiza os contadores na tela
+      document.getElementById("counter-pending").innerText = counts.pending;
+      document.getElementById("counter-progress").innerText = counts.progress;
+      document.getElementById("counter-completed").innerText = counts.completed;
 
       let filteredActions = allActions.filter(act => {
         let isDone = act.status.toLowerCase().includes('concluído');
@@ -1529,7 +1591,7 @@
       document.getElementById("image-viewer-modal").classList.remove("hidden");
     }
 
-    // 📎 Enviar Arquivo ou Foto no Chat
+    // 📎 Enviar Arquivo ou Foto no Chat (Corrigido para evitar erro 404 de rotas)
     function sendChatAttachment(event) {
       const file = event.target.files[0];
       if (!file || !activeChatActionId || !isFirebaseReady) return;
