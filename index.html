@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Auditoria Operacional - Casa Bauducco</title>
+  <title>Sistema Integrado - Casa Bauducco</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- SDKs do Firebase Compat -->
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
@@ -58,7 +58,40 @@
     </div>
   </div>
 
-  <!-- Header -->
+  <!-- Tela de Seleção de Módulos (Após Login) -->
+  <div id="modules-screen" class="fixed inset-0 bg-cb-bordo-dark z-40 hidden flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-md rounded-2xl p-6 space-y-5 shadow-2xl border border-cb-gold/30 text-center">
+      <div>
+        <img id="modules-logo-img" alt="Casa Bauducco" class="h-16 w-auto object-contain mx-auto mb-2">
+        <h2 class="text-base font-bold text-cb-bordo uppercase tracking-wide">Painel de Operações</h2>
+        <p class="text-xs text-stone-500">Selecione o módulo que deseja acessar</p>
+      </div>
+
+      <div class="grid grid-cols-1 gap-3">
+        <button onclick="selectModule('checklists')" class="p-4 bg-cb-cream hover:bg-stone-100 border border-cb-gold/50 rounded-xl flex items-center gap-4 transition shadow-sm text-left group">
+          <div class="text-3xl bg-cb-bordo text-white p-3 rounded-lg group-hover:bg-cb-bordo-dark transition">📋</div>
+          <div>
+            <h3 class="font-bold text-cb-bordo text-sm uppercase">Módulo de Checklists</h3>
+            <p class="text-xs text-stone-600">Realizar auditorias, gerenciar lojas e ver relatórios</p>
+          </div>
+        </button>
+
+        <button onclick="selectModule('actions')" class="p-4 bg-cb-cream hover:bg-stone-100 border border-cb-gold/50 rounded-xl flex items-center gap-4 transition shadow-sm text-left group">
+          <div class="text-3xl bg-amber-700 text-white p-3 rounded-lg group-hover:bg-amber-800 transition">🛠️</div>
+          <div>
+            <h3 class="font-bold text-amber-900 text-sm uppercase">Planos de Ação & Manutenção</h3>
+            <p class="text-xs text-stone-600">Acompanhar o andamento de todas as correções da rede</p>
+          </div>
+        </button>
+      </div>
+
+      <button onclick="handleLogout()" class="text-xs text-rose-600 font-bold hover:underline pt-2 block mx-auto">
+        Encerrar Sessão (Sair)
+      </button>
+    </div>
+  </div>
+
+  <!-- Header Global -->
   <header class="bg-cb-bordo text-white sticky top-0 z-30 shadow-lg border-b-2 border-cb-gold">
     <div class="max-w-xl mx-auto px-4 py-2 flex justify-between items-center">
       <div class="flex items-center gap-2.5">
@@ -71,22 +104,22 @@
         </div>
       </div>
       <div class="flex items-center gap-2">
+        <button onclick="openModulesScreen()" class="text-[11px] bg-cb-bordo-dark border border-cb-gold/40 hover:bg-stone-900 px-2.5 py-1.5 rounded-lg transition text-stone-200 font-bold">
+          🔀 Módulos
+        </button>
         <button id="btn-admin-users" onclick="toggleUsersModal()" class="hidden text-[11px] bg-cb-bordo-dark border border-cb-gold/40 hover:bg-stone-900 px-2 py-1.5 rounded-lg transition text-stone-200 font-medium">
           👥 Usuários
         </button>
-        <button onclick="toggleConfigModal()" class="text-[11px] bg-cb-bordo-dark border border-cb-gold/40 hover:bg-stone-900 px-2.5 py-1.5 rounded-lg transition text-stone-200 font-bold flex items-center gap-1">
-          ⚙️ <span>Configurar</span>
-        </button>
-        <button onclick="handleLogout()" class="text-xs text-rose-300 hover:text-white font-bold px-1.5">
-          Sair
+        <button onclick="toggleConfigModal()" class="text-[11px] bg-cb-bordo-dark border border-cb-gold/40 hover:bg-stone-900 px-2.5 py-1.5 rounded-lg transition text-stone-200 font-bold">
+          ⚙️ Configurar
         </button>
       </div>
     </div>
 
-    <!-- Navegação de Telas -->
-    <div class="bg-cb-bordo-dark border-t border-cb-gold/20 flex text-xs font-bold text-center">
+    <!-- Abas do Módulo Checklists -->
+    <div id="checklist-subnav" class="bg-cb-bordo-dark border-t border-cb-gold/20 flex text-xs font-bold text-center">
       <button id="main-tab-audit" onclick="switchMainTab('audit')" class="flex-1 py-2.5 border-b-2 border-cb-gold text-cb-gold transition flex items-center justify-center gap-1.5">
-        <span>📋 Auditoria em Andamento</span>
+        <span>📋 Nova Auditoria</span>
       </button>
       <button id="main-tab-history" onclick="switchMainTab('history')" class="flex-1 py-2.5 border-b-2 border-transparent text-stone-300 hover:text-white transition flex items-center justify-center gap-1.5">
         <span>📂 Relatórios Salvos</span>
@@ -95,79 +128,97 @@
     </div>
   </header>
 
-  <!-- VIEW 1: FORMULÁRIO DE AUDITORIA -->
-  <main id="audit-view" class="max-w-xl mx-auto p-4 space-y-4">
-
-    <!-- Seletor de Modelo -->
-    <div class="bg-white p-3 rounded-xl shadow-sm border border-stone-200 flex items-center justify-between gap-2">
-      <label class="text-xs font-bold text-cb-bordo uppercase tracking-wide shrink-0">Modelo:</label>
-      <select id="checklist-selector" onchange="changeChecklistModel(this.value)" class="w-full text-xs font-semibold bg-stone-50 border rounded-lg p-2 focus:outline-none focus:ring-1 focus:ring-cb-bordo text-stone-800"></select>
-    </div>
-
-    <!-- Indicador de Conformidade -->
-    <div class="bg-cb-bordo text-white p-3.5 rounded-xl flex justify-between items-center shadow-sm border border-cb-gold/30">
-      <div>
-        <span class="text-xs font-bold text-stone-200 uppercase tracking-wider block">Conformidade Geral</span>
-        <span id="evaluated-count-display" class="text-[10px] text-stone-300">0 avaliados</span>
-      </div>
-      <span id="score-display" class="text-2xl font-black text-cb-gold">100%</span>
-    </div>
-
-    <!-- Dados da Unidade -->
-    <div class="bg-white p-4 rounded-xl shadow-sm border border-stone-200 space-y-3">
-      <div class="flex justify-between items-center border-b pb-2">
-        <h2 class="font-bold text-cb-bordo text-xs uppercase tracking-wider">Dados da Unidade</h2>
-        <button onclick="openUnitsConfigTab()" class="text-[11px] text-cb-bordo font-bold hover:underline flex items-center gap-1">
-          ⚙️ <span>Gerenciar Lojas</span>
-        </button>
+  <!-- MÓDULO 1: CHECKLISTS & HISTÓRICO -->
+  <div id="module-checklists-container">
+    
+    <!-- Sub-view 1: Auditoria em Andamento -->
+    <main id="audit-view" class="max-w-xl mx-auto p-4 space-y-4">
+      <div class="bg-white p-3 rounded-xl shadow-sm border border-stone-200 flex items-center justify-between gap-2">
+        <label class="text-xs font-bold text-cb-bordo uppercase tracking-wide shrink-0">Modelo:</label>
+        <select id="checklist-selector" onchange="changeChecklistModel(this.value)" class="w-full text-xs font-semibold bg-stone-50 border rounded-lg p-2 focus:outline-none focus:ring-1 focus:ring-cb-bordo text-stone-800"></select>
       </div>
 
-      <div class="space-y-3 text-sm">
+      <div class="bg-cb-bordo text-white p-3.5 rounded-xl flex justify-between items-center shadow-sm border border-cb-gold/30">
         <div>
-          <label class="block text-xs font-semibold text-stone-600 mb-1">Selecione a Unidade / Loja</label>
-          <select id="unit-selector" class="w-full border rounded-lg p-2.5 text-sm bg-stone-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-cb-bordo font-semibold text-stone-800"></select>
+          <span class="text-xs font-bold text-stone-200 uppercase tracking-wider block">Conformidade Geral</span>
+          <span id="evaluated-count-display" class="text-[10px] text-stone-300">0 avaliados</span>
         </div>
-        <div>
-          <label class="block text-xs font-semibold text-stone-600 mb-1">Supervisor / Operador</label>
-          <input type="text" id="supervisor-name" class="w-full border rounded-lg p-2.5 text-sm bg-stone-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-cb-bordo">
-        </div>
-      </div>
-    </div>
-
-    <!-- Container dos Itens -->
-    <div id="checklist-container" class="space-y-4"></div>
-
-    <!-- Observações Gerais -->
-    <div class="bg-white p-4 rounded-xl shadow-sm border border-stone-200 space-y-2">
-      <h2 class="font-bold text-cb-bordo text-xs uppercase tracking-wider">Observações Gerais da Visita</h2>
-      <textarea id="notes" rows="3" placeholder="Comentários gerais sobre a visita, postura da equipe, elogios..." class="w-full border rounded-lg p-2.5 text-sm bg-stone-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-cb-bordo"></textarea>
-    </div>
-
-  </main>
-
-  <!-- VIEW 2: HISTÓRICO DE RELATÓRIOS SALVOS -->
-  <main id="history-view" class="max-w-xl mx-auto p-4 space-y-4 hidden">
-    <div class="bg-white p-4 rounded-xl shadow-sm border border-stone-200 flex flex-col gap-2.5">
-      <div class="flex justify-between items-center">
-        <div>
-          <h2 class="font-bold text-cb-bordo text-sm uppercase tracking-wider">Histórico de Relatórios</h2>
-          <p class="text-xs text-stone-500">Auditorias concluídas sincronizadas na nuvem</p>
-        </div>
-        <button onclick="clearAllHistory()" class="text-xs text-rose-600 font-bold hover:underline">
-          Limpar Tudo
-        </button>
+        <span id="score-display" class="text-2xl font-black text-cb-gold">100%</span>
       </div>
 
-      <!-- Botão de Desfazer Exclusão -->
-      <div id="undo-container" class="hidden pt-2 border-t flex items-center justify-between bg-amber-50 p-2.5 rounded-lg border border-amber-300">
-        <span class="text-xs text-amber-900 font-medium">Um relatório foi excluído.</span>
-        <button onclick="undoDeleteReport()" class="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded transition shadow-sm">
-          ↩️ Desfazer (Restaurar)
-        </button>
-      </div>
-    </div>
+      <div class="bg-white p-4 rounded-xl shadow-sm border border-stone-200 space-y-3">
+        <div class="flex justify-between items-center border-b pb-2">
+          <h2 class="font-bold text-cb-bordo text-xs uppercase tracking-wider">Dados da Unidade</h2>
+          <button onclick="openUnitsConfigTab()" class="text-[11px] text-cb-bordo font-bold hover:underline flex items-center gap-1">
+            ⚙️ <span>Gerenciar Lojas</span>
+          </button>
+        </div>
 
-    <div id="history-list-container" class="space-y-3"></div>
+        <div class="space-y-3 text-sm">
+          <div>
+            <label class="block text-xs font-semibold text-stone-600 mb-1">Selecione a Unidade / Loja</label>
+            <select id="unit-selector" class="w-full border rounded-lg p-2.5 text-sm bg-stone-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-cb-bordo font-semibold text-stone-800"></select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-stone-600 mb-1">Supervisor / Operador</label>
+            <input type="text" id="supervisor-name" class="w-full border rounded-lg p-2.5 text-sm bg-stone-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-cb-bordo">
+          </div>
+        </div>
+      </div>
+
+      <div id="checklist-container" class="space-y-4"></div>
+
+      <div class="bg-white p-4 rounded-xl shadow-sm border border-stone-200 space-y-2">
+        <h2 class="font-bold text-cb-bordo text-xs uppercase tracking-wider">Observações Gerais da Visita</h2>
+        <textarea id="notes" rows="3" placeholder="Comentários gerais sobre a visita, postura da equipe, elogios..." class="w-full border rounded-lg p-2.5 text-sm bg-stone-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-cb-bordo"></textarea>
+      </div>
+    </main>
+
+    <!-- Sub-view 2: Relatórios Salvos (Com Filtros e Linhas Colapsáveis) -->
+    <main id="history-view" class="max-w-xl mx-auto p-4 space-y-4 hidden">
+      <div class="bg-white p-4 rounded-xl shadow-sm border border-stone-200 space-y-3">
+        <div class="flex justify-between items-center border-b pb-2">
+          <div>
+            <h2 class="font-bold text-cb-bordo text-sm uppercase tracking-wider">Histórico de Relatórios</h2>
+            <p class="text-xs text-stone-500">Filtragem e consulta de auditorias concluídas</p>
+          </div>
+          <button onclick="clearAllHistory()" class="text-xs text-rose-600 font-bold hover:underline">
+            Limpar Tudo
+          </button>
+        </div>
+
+        <!-- Filtros -->
+        <div class="grid grid-cols-2 gap-2 text-xs">
+          <div>
+            <label class="block font-bold text-stone-600 mb-1">Filtrar por Loja:</label>
+            <select id="filter-store" onchange="renderHistoryList()" class="w-full border rounded p-2 bg-stone-50 font-semibold"></select>
+          </div>
+          <div>
+            <label class="block font-bold text-stone-600 mb-1">Filtrar por Data:</label>
+            <input type="date" id="filter-date" onchange="renderHistoryList()" class="w-full border rounded p-2 bg-stone-50">
+          </div>
+        </div>
+
+        <!-- Botão Desfazer -->
+        <div id="undo-container" class="hidden flex items-center justify-between bg-amber-50 p-2 rounded-lg border border-amber-300">
+          <span class="text-xs text-amber-900 font-medium">Relatório excluído.</span>
+          <button onclick="undoDeleteReport()" class="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded transition shadow-sm">
+            ↩️ Desfazer
+          </button>
+        </div>
+      </div>
+
+      <div id="history-list-container" class="space-y-2"></div>
+    </main>
+  </div>
+
+  <!-- MÓDULO 2: PLANOS DE AÇÃO CENTRALIZADOS -->
+  <main id="module-actions-container" class="max-w-xl mx-auto p-4 space-y-4 hidden">
+    <div class="bg-white p-4 rounded-xl shadow-sm border border-stone-200">
+      <h2 class="font-bold text-cb-bordo text-sm uppercase tracking-wider">Acompanhamento de Planos de Ação</h2>
+      <p class="text-xs text-stone-500">Todas as não conformidades e manutenções pendentes da rede</p>
+    </div>
+    <div id="centralized-actions-list" class="space-y-3"></div>
   </main>
 
   <!-- Barra Inferior de Ações -->
@@ -185,33 +236,6 @@
     </div>
   </footer>
 
-  <!-- Modal de Usuários -->
-  <div id="users-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white w-full max-w-md rounded-2xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden border border-cb-gold/30">
-      <div class="p-4 border-b border-stone-200 flex justify-between items-center bg-cb-cream">
-        <div>
-          <h3 class="font-bold text-cb-bordo text-sm">Gerenciar Usuários</h3>
-          <p class="text-xs text-stone-500">Crie ou remova logins de acesso (Nuvem)</p>
-        </div>
-        <button onclick="toggleUsersModal()" class="text-stone-400 hover:text-stone-700 text-lg font-bold p-1">✕</button>
-      </div>
-
-      <div id="users-list" class="p-4 overflow-y-auto space-y-2 flex-1 text-sm"></div>
-
-      <div class="p-4 border-t border-stone-200 bg-cb-cream space-y-2">
-        <span class="block text-xs font-bold text-cb-bordo uppercase">Novo Usuário</span>
-        <div class="grid grid-cols-2 gap-2">
-          <input type="text" id="new-user-name" placeholder="Login" class="text-xs border rounded-lg p-2 bg-white">
-          <input type="text" id="new-user-pass" placeholder="Senha" class="text-xs border rounded-lg p-2 bg-white">
-        </div>
-        <input type="text" id="new-user-fullname" placeholder="Nome Completo do Operador" class="w-full text-xs border rounded-lg p-2 bg-white">
-        <button onclick="addNewUser()" class="w-full py-2 bg-cb-bordo hover:bg-cb-bordo-dark text-white text-xs font-bold rounded-lg transition uppercase tracking-wider">
-          + Criar Acesso
-        </button>
-      </div>
-    </div>
-  </div>
-
   <!-- Modal de Configuração -->
   <div id="config-modal" class="fixed inset-0 bg-black/70 z-50 hidden flex items-center justify-center p-2 sm:p-4">
     <div class="bg-white w-full max-w-2xl h-[92vh] rounded-2xl flex flex-col shadow-2xl overflow-hidden border border-cb-gold/30">
@@ -219,12 +243,11 @@
       <div class="p-3.5 border-b border-stone-200 flex justify-between items-center bg-cb-bordo text-white">
         <div>
           <h3 class="font-bold text-sm text-cb-gold">Painel de Configuração</h3>
-          <p class="text-[11px] text-stone-200">Alterações são sincronizadas automaticamente em todos os aparelhos</p>
+          <p class="text-[11px] text-stone-200">Sincronizado automaticamente na nuvem</p>
         </div>
         <button onclick="toggleConfigModal()" class="text-stone-300 hover:text-white text-xl font-bold px-2 py-0.5">✕</button>
       </div>
 
-      <!-- Abas de Navegação -->
       <div class="flex border-b border-stone-200 bg-stone-100 text-xs font-bold overflow-x-auto">
         <button id="tab-btn-units" onclick="switchConfigTab('units')" class="flex-1 min-w-[120px] py-3 border-b-2 border-cb-bordo text-cb-bordo bg-white transition">
           🏢 Lojas
@@ -237,7 +260,6 @@
         </button>
       </div>
 
-      <!-- Aba: Unidades -->
       <div id="tab-content-units" class="p-4 space-y-4 overflow-y-auto flex-1 bg-stone-50 text-sm">
         <div class="bg-white p-4 rounded-xl border border-stone-200 space-y-3 shadow-sm">
           <span class="block text-xs font-bold text-cb-bordo uppercase tracking-wider">Adicionar Nova Loja / Unidade</span>
@@ -258,7 +280,6 @@
         </div>
       </div>
 
-      <!-- Aba: Perguntas & Setores -->
       <div id="tab-content-items" class="hidden flex-1 flex flex-col overflow-hidden">
         <div id="modal-item-list" class="p-4 overflow-y-auto space-y-4 flex-1 text-sm bg-stone-50"></div>
 
@@ -271,7 +292,7 @@
           </div>
 
           <div id="new-cat-box" class="hidden flex gap-2 p-2 bg-stone-100 rounded-lg border">
-            <input type="text" id="new-cat-text" placeholder="Nome do novo setor (ex: 6. Manutenção)" class="flex-1 text-xs border rounded-lg p-2 bg-white">
+            <input type="text" id="new-cat-text" placeholder="Nome do novo setor..." class="flex-1 text-xs border rounded-lg p-2 bg-white">
             <button onclick="addNewCategory()" class="px-3 py-2 bg-stone-800 hover:bg-black text-white text-xs font-bold rounded-lg transition">Salvar Setor</button>
           </div>
 
@@ -279,9 +300,9 @@
             <select id="new-item-category" class="text-xs border rounded-lg p-2 bg-stone-50 font-medium"></select>
             <select id="new-item-type" class="text-xs border rounded-lg p-2 bg-stone-50 font-semibold text-stone-700">
               <option value="boolean">🔘 Sim / Não / N/A (Conformidade)</option>
-              <option value="maintenance">🔧 Ordem de Manutenção (Abrir / Regular / N/A)</option>
+              <option value="maintenance">🔧 Ordem de Manutenção</option>
               <option value="stars">⭐ Avaliação (1 a 5 Estrelas)</option>
-              <option value="text">📝 Resposta Aberta (Texto Livre)</option>
+              <option value="text">📝 Resposta Aberta</option>
             </select>
             <input type="text" id="new-item-text" placeholder="Título / Pergunta..." class="text-xs border rounded-lg p-2 bg-white">
           </div>
@@ -298,7 +319,6 @@
         </div>
       </div>
 
-      <!-- Aba: Modelos -->
       <div id="tab-content-models" class="hidden p-5 space-y-5 overflow-y-auto flex-1 bg-stone-50 text-sm">
         <div class="bg-white p-4 rounded-xl border border-stone-200 space-y-3 shadow-sm">
           <span class="block text-xs font-bold text-cb-bordo uppercase tracking-wider">Renomear Modelo Atual</span>
@@ -315,7 +335,6 @@
 
         <div class="bg-white p-4 rounded-xl border border-stone-200 space-y-3 shadow-sm">
           <span class="block text-xs font-bold text-cb-bordo uppercase tracking-wider">Criar Novo Tipo de Checklist</span>
-          <p class="text-xs text-stone-500">Crie checklists independentes (ex: Abertura, Manutenção, Higiene).</p>
           <div class="flex gap-2">
             <input type="text" id="new-checklist-name" placeholder="Ex: Checklist de Manutenção" class="flex-1 text-xs border rounded-lg p-2.5 bg-stone-50">
             <button onclick="createNewChecklistType()" class="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-lg transition">
@@ -327,7 +346,7 @@
 
       <div class="p-3 border-t flex justify-between bg-white text-xs items-center">
         <button onclick="restoreDefaultChecklist()" class="text-rose-600 font-semibold hover:underline">
-          Restaurar Padrões da Casa Bauducco
+          Restaurar Padrões
         </button>
         <button onclick="toggleConfigModal()" class="bg-stone-900 hover:bg-black text-white font-bold px-6 py-2 rounded-lg transition">
           Concluir
@@ -338,9 +357,6 @@
   </div>
 
   <script>
-    // ==========================================
-    // CONFIGURAÇÃO DO FIREBASE (PROJETO CHECKLISTCB)
-    // ==========================================
     const firebaseConfig = {
       apiKey: "AIzaSyAII60fmHrt6myJd7PdviKPeCk5PKL4VYo",
       authDomain: "checklistcb.firebaseapp.com",
@@ -359,7 +375,7 @@
       db = firebase.firestore();
       isFirebaseReady = true;
     } catch (err) {
-      console.warn("Erro ao iniciar Firebase:", err);
+      console.warn("Erro Firebase:", err);
     }
 
     const DEFAULT_EMBEDDED_LOGO = "./logo.png";
@@ -455,7 +471,7 @@
     let allChecklists = JSON.parse(localStorage.getItem("CB_LOCAL_CHECKLISTS")) || defaultTemplates;
     let activeChecklistId = localStorage.getItem("CB_LOCAL_ACTIVE_ID") || allChecklists[0].id;
     let savedReports = JSON.parse(localStorage.getItem("CB_LOCAL_REPORTS")) || [];
-    let lastDeletedReport = null; // Para a função Desfazer
+    let lastDeletedReport = null;
     
     let attachedPhotos = {};
     let actionPlans = {};
@@ -471,9 +487,6 @@
 
     let isInitialConfigLoad = true;
 
-    // ==========================================
-    // SINCRONIZAÇÃO EM TEMPO REAL COM O FIRESTORE
-    // ==========================================
     function setupCloudListeners() {
       if (!isFirebaseReady) {
         updateSyncUI("🟡 Modo Local", "Sem conexão");
@@ -482,22 +495,12 @@
 
       updateSyncUI("🟢 Conectando...", "Sincronizando");
 
-      // 1. Ouvinte para Configurações (Lojas, Modelos, Usuários)
       db.collection("app_config").doc("main").onSnapshot(doc => {
         if (doc.exists) {
           const data = doc.data();
-          if (data.checklists) {
-            allChecklists = data.checklists;
-            localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
-          }
-          if (data.units) {
-            presetUnits = data.units;
-            localStorage.setItem("CB_LOCAL_UNITS", JSON.stringify(presetUnits));
-          }
-          if (data.users) {
-            users = data.users;
-            localStorage.setItem("CB_LOCAL_USERS", JSON.stringify(users));
-          }
+          if (data.checklists) { allChecklists = data.checklists; localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists)); }
+          if (data.units) { presetUnits = data.units; localStorage.setItem("CB_LOCAL_UNITS", JSON.stringify(presetUnits)); }
+          if (data.users) { users = data.users; localStorage.setItem("CB_LOCAL_USERS", JSON.stringify(users)); }
 
           if (isInitialConfigLoad) {
             renderPresetUnits();
@@ -509,11 +512,8 @@
         } else {
           syncConfigToCloud();
         }
-      }, err => {
-        updateSyncUI("🔴 Modo Offline", "Usando memória local");
       });
 
-      // 2. Ouvinte para Relatórios Salvos
       db.collection("reports").orderBy("createdAt", "desc").onSnapshot(snapshot => {
         savedReports = [];
         snapshot.forEach(doc => {
@@ -521,8 +521,15 @@
         });
         localStorage.setItem("CB_LOCAL_REPORTS", JSON.stringify(savedReports));
         updateHistoryBadge();
-        if (!document.getElementById("history-view").classList.contains("hidden")) {
+        
+        const historyView = document.getElementById("history-view");
+        const actionsView = document.getElementById("module-actions-container");
+
+        if (historyView && !historyView.classList.contains("hidden")) {
           renderHistoryList();
+        }
+        if (actionsView && !actionsView.classList.contains("hidden")) {
+          renderCentralizedActions();
         }
       });
     }
@@ -534,9 +541,7 @@
         units: presetUnits,
         users: users,
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-      }).catch(err => {
-        console.error("Erro ao sincronizar na nuvem:", err);
-      });
+      }).catch(err => console.error(err));
     }
 
     function saveReportToCloud(reportData) {
@@ -548,22 +553,19 @@
       }
 
       reportData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-      db.collection("reports").add(reportData).then(() => {
-        updateSyncUI("🟢 Relatório Salvo na Nuvem", new Date().toLocaleTimeString('pt-BR'));
-      }).catch(err => {
-        savedReports.unshift(reportData);
-        localStorage.setItem("CB_LOCAL_REPORTS", JSON.stringify(savedReports));
-        updateHistoryBadge();
-      });
+      db.collection("reports").add(reportData).catch(err => console.error(err));
     }
 
     function updateLogos() {
-      document.getElementById("login-logo-img").src = currentLogo;
-      document.getElementById("header-logo-img").src = currentLogo;
+      document.getElementById("login-logo-img").src = DEFAULT_EMBEDDED_LOGO;
+      document.getElementById("header-logo-img").src = DEFAULT_EMBEDDED_LOGO;
+      const modLogo = document.getElementById("modules-logo-img");
+      if (modLogo) modLogo.src = DEFAULT_EMBEDDED_LOGO;
     }
 
     function renderPresetUnits() {
       const select = document.getElementById("unit-selector");
+      const filterStore = document.getElementById("filter-store");
       const listContainer = document.getElementById("units-list-container");
       const badge = document.getElementById("units-count-badge");
 
@@ -576,9 +578,19 @@
           opt.innerText = u;
           select.appendChild(opt);
         });
-        if (currentVal && presetUnits.includes(currentVal)) {
-          select.value = currentVal;
-        }
+        if (currentVal && presetUnits.includes(currentVal)) select.value = currentVal;
+      }
+
+      if (filterStore) {
+        const currentFilter = filterStore.value;
+        filterStore.innerHTML = `<option value="">Todas as Lojas</option>`;
+        presetUnits.forEach(u => {
+          const opt = document.createElement("option");
+          opt.value = u;
+          opt.innerText = u;
+          filterStore.appendChild(opt);
+        });
+        filterStore.value = currentFilter;
       }
 
       if (listContainer) {
@@ -639,6 +651,54 @@
       switchConfigTab('units');
     }
 
+    // CONTROLE DE MÓDULOS E TELAS
+    function handleLogin() {
+      const u = document.getElementById("login-user").value.trim().toLowerCase();
+      const p = document.getElementById("login-pass").value.trim();
+      const found = users.find(item => item.username.toLowerCase() === u && item.pass === p);
+      if (found) {
+        currentUser = found;
+        sessionStorage.setItem("CB_LOCAL_LOGGED_USER", JSON.stringify(found));
+        document.getElementById("login-screen").classList.add("hidden");
+        document.getElementById("login-error").classList.add("hidden");
+        openModulesScreen();
+      } else {
+        document.getElementById("login-error").classList.remove("hidden");
+      }
+    }
+
+    function handleLogout() {
+      sessionStorage.removeItem("CB_LOCAL_LOGGED_USER");
+      location.reload();
+    }
+
+    function openModulesScreen() {
+      document.getElementById("modules-screen").classList.remove("hidden");
+      document.getElementById("current-user-badge").innerText = currentUser.name;
+    }
+
+    function selectModule(mod) {
+      document.getElementById("modules-screen").classList.add("hidden");
+      const checklistsMod = document.getElementById("module-checklists-container");
+      const actionsMod = document.getElementById("module-actions-container");
+      const auditFooter = document.getElementById("audit-footer");
+      const subNav = document.getElementById("checklist-subnav");
+
+      if (mod === 'checklists') {
+        checklistsMod.classList.remove("hidden");
+        actionsMod.classList.add("hidden");
+        auditFooter.classList.remove("hidden");
+        subNav.classList.remove("hidden");
+        switchMainTab('audit');
+      } else if (mod === 'actions') {
+        checklistsMod.classList.add("hidden");
+        actionsMod.classList.remove("hidden");
+        auditFooter.classList.add("hidden");
+        subNav.classList.add("hidden");
+        renderCentralizedActions();
+      }
+    }
+
     function switchMainTab(tab) {
       const auditView = document.getElementById("audit-view");
       const historyView = document.getElementById("history-view");
@@ -667,6 +727,7 @@
       if (badge) badge.innerText = savedReports.length;
     }
 
+    // HISTÓRICO COM LINHAS COLAPSÁVEIS E FILTROS
     function renderHistoryList() {
       const container = document.getElementById("history-list-container");
       container.innerHTML = "";
@@ -674,43 +735,55 @@
 
       const undoBox = document.getElementById("undo-container");
       if (undoBox) {
-        if (lastDeletedReport) {
-          undoBox.classList.remove("hidden");
-        } else {
-          undoBox.classList.add("hidden");
-        }
+        if (lastDeletedReport) undoBox.classList.remove("hidden");
+        else undoBox.classList.add("hidden");
       }
 
-      if (savedReports.length === 0) {
+      const storeFilter = document.getElementById("filter-store").value;
+      const dateFilter = document.getElementById("filter-date").value;
+
+      let filtered = savedReports.filter(rep => {
+        let matchStore = !storeFilter || rep.unit === storeFilter;
+        let matchDate = true;
+        if (dateFilter && rep.date) {
+          // rep.date ex: "19/08/2026, 19:18:57" -> converte para comparar yyyy-mm-dd
+          let parts = rep.date.split(',')[0].split('/');
+          let repIso = `${parts[2]}-${parts[1]}-${parts[0]}`;
+          matchDate = repIso === dateFilter;
+        }
+        return matchStore && matchDate;
+      });
+
+      if (filtered.length === 0) {
         container.innerHTML = `
           <div class="p-8 text-center bg-white rounded-xl border border-stone-200 text-stone-400 text-xs font-semibold">
-            Nenhum relatório realizado até o momento.<br>Todas as auditorias feitas em qualquer celular aparecem aqui automaticamente.
+            Nenhum relatório encontrado com os filtros selecionados.
           </div>
         `;
         return;
       }
 
-      savedReports.forEach((rep, idx) => {
+      filtered.forEach((rep, idx) => {
         const itemCard = document.createElement("div");
-        itemCard.className = "bg-white p-4 rounded-xl border border-stone-200 shadow-sm space-y-3";
+        itemCard.className = "bg-white rounded-xl border border-stone-200 shadow-sm overflow-hidden text-xs";
         
         let ncListHtml = "";
         if (rep.nonConformities && rep.nonConformities.length > 0) {
           ncListHtml = rep.nonConformities.map(nc => `
-            <div class="p-2 bg-rose-50 border border-rose-200 rounded-lg text-xs">
+            <div class="p-2 bg-rose-50 border border-rose-200 rounded-lg text-xs mb-1">
               <span class="font-bold text-rose-800 block">❌ ${nc.title}</span>
               <span class="text-stone-700 block">↳ Ação: ${nc.action || 'Não descrita'}</span>
               <span class="text-stone-500 text-[11px] block">↳ Prazo: ${nc.date || 'Não definida'}</span>
             </div>
           `).join("");
         } else {
-          ncListHtml = `<div class="text-xs text-emerald-700 font-semibold">✓ Nenhuma não conformidade operacional.</div>`;
+          ncListHtml = `<div class="text-xs text-emerald-700 font-semibold mb-1">✓ Nenhuma não conformidade operacional.</div>`;
         }
 
         let omListHtml = "";
         if (rep.maintenanceOrders && rep.maintenanceOrders.length > 0) {
           omListHtml = rep.maintenanceOrders.map(om => `
-            <div class="p-2 bg-amber-50 border border-amber-300 rounded-lg text-xs">
+            <div class="p-2 bg-amber-50 border border-amber-300 rounded-lg text-xs mb-1">
               <span class="font-bold text-amber-900 block">🔧 ${om.equipment || 'Equipamento não especificado'}</span>
               <span class="text-stone-700 block">↳ Motivo/Ação: ${om.action || 'Não descrito'}</span>
               <span class="text-stone-600 text-[11px] block">↳ Prazo para Conclusão: ${om.date || 'Não definida'}</span>
@@ -719,65 +792,85 @@
         }
 
         itemCard.innerHTML = `
-          <div class="flex justify-between items-start border-b pb-2">
-            <div>
-              <span class="text-xs font-black text-cb-bordo uppercase tracking-wide block">${rep.unit}</span>
-              <span class="text-[11px] text-stone-500">${rep.checklistName} • ${rep.date}</span>
+          <!-- Linha Resumida -->
+          <div onclick="toggleHistoryDetails(${idx})" class="p-3.5 bg-stone-50 hover:bg-stone-100 flex justify-between items-center cursor-pointer transition">
+            <div class="flex items-center gap-3">
+              <span class="font-black text-cb-bordo text-sm">${rep.unit}</span>
+              <span class="text-stone-500">${rep.date}</span>
             </div>
-            <div class="text-right">
-              <span class="text-xs font-bold text-stone-400 uppercase block text-[10px]">Conformidade</span>
-              <span class="text-lg font-black text-cb-bordo">${rep.score}%</span>
+            <div class="flex items-center gap-3">
+              <span class="px-2 py-0.5 rounded font-bold text-white ${rep.score >= 90 ? 'bg-emerald-600' : rep.score >= 75 ? 'bg-amber-600' : 'bg-rose-600'}">${rep.score}%</span>
+              <span id="chevron-${idx}" class="text-stone-400 font-bold">▼</span>
             </div>
           </div>
 
-          <div class="text-xs text-stone-600 space-y-1">
-            <div><strong>Supervisor:</strong> ${rep.supervisor}</div>
-            <div><strong>Avaliados:</strong> ${rep.total} itens</div>
-            ${rep.notes ? `<div><strong>Observações:</strong> <span class="italic text-stone-700">${rep.notes}</span></div>` : ''}
-          </div>
-
-          <div class="space-y-1.5 pt-1">
-            <span class="text-[11px] font-bold text-cb-bordo uppercase tracking-wider block">Não Conformidades:</span>
-            ${ncListHtml}
-          </div>
-
-          ${omListHtml ? `
-            <div class="space-y-1.5 pt-1">
-              <span class="text-[11px] font-bold text-amber-800 uppercase tracking-wider block">Ordens de Manutenção Abertas:</span>
-              ${omListHtml}
+          <!-- Detalhes Ocultos -->
+          <div id="history-details-${idx}" class="hidden p-4 border-t border-stone-200 space-y-3 bg-white">
+            <div class="text-stone-600 space-y-1">
+              <div><strong>Checklist:</strong> ${rep.checklistName}</div>
+              <div><strong>Supervisor:</strong> ${rep.supervisor}</div>
+              <div><strong>Itens Avaliados:</strong> ${rep.total}</div>
+              ${rep.notes ? `<div><strong>Observações:</strong> <span class="italic text-stone-700">${rep.notes}</span></div>` : ''}
             </div>
-          ` : ''}
 
-          <div class="pt-2 border-t flex justify-end gap-2 text-xs">
-            <button onclick="reopenPDFFromHistory(${idx})" class="px-3 py-1.5 bg-cb-bordo text-white font-bold rounded-lg hover:bg-cb-bordo-dark transition">
-              📄 Visualizar / Imprimir PDF
-            </button>
-            <button onclick="deleteReportFromHistory(${idx})" class="px-2.5 py-1.5 text-rose-600 font-bold hover:bg-rose-50 rounded-lg transition">
-              Excluir
-            </button>
+            <div class="space-y-1 pt-1">
+              <span class="font-bold text-cb-bordo uppercase block text-[11px]">Não Conformidades:</span>
+              ${ncListHtml}
+            </div>
+
+            ${omListHtml ? `
+              <div class="space-y-1 pt-1">
+                <span class="font-bold text-amber-800 uppercase block text-[11px]">Ordens de Manutenção:</span>
+                ${omListHtml}
+              </div>
+            ` : ''}
+
+            <div class="pt-2 border-t flex justify-end gap-2">
+              <button onclick="reopenPDFFromHistoryByIndex('${rep.id}')" class="px-3 py-1.5 bg-cb-bordo text-white font-bold rounded-lg hover:bg-cb-bordo-dark transition">
+                📄 Visualizar / Imprimir PDF
+              </button>
+              <button onclick="deleteReportFromHistory('${rep.id}')" class="px-2.5 py-1.5 text-rose-600 font-bold hover:bg-rose-50 rounded-lg transition">
+                Excluir
+              </button>
+            </div>
           </div>
         `;
         container.appendChild(itemCard);
       });
     }
 
-    function deleteReportFromHistory(idx) {
-      if (confirm("Excluir este relatório do histórico?")) {
-        const deleted = savedReports.splice(idx, 1)[0];
-        lastDeletedReport = deleted;
-        localStorage.setItem("CB_LOCAL_REPORTS", JSON.stringify(savedReports));
+    function toggleHistoryDetails(idx) {
+      const details = document.getElementById(`history-details-${idx}`);
+      const chevron = document.getElementById(`chevron-${idx}`);
+      if (details.classList.contains("hidden")) {
+        details.classList.remove("hidden");
+        chevron.innerText = "▲";
+      } else {
+        details.classList.add("hidden");
+        chevron.innerText = "▼";
+      }
+    }
 
-        if (isFirebaseReady && deleted.id) {
-          db.collection("reports").doc(deleted.id).delete().catch(err => console.error(err));
+    function deleteReportFromHistory(docId) {
+      if (confirm("Excluir este relatório do histórico?")) {
+        const idx = savedReports.findIndex(r => r.id === docId);
+        if (idx !== -1) {
+          lastDeletedReport = savedReports[idx];
+          savedReports.splice(idx, 1);
+          localStorage.setItem("CB_LOCAL_REPORTS", JSON.stringify(savedReports));
+
+          if (isFirebaseReady && docId) {
+            db.collection("reports").doc(docId).delete().catch(err => console.error(err));
+          }
+          renderHistoryList();
         }
-        renderHistoryList();
       }
     }
 
     function undoDeleteReport() {
       if (lastDeletedReport) {
         const reportToRestore = { ...lastDeletedReport };
-        delete reportToRestore.id; // Remove id local para recriar no cloud
+        delete reportToRestore.id;
         saveReportToCloud(reportToRestore);
         lastDeletedReport = null;
         renderHistoryList();
@@ -794,9 +887,67 @@
       }
     }
 
-    function reopenPDFFromHistory(idx) {
-      const rep = savedReports[idx];
-      openPrintWindow(rep.htmlContent, rep.checklistName, rep.unit);
+    function reopenPDFFromHistoryByIndex(docId) {
+      const rep = savedReports.find(r => r.id === docId);
+      if (rep) openPrintWindow(rep.htmlContent, rep.checklistName, rep.unit);
+    }
+
+    // MÓDULO 2: PLANOS DE AÇÃO CENTRALIZADOS
+    function renderCentralizedActions() {
+      const container = document.getElementById("centralized-actions-list");
+      container.innerHTML = "";
+
+      let totalActions = 0;
+
+      savedReports.forEach(rep => {
+        if (rep.nonConformities && rep.nonConformities.length > 0) {
+          rep.nonConformities.forEach(nc => {
+            totalActions++;
+            const card = document.createElement("div");
+            card.className = "bg-white p-4 rounded-xl border border-stone-200 shadow-sm space-y-2 text-xs";
+            card.innerHTML = `
+              <div class="flex justify-between items-center border-b pb-1.5">
+                <span class="font-bold text-cb-bordo uppercase">${rep.unit}</span>
+                <span class="text-stone-400 text-[11px]">${rep.date}</span>
+              </div>
+              <div>
+                <strong class="text-rose-700 block">❌ ${nc.title}</strong>
+                <span class="text-stone-700 block mt-1"><strong>Ação:</strong> ${nc.action || 'Não descrita'}</span>
+                <span class="text-stone-600 block mt-0.5"><strong>Prazo Limite:</strong> <span class="font-bold text-cb-bordo">${nc.date || 'Não definida'}</span></span>
+              </div>
+            `;
+            container.appendChild(card);
+          });
+        }
+
+        if (rep.maintenanceOrders && rep.maintenanceOrders.length > 0) {
+          rep.maintenanceOrders.forEach(om => {
+            totalActions++;
+            const card = document.createElement("div");
+            card.className = "bg-white p-4 rounded-xl border border-stone-200 shadow-sm space-y-2 text-xs";
+            card.innerHTML = `
+              <div class="flex justify-between items-center border-b pb-1.5">
+                <span class="font-bold text-cb-bordo uppercase">${rep.unit}</span>
+                <span class="text-stone-400 text-[11px]">${rep.date}</span>
+              </div>
+              <div>
+                <strong class="text-amber-800 block">🔧 Manutenção: ${om.equipment || 'Equipamento'}</strong>
+                <span class="text-stone-700 block mt-1"><strong>Plano/Defeito:</strong> ${om.action || 'Não descrito'}</span>
+                <span class="text-stone-600 block mt-0.5"><strong>Prazo para Conclusão:</strong> <span class="font-bold text-amber-900">${om.date || 'Não definida'}</span></span>
+              </div>
+            `;
+            container.appendChild(card);
+          });
+        }
+      });
+
+      if (totalActions === 0) {
+        container.innerHTML = `
+          <div class="p-8 text-center bg-white rounded-xl border border-stone-200 text-stone-400 text-xs font-semibold">
+            Nenhum plano de ação ou ordem de manutenção pendente na rede.
+          </div>
+        `;
+      }
     }
 
     function switchConfigTab(tab) {
@@ -935,9 +1086,7 @@
 
     function toggleEditItemBox(sIdx, iIdx) {
       const editBox = document.getElementById(`edit-item-box-${sIdx}-${iIdx}`);
-      if (editBox) {
-        editBox.classList.toggle("hidden");
-      }
+      if (editBox) editBox.classList.toggle("hidden");
     }
 
     function saveItemEdit(sIdx, iIdx) {
@@ -956,26 +1105,6 @@
       renderChecklist();
     }
 
-    function handleLogin() {
-      const u = document.getElementById("login-user").value.trim().toLowerCase();
-      const p = document.getElementById("login-pass").value.trim();
-      const found = users.find(item => item.username.toLowerCase() === u && item.pass === p);
-      if (found) {
-        currentUser = found;
-        sessionStorage.setItem("CB_LOCAL_LOGGED_USER", JSON.stringify(found));
-        document.getElementById("login-screen").classList.add("hidden");
-        document.getElementById("login-error").classList.add("hidden");
-        initApp();
-      } else {
-        document.getElementById("login-error").classList.remove("hidden");
-      }
-    }
-
-    function handleLogout() {
-      sessionStorage.removeItem("CB_LOCAL_LOGGED_USER");
-      location.reload();
-    }
-
     function initApp() {
       updateLogos();
       renderPresetUnits();
@@ -987,7 +1116,8 @@
         return;
       }
       document.getElementById("login-screen").classList.add("hidden");
-      document.getElementById("current-user-badge").innerText = currentUser.name + (currentUser.role === 'admin' ? ' (Admin)' : '');
+      document.getElementById("modules-screen").classList.remove("hidden");
+      document.getElementById("current-user-badge").innerText = currentUser.name;
       document.getElementById("supervisor-name").value = currentUser.name;
 
       if (currentUser.role === "admin") {
@@ -1079,11 +1209,8 @@
       for (let i = 1; i <= 5; i++) {
         const starBtn = document.getElementById(`star-${itemKey}-${i}`);
         if (starBtn) {
-          if (i <= stars) {
-            starBtn.className = "text-xl text-amber-400 scale-110 transition";
-          } else {
-            starBtn.className = "text-xl text-stone-300 hover:text-amber-200 transition";
-          }
+          if (i <= stars) starBtn.className = "text-xl text-amber-400 scale-110 transition";
+          else starBtn.className = "text-xl text-stone-300 hover:text-amber-200 transition";
         }
       }
       const label = document.getElementById(`star-label-${itemKey}`);
@@ -1091,10 +1218,7 @@
       calculateScore();
     }
 
-    function updateTextInput(itemKey, val) {
-      customAnswers[itemKey] = val;
-    }
-
+    function updateTextInput(itemKey, val) { customAnswers[itemKey] = val; }
     function updateActionPlan(itemKey, field, val) {
       if (!actionPlans[itemKey]) actionPlans[itemKey] = { action: '', date: '' };
       actionPlans[itemKey][field] = val;
@@ -1113,31 +1237,18 @@
           if (itemType === "boolean") {
             const selected = document.querySelector(`input[name="item-${itemKey}"]:checked`);
             if (selected) {
-              if (selected.value === "conforme") {
-                pointsEarned += 1.0;
-                totalQuestionsEvaluated += 1.0;
-              } else if (selected.value === "nao-conforme") {
-                pointsEarned += 0.0;
-                totalQuestionsEvaluated += 1.0;
-              }
+              if (selected.value === "conforme") { pointsEarned += 1.0; totalQuestionsEvaluated += 1.0; }
+              else if (selected.value === "nao-conforme") { pointsEarned += 0.0; totalQuestionsEvaluated += 1.0; }
             }
           } else if (itemType === "maintenance") {
             const selected = document.querySelector(`input[name="item-${itemKey}"]:checked`);
             if (selected) {
-              if (selected.value === "regular") {
-                pointsEarned += 1.0;
-                totalQuestionsEvaluated += 1.0;
-              } else if (selected.value === "abrir") {
-                pointsEarned += 0.0;
-                totalQuestionsEvaluated += 1.0;
-              }
+              if (selected.value === "regular") { pointsEarned += 1.0; totalQuestionsEvaluated += 1.0; }
+              else if (selected.value === "abrir") { pointsEarned += 0.0; totalQuestionsEvaluated += 1.0; }
             }
           } else if (itemType === "stars") {
             const rating = parseInt(customAnswers[itemKey]) || 0;
-            if (rating > 0) {
-              pointsEarned += (rating / 5);
-              totalQuestionsEvaluated += 1.0;
-            }
+            if (rating > 0) { pointsEarned += (rating / 5); totalQuestionsEvaluated += 1.0; }
           }
         });
       });
@@ -1149,9 +1260,7 @@
       scoreDisplay.className = `text-2xl font-black ${score >= 90 ? 'text-cb-gold' : score >= 75 ? 'text-amber-400' : 'text-rose-400'}`;
 
       const evalDisplay = document.getElementById("evaluated-count-display");
-      if (evalDisplay) {
-        evalDisplay.innerText = `${Math.round(totalQuestionsEvaluated)} item(ns) avaliado(s)`;
-      }
+      if (evalDisplay) evalDisplay.innerText = `${Math.round(totalQuestionsEvaluated)} item(ns) avaliado(s)`;
 
       return { score, conformes: Math.round(pointsEarned), total: Math.round(totalQuestionsEvaluated) };
     }
@@ -1188,21 +1297,15 @@
               <div class="flex gap-2 text-xs">
                 <label class="flex-1 cursor-pointer">
                   <input type="radio" name="item-${itemKey}" value="conforme" class="hidden peer" onchange="handleEvaluationChange('${itemKey}', this.value)">
-                  <div class="text-center py-2 rounded-md border border-stone-200 text-stone-600 peer-checked:bg-emerald-600 peer-checked:text-white peer-checked:border-emerald-600 font-bold transition shadow-sm">
-                    Sim
-                  </div>
+                  <div class="text-center py-2 rounded-md border border-stone-200 text-stone-600 peer-checked:bg-emerald-600 peer-checked:text-white peer-checked:border-emerald-600 font-bold transition shadow-sm">Sim</div>
                 </label>
                 <label class="flex-1 cursor-pointer">
                   <input type="radio" name="item-${itemKey}" value="nao-conforme" class="hidden peer" onchange="handleEvaluationChange('${itemKey}', this.value)">
-                  <div class="text-center py-2 rounded-md border border-stone-200 text-stone-600 peer-checked:bg-rose-700 peer-checked:text-white peer-checked:border-rose-700 font-bold transition shadow-sm">
-                    Não
-                  </div>
+                  <div class="text-center py-2 rounded-md border border-stone-200 text-stone-600 peer-checked:bg-rose-700 peer-checked:text-white peer-checked:border-rose-700 font-bold transition shadow-sm">Não</div>
                 </label>
                 <label class="flex-1 cursor-pointer">
                   <input type="radio" name="item-${itemKey}" value="na" class="hidden peer" onchange="handleEvaluationChange('${itemKey}', this.value)">
-                  <div class="text-center py-2 rounded-md border border-stone-200 text-stone-600 peer-checked:bg-stone-500 peer-checked:text-white peer-checked:border-stone-500 font-bold transition shadow-sm">
-                    N/A
-                  </div>
+                  <div class="text-center py-2 rounded-md border border-stone-200 text-stone-600 peer-checked:bg-stone-500 peer-checked:text-white peer-checked:border-stone-500 font-bold transition shadow-sm">N/A</div>
                 </label>
               </div>
 
@@ -1210,11 +1313,11 @@
                 <span class="block font-bold text-rose-800 uppercase tracking-wider text-[10px]">⚠️ Plano de Ação para Não Conformidade</span>
                 <div>
                   <label class="block text-stone-600 font-semibold mb-1">O que deve ser realizado?</label>
-                  <input type="text" value="${planData.action}" placeholder="Ação corretiva necessária..." oninput="updateActionPlan('${itemKey}', 'action', this.value)" class="w-full border border-rose-300 rounded-md p-2 bg-white text-xs focus:outline-none focus:ring-1 focus:ring-rose-500">
+                  <input type="text" value="${planData.action}" placeholder="Ação corretiva..." oninput="updateActionPlan('${itemKey}', 'action', this.value)" class="w-full border border-rose-300 rounded-md p-2 bg-white text-xs">
                 </div>
                 <div>
                   <label class="block text-stone-600 font-semibold mb-1">Data limite de entrega:</label>
-                  <input type="date" value="${planData.date}" oninput="updateActionPlan('${itemKey}', 'date', this.value)" class="w-full border border-rose-300 rounded-md p-2 bg-white text-xs focus:outline-none focus:ring-1 focus:ring-rose-500">
+                  <input type="date" value="${planData.date}" oninput="updateActionPlan('${itemKey}', 'date', this.value)" class="w-full border border-rose-300 rounded-md p-2 bg-white text-xs">
                 </div>
               </div>
             `;
@@ -1223,21 +1326,15 @@
               <div class="flex gap-2 text-xs">
                 <label class="flex-1 cursor-pointer">
                   <input type="radio" name="item-${itemKey}" value="abrir" class="hidden peer" onchange="handleMaintenanceChange('${itemKey}', this.value)">
-                  <div class="text-center py-2 rounded-md border border-stone-200 text-stone-600 peer-checked:bg-amber-600 peer-checked:text-white peer-checked:border-amber-600 font-bold transition shadow-sm flex items-center justify-center gap-1">
-                    <span>🔧 Abrir</span>
-                  </div>
+                  <div class="text-center py-2 rounded-md border border-stone-200 text-stone-600 peer-checked:bg-amber-600 peer-checked:text-white peer-checked:border-amber-600 font-bold transition shadow-sm">🔧 Abrir</div>
                 </label>
                 <label class="flex-1 cursor-pointer">
                   <input type="radio" name="item-${itemKey}" value="regular" class="hidden peer" onchange="handleMaintenanceChange('${itemKey}', this.value)">
-                  <div class="text-center py-2 rounded-md border border-stone-200 text-stone-600 peer-checked:bg-emerald-600 peer-checked:text-white peer-checked:border-emerald-600 font-bold transition shadow-sm">
-                    Regular / Ok
-                  </div>
+                  <div class="text-center py-2 rounded-md border border-stone-200 text-stone-600 peer-checked:bg-emerald-600 peer-checked:text-white peer-checked:border-emerald-600 font-bold transition shadow-sm">Regular / Ok</div>
                 </label>
                 <label class="flex-1 cursor-pointer">
                   <input type="radio" name="item-${itemKey}" value="na" class="hidden peer" onchange="handleMaintenanceChange('${itemKey}', this.value)">
-                  <div class="text-center py-2 rounded-md border border-stone-200 text-stone-600 peer-checked:bg-stone-500 peer-checked:text-white peer-checked:border-stone-500 font-bold transition shadow-sm">
-                    N/A
-                  </div>
+                  <div class="text-center py-2 rounded-md border border-stone-200 text-stone-600 peer-checked:bg-stone-500 peer-checked:text-white peer-checked:border-stone-500 font-bold transition shadow-sm">N/A</div>
                 </label>
               </div>
 
@@ -1245,15 +1342,15 @@
                 <span class="block font-bold text-amber-900 uppercase tracking-wider text-[10px]">🔧 Abertura de Ordem de Manutenção</span>
                 <div>
                   <label class="block text-stone-700 font-semibold mb-1">Qual é o equipamento?</label>
-                  <input type="text" value="${omData.equipment}" placeholder="Ex: Forno Turbo, Geladeira Expositora, Ar Condicionado..." oninput="updateMaintenanceOrder('${itemKey}', 'equipment', this.value)" class="w-full border border-amber-300 rounded-md p-2 bg-white text-xs focus:outline-none focus:ring-1 focus:ring-amber-500">
+                  <input type="text" value="${omData.equipment}" placeholder="Ex: Forno Turbo..." oninput="updateMaintenanceOrder('${itemKey}', 'equipment', this.value)" class="w-full border border-amber-300 rounded-md p-2 bg-white text-xs">
                 </div>
                 <div>
                   <label class="block text-stone-700 font-semibold mb-1">Plano de Ação / Descrição do Defeito:</label>
-                  <input type="text" value="${omData.action}" placeholder="Ex: Troca de termostato, acionar assistência técnica autorizada..." oninput="updateMaintenanceOrder('${itemKey}', 'action', this.value)" class="w-full border border-amber-300 rounded-md p-2 bg-white text-xs focus:outline-none focus:ring-1 focus:ring-amber-500">
+                  <input type="text" value="${omData.action}" placeholder="Ex: Troca de termostato..." oninput="updateMaintenanceOrder('${itemKey}', 'action', this.value)" class="w-full border border-amber-300 rounded-md p-2 bg-white text-xs">
                 </div>
                 <div>
                   <label class="block text-stone-700 font-semibold mb-1">Prazo para Conclusão:</label>
-                  <input type="date" value="${omData.date}" oninput="updateMaintenanceOrder('${itemKey}', 'date', this.value)" class="w-full border border-amber-300 rounded-md p-2 bg-white text-xs focus:outline-none focus:ring-1 focus:ring-amber-500">
+                  <input type="date" value="${omData.date}" oninput="updateMaintenanceOrder('${itemKey}', 'date', this.value)" class="w-full border border-amber-300 rounded-md p-2 bg-white text-xs">
                 </div>
               </div>
             `;
@@ -1261,27 +1358,11 @@
             const currentStars = parseInt(savedAnswer) || 0;
             let starsSpans = "";
             for (let s = 1; s <= 5; s++) {
-              const isFilled = s <= currentStars;
-              starsSpans += `
-                <button type="button" id="star-${itemKey}-${s}" onclick="setStarRating('${itemKey}', ${s})" class="text-xl ${isFilled ? 'text-amber-400 scale-110' : 'text-stone-300 hover:text-amber-200'} transition focus:outline-none">
-                  ★
-                </button>
-              `;
+              starsSpans += `<button type="button" id="star-${itemKey}-${s}" onclick="setStarRating('${itemKey}', ${s})" class="text-xl ${s <= currentStars ? 'text-amber-400 scale-110' : 'text-stone-300'}">★</button>`;
             }
-            controlHtml = `
-              <div class="flex items-center justify-between bg-stone-50 p-2.5 rounded-lg border border-stone-200">
-                <div class="flex gap-2 items-center">
-                  ${starsSpans}
-                </div>
-                <span id="star-label-${itemKey}" class="text-xs font-bold text-stone-600">${currentStars > 0 ? currentStars + ' de 5 estrelas' : 'Avalie de 1 a 5'}</span>
-              </div>
-            `;
+            controlHtml = `<div class="flex items-center justify-between bg-stone-50 p-2.5 rounded-lg border border-stone-200"><div class="flex gap-2 items-center">${starsSpans}</div><span id="star-label-${itemKey}" class="text-xs font-bold text-stone-600">${currentStars > 0 ? currentStars + ' de 5' : 'Avalie'}</span></div>`;
           } else if (itemType === "text") {
-            controlHtml = `
-              <div>
-                <textarea rows="2" placeholder="Digite a resposta ou apontamento detalhado..." oninput="updateTextInput('${itemKey}', this.value)" class="w-full border rounded-lg p-2.5 text-xs bg-stone-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-cb-bordo">${savedAnswer || ''}</textarea>
-              </div>
-            `;
+            controlHtml = `<div><textarea rows="2" placeholder="Digite..." oninput="updateTextInput('${itemKey}', this.value)" class="w-full border rounded-lg p-2.5 text-xs bg-stone-50">${savedAnswer || ''}</textarea></div>`;
           }
 
           return `
@@ -1290,31 +1371,19 @@
               <span class="text-sm text-stone-800 leading-snug font-medium">${item.title}</span>
               ${isPhotoReq ? '<span class="text-[10px] bg-amber-50 text-amber-800 border border-amber-300 font-bold px-2 py-0.5 rounded-full shrink-0">Foto Obrigatória</span>' : ''}
             </div>
-
             ${controlHtml}
-
             <div class="flex items-center gap-2 pt-1">
-              <label class="cursor-pointer inline-flex items-center gap-1.5 text-xs font-semibold text-cb-bordo bg-cb-cream hover:bg-stone-200 px-3 py-1.5 rounded-md border border-stone-200 transition">
+              <label class="cursor-pointer inline-flex items-center gap-1.5 text-xs font-semibold text-cb-bordo bg-cb-cream hover:bg-stone-200 px-3 py-1.5 rounded-md border transition">
                 📷 <span>${photoData ? 'Alterar Foto' : 'Adicionar Foto'}</span>
                 <input type="file" accept="image/*" class="hidden" onchange="handlePhotoUpload(event, '${itemKey}')">
               </label>
-              ${photoData ? `
-                <div class="flex items-center gap-1.5 text-xs text-emerald-800 bg-emerald-50 px-2 py-1 rounded border border-emerald-300 font-medium">
-                  <span>✓ Foto anexada</span>
-                  <button onclick="removePhoto('${itemKey}')" class="text-rose-600 font-bold ml-1">✕</button>
-                </div>
-              ` : ''}
+              ${photoData ? `<div class="flex items-center gap-1.5 text-xs text-emerald-800 bg-emerald-50 px-2 py-1 rounded border font-medium"><span>✓ Foto anexada</span><button onclick="removePhoto('${itemKey}')" class="text-rose-600 font-bold ml-1">✕</button></div>` : ''}
             </div>
           </div>
         `;
         }).join("");
 
-        secEl.innerHTML = `
-          <div class="bg-cb-cream px-4 py-2.5 font-bold text-xs uppercase tracking-wider text-cb-bordo border-b border-stone-200 flex items-center justify-between">
-            <span>${sec.category}</span>
-          </div>
-          <div>${itemsHtml}</div>
-        `;
+        secEl.innerHTML = `<div class="bg-cb-cream px-4 py-2.5 font-bold text-xs uppercase tracking-wider text-cb-bordo border-b flex justify-between"><span>${sec.category}</span></div><div>${itemsHtml}</div>`;
         container.appendChild(secEl);
       });
 
@@ -1325,18 +1394,12 @@
       const file = event.target.files[0];
       if (file) {
         const reader = new FileReader();
-        reader.onload = function(e) {
-          attachedPhotos[key] = e.target.result;
-          renderChecklist();
-        };
+        reader.onload = function(e) { attachedPhotos[key] = e.target.result; renderChecklist(); };
         reader.readAsDataURL(file);
       }
     }
 
-    function removePhoto(key) {
-      delete attachedPhotos[key];
-      renderChecklist();
-    }
+    function removePhoto(key) { delete attachedPhotos[key]; renderChecklist(); }
 
     function validatePhotos() {
       let missingPhotos = [];
@@ -1357,7 +1420,7 @@
       const current = getCurrentChecklist();
       const unit = document.getElementById("unit-selector").value || "Unidade Não Informada";
       const supervisor = document.getElementById("supervisor-name").value || currentUser.name;
-      const notes = document.getElementById("notes").value || "Sem observações registradas.";
+      const notes = document.getElementById("notes").value || "Sem observações.";
       const { score, total } = calculateScore();
       const dateStr = new Date().toLocaleString("pt-BR");
 
@@ -1372,11 +1435,7 @@
 
       current.categories.forEach((sec, sIdx) => {
         if (sec.items.length === 0) return;
-        itemsRows += `
-          <tr style="background-color: #FAF7F2; page-break-inside: avoid;">
-            <td colspan="2" style="padding: 7px 10px; font-size: 11px; font-weight: bold; border: 1px solid #d6d3d1; color: #4A0E17; text-transform: uppercase;">${sec.category}</td>
-          </tr>
-        `;
+        itemsRows += `<tr style="background-color: #FAF7F2; page-break-inside: avoid;"><td colspan="2" style="padding: 7px 10px; font-size: 11px; font-weight: bold; border: 1px solid #d6d3d1; color: #4A0E17; text-transform: uppercase;">${sec.category}</td></tr>`;
 
         sec.items.forEach((item, iIdx) => {
           const key = `${sIdx}-${iIdx}`;
@@ -1386,7 +1445,6 @@
           if (itemType === "boolean") {
             const selected = document.querySelector(`input[name="item-${key}"]:checked`);
             const val = selected ? selected.value : "na";
-            
             if (val === "conforme") statusBadge = `<span style="color: #059669; font-weight: bold;">✓ SIM</span>`;
             if (val === "na") statusBadge = `<span style="color: #78716c; font-weight: 600;">N/A</span>`;
             if (val === "nao-conforme") {
@@ -1394,33 +1452,12 @@
               ncCount++;
               const plan = actionPlans[key] || { action: '', date: '' };
               const formattedDate = plan.date ? new Date(plan.date + 'T00:00:00').toLocaleDateString('pt-BR') : 'Não definida';
-
-              nonConformitiesList.push({
-                title: item.title,
-                category: sec.category,
-                action: plan.action,
-                date: formattedDate
-              });
-
-              nonConformitiesRows += `
-                <tr style="page-break-inside: avoid; background-color: ${ncCount % 2 === 0 ? '#ffffff' : '#fff5f5'};">
-                  <td style="padding: 8px 10px; font-size: 10px; vertical-align: top; border: 1px solid #fecdd3; width: 40%;">
-                    <strong style="color: #be123c;">${item.title}</strong>
-                    <div style="font-size: 9px; color: #78716c; margin-top: 2px;">Setor: ${sec.category}</div>
-                  </td>
-                  <td style="padding: 8px 10px; font-size: 10px; vertical-align: top; border: 1px solid #fecdd3; width: 42%; color: #1c1917;">
-                    ${plan.action ? plan.action : '<span style="color: #9ca3af; font-style: italic;">Nenhum plano de ação descrito</span>'}
-                  </td>
-                  <td style="padding: 8px 10px; font-size: 10px; text-align: center; vertical-align: middle; border: 1px solid #fecdd3; font-weight: bold; color: #4A0E17; width: 18%;">
-                    ${formattedDate}
-                  </td>
-                </tr>
-              `;
+              nonConformitiesList.push({ title: item.title, category: sec.category, action: plan.action, date: formattedDate });
+              nonConformitiesRows += `<tr style="page-break-inside: avoid;"><td style="padding: 8px; border: 1px solid #fecdd3;"><strong style="color: #be123c;">${item.title}</strong></td><td style="padding: 8px; border: 1px solid #fecdd3;">${plan.action}</td><td style="padding: 8px; text-align: center; border: 1px solid #fecdd3;">${formattedDate}</td></tr>`;
             }
           } else if (itemType === "maintenance") {
             const selected = document.querySelector(`input[name="item-${key}"]:checked`);
             const val = selected ? selected.value : "na";
-
             if (val === "regular") statusBadge = `<span style="color: #059669; font-weight: bold;">✓ REGULAR</span>`;
             if (val === "na") statusBadge = `<span style="color: #78716c; font-weight: 600;">N/A</span>`;
             if (val === "abrir") {
@@ -1428,313 +1465,62 @@
               omCount++;
               const om = maintenanceOrders[key] || { equipment: '', action: '', date: '' };
               const formattedDate = om.date ? new Date(om.date + 'T00:00:00').toLocaleDateString('pt-BR') : 'Não definida';
-
-              maintenanceList.push({
-                equipment: om.equipment,
-                action: om.action,
-                date: formattedDate
-              });
-
-              maintenanceRows += `
-                <tr style="page-break-inside: avoid; background-color: ${omCount % 2 === 0 ? '#ffffff' : '#fffbeb'};">
-                  <td style="padding: 8px 10px; font-size: 10px; vertical-align: top; border: 1px solid #fde68a; width: 35%;">
-                    <strong style="color: #92400e;">${om.equipment ? om.equipment : 'Não especificado'}</strong>
-                    <div style="font-size: 9px; color: #78716c; margin-top: 2px;">Setor: ${sec.category}</div>
-                  </td>
-                  <td style="padding: 8px 10px; font-size: 10px; vertical-align: top; border: 1px solid #fde68a; width: 45%; color: #1c1917;">
-                    ${om.action ? om.action : '<span style="color: #9ca3af; font-style: italic;">Nenhum plano descrito</span>'}
-                  </td>
-                  <td style="padding: 8px 10px; font-size: 10px; text-align: center; vertical-align: middle; border: 1px solid #fde68a; font-weight: bold; color: #4A0E17; width: 20%;">
-                    ${formattedDate}
-                  </td>
-                </tr>
-              `;
+              maintenanceList.push({ equipment: om.equipment, action: om.action, date: formattedDate });
+              maintenanceRows += `<tr style="page-break-inside: avoid;"><td style="padding: 8px; border: 1px solid #fde68a;"><strong style="color: #92400e;">${om.equipment}</strong></td><td style="padding: 8px; border: 1px solid #fde68a;">${om.action}</td><td style="padding: 8px; text-align: center; border: 1px solid #fde68a;">${formattedDate}</td></tr>`;
             }
           } else if (itemType === "stars") {
             const stars = customAnswers[key] || 0;
-            statusBadge = `<span style="color: #d97706; font-weight: bold;">${'★'.repeat(stars)}${'☆'.repeat(5 - stars)} (${stars}/5)</span>`;
+            statusBadge = `<span>${'★'.repeat(stars)}${'☆'.repeat(5 - stars)} (${stars}/5)</span>`;
           } else if (itemType === "text") {
-            const txt = customAnswers[key] || "—";
-            statusBadge = `<span style="color: #44403c; font-size: 10px;">${txt}</span>`;
+            statusBadge = `<span>${customAnswers[key] || "—"}</span>`;
           }
 
-          itemsRows += `
-            <tr style="page-break-inside: avoid;">
-              <td style="padding: 6px 10px; font-size: 10px; border: 1px solid #e7e5e4; color: #292524; width: 75%;">${item.title}</td>
-              <td style="padding: 6px 10px; font-size: 10px; text-align: center; border: 1px solid #e7e5e4; width: 25%;">${statusBadge}</td>
-            </tr>
-          `;
+          itemsRows += `<tr style="page-break-inside: avoid;"><td style="padding: 6px 10px; font-size: 10px; border: 1px solid #e7e5e4;">${item.title}</td><td style="padding: 6px 10px; font-size: 10px; text-align: center; border: 1px solid #e7e5e4;">${statusBadge}</td></tr>`;
 
           if (attachedPhotos[key]) {
-            photoCards += `
-              <div style="page-break-inside: avoid; border: 1px solid #e7e5e4; border-radius: 6px; padding: 6px; background-color: #FAF7F2; width: 48%; box-sizing: border-box; margin-bottom: 8px;">
-                <p style="font-size: 9px; font-weight: bold; margin: 0 0 4px 0; color: #4A0E17; height: 24px; overflow: hidden;">${item.title}</p>
-                <img src="${attachedPhotos[key]}" style="width: 100%; height: 130px; object-fit: cover; border-radius: 4px; display: block;" />
-              </div>
-            `;
+            photoCards += `<div style="page-break-inside: avoid; border: 1px solid #e7e5e4; border-radius: 6px; padding: 6px; width: 48%; box-sizing: border-box; margin-bottom: 8px;"><p style="font-size: 9px; font-weight: bold; margin: 0 0 4px 0;">${item.title}</p><img src="${attachedPhotos[key]}" style="width: 100%; height: 130px; object-fit: cover; border-radius: 4px;" /></div>`;
           }
         });
       });
 
       const fullHtml = `
-        <table style="border-bottom: 3px solid #4A0E17; margin-bottom: 12px; width: 100%; border-collapse: collapse;">
-          <tr>
-            <td style="width: 70px; padding-bottom: 8px; vertical-align: middle;">
-              <img src="${currentLogo}" style="height: 48px; width: auto; object-fit: contain;" />
-            </td>
-            <td style="padding-bottom: 8px; vertical-align: middle; padding-left: 10px;">
-              <div style="font-size: 14px; font-weight: bold; color: #4A0E17; text-transform: uppercase;">${current.name}</div>
-              <div style="font-size: 10px; color: #78716c; margin-top: 2px;">Data da Auditoria: ${dateStr}</div>
-            </td>
-            <td style="width: 120px; padding-bottom: 8px; text-align: right; vertical-align: middle;">
-              <div style="font-size: 9px; color: #78716c; text-transform: uppercase; font-weight: bold;">Conformidade</div>
-              <div style="font-size: 20px; font-weight: 900; color: #4A0E17;">${score}%</div>
-            </td>
-          </tr>
-        </table>
-
-        <table style="background-color: #FAF7F2; border: 1px solid #D4AF37; border-radius: 4px; margin-bottom: 14px; width: 100%; border-collapse: collapse;">
-          <tr>
-            <td style="padding: 6px 8px; font-size: 10px; width: 40%;"><strong>Unidade:</strong> ${unit}</td>
-            <td style="padding: 6px 8px; font-size: 10px; width: 35%;"><strong>Supervisor:</strong> ${supervisor}</td>
-            <td style="padding: 6px 8px; font-size: 10px; width: 25%; text-align: right;"><strong>Avaliados:</strong> ${total} itens</td>
-          </tr>
-        </table>
-
-        <table style="margin-bottom: 14px; table-layout: fixed; width: 100%; border-collapse: collapse;">
-          <thead>
-            <tr style="background-color: #4A0E17; color: white;">
-              <th style="padding: 6px 8px; font-size: 10px; text-align: left; width: 75%;">Item Avaliado</th>
-              <th style="padding: 6px 8px; font-size: 10px; text-align: center; width: 25%;">Resultado</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${itemsRows}
-          </tbody>
-        </table>
-
-        <div style="page-break-inside: avoid; border: 1px solid #e7e5e4; border-radius: 4px; padding: 8px; background-color: #FAF7F2; margin-bottom: 14px;">
-          <div style="font-size: 10px; text-transform: uppercase; font-weight: bold; color: #4A0E17; margin-bottom: 4px;">Observações Gerais</div>
-          <div style="font-size: 10px; color: #44403c; line-height: 1.3;">${notes}</div>
-        </div>
-
-        <div style="page-break-inside: avoid; margin-top: 14px; margin-bottom: 14px;">
-          <table style="border-bottom: 2px solid #be123c; margin-bottom: 6px; width: 100%; border-collapse: collapse;">
-            <tr>
-              <td style="font-size: 11px; text-transform: uppercase; font-weight: bold; color: #be123c; padding-bottom: 4px;">
-                Quadro de Não Conformidades & Planos de Ação
-              </td>
-              <td style="font-size: 9px; font-weight: bold; color: #78716c; text-align: right; padding-bottom: 4px;">
-                Total: ${ncCount} apontamentos
-              </td>
-            </tr>
-          </table>
-
-          ${ncCount > 0 ? `
-            <table style="table-layout: fixed; width: 100%; border-collapse: collapse;">
-              <thead>
-                <tr style="background-color: #be123c; color: white;">
-                  <th style="padding: 6px 8px; font-size: 9px; text-align: left; width: 40%;">Item Não Conforme</th>
-                  <th style="padding: 6px 8px; font-size: 9px; text-align: left; width: 42%;">Plano de Ação Sugerido</th>
-                  <th style="padding: 6px 8px; font-size: 9px; text-align: center; width: 18%;">Data de Entrega</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${nonConformitiesRows}
-              </tbody>
-            </table>
-          ` : `
-            <div style="padding: 8px; background-color: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 4px; text-align: center; color: #065f46; font-size: 10px; font-weight: bold;">
-              ✓ Nenhuma não conformidade operacional registrada.
-            </div>
-          `}
-        </div>
-
-        ${omCount > 0 ? `
-          <div style="page-break-inside: avoid; margin-top: 14px; margin-bottom: 14px;">
-            <table style="border-bottom: 2px solid #d97706; margin-bottom: 6px; width: 100%; border-collapse: collapse;">
-              <tr>
-                <td style="font-size: 11px; text-transform: uppercase; font-weight: bold; color: #d97706; padding-bottom: 4px;">
-                  🔧 Ordens de Manutenção Abertas
-                </td>
-                <td style="font-size: 9px; font-weight: bold; color: #78716c; text-align: right; padding-bottom: 4px;">
-                  Total: ${omCount} ordem(ns)
-                </td>
-              </tr>
-            </table>
-
-            <table style="table-layout: fixed; width: 100%; border-collapse: collapse;">
-              <thead>
-                <tr style="background-color: #d97706; color: white;">
-                  <th style="padding: 6px 8px; font-size: 9px; text-align: left; width: 35%;">Equipamento / Item</th>
-                  <th style="padding: 6px 8px; font-size: 9px; text-align: left; width: 45%;">Plano de Ação / Defeito</th>
-                  <th style="padding: 6px 8px; font-size: 9px; text-align: center; width: 20%;">Prazo Conclusão</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${maintenanceRows}
-              </tbody>
-            </table>
-          </div>
-        ` : ''}
-
-        ${photoCards ? `
-          <div style="page-break-before: auto; margin-top: 14px;">
-            <div style="font-size: 11px; text-transform: uppercase; font-weight: bold; border-bottom: 2px solid #4A0E17; padding-bottom: 4px; color: #4A0E17; margin-bottom: 8px;">
-              Evidências Fotográficas Anexadas
-            </div>
-            <div style="display: flex; flex-wrap: wrap; justify-content: space-between;">
-              ${photoCards}
-            </div>
-          </div>
-        ` : ''}
+        <table style="border-bottom: 3px solid #4A0E17; margin-bottom: 12px; width: 100%; border-collapse: collapse;"><tr><td style="width: 70px;"><img src="${DEFAULT_EMBEDDED_LOGO}" style="height: 48px;" /></td><td><div style="font-size: 14px; font-weight: bold; color: #4A0E17;">${current.name}</div><div style="font-size: 10px; color: #78716c;">Data: ${dateStr}</div></td><td style="text-align: right;"><div style="font-size: 9px; font-weight: bold;">Conformidade</div><div style="font-size: 20px; font-weight: 900; color: #4A0E17;">${score}%</div></td></tr></table>
+        <table style="background-color: #FAF7F2; border: 1px solid #D4AF37; margin-bottom: 14px; width: 100%; border-collapse: collapse;"><tr><td style="padding: 6px 8px; font-size: 10px;"><strong>Unidade:</strong> ${unit}</td><td style="padding: 6px 8px; font-size: 10px;"><strong>Supervisor:</strong> ${supervisor}</td></tr></table>
+        <table style="margin-bottom: 14px; width: 100%; border-collapse: collapse;"><thead><tr style="background-color: #4A0E17; color: white;"><th style="padding: 6px; font-size: 10px; text-align: left;">Item</th><th style="padding: 6px; font-size: 10px; text-align: center;">Resultado</th></tr></thead><tbody>${itemsRows}</tbody></table>
+        <div style="border: 1px solid #e7e5e4; padding: 8px; background-color: #FAF7F2; margin-bottom: 14px; font-size: 10px;"><strong>Observações:</strong> ${notes}</div>
+        ${ncCount > 0 ? `<table style="width: 100%; border-collapse: collapse; margin-bottom: 14px;"><thead><tr style="background-color: #be123c; color: white;"><th style="padding: 6px; font-size: 9px; text-align: left;">Não Conformidade</th><th style="padding: 6px; font-size: 9px; text-align: left;">Ação</th><th style="padding: 6px; font-size: 9px; text-align: center;">Prazo</th></tr></thead><tbody>${nonConformitiesRows}</tbody></table>` : ''}
+        ${omCount > 0 ? `<table style="width: 100%; border-collapse: collapse; margin-bottom: 14px;"><thead><tr style="background-color: #d97706; color: white;"><th style="padding: 6px; font-size: 9px; text-align: left;">Equipamento</th><th style="padding: 6px; font-size: 9px; text-align: left;">Defeito/Ação</th><th style="padding: 6px; font-size: 9px; text-align: center;">Prazo</th></tr></thead><tbody>${maintenanceRows}</tbody></table>` : ''}
       `;
 
-      return {
-        unit,
-        supervisor,
-        notes,
-        score,
-        total,
-        date: dateStr,
-        checklistName: current.name,
-        nonConformities: nonConformitiesList,
-        maintenanceOrders: maintenanceList,
-        htmlContent: fullHtml
-      };
+      return { unit, supervisor, notes, score, total, date: dateStr, checklistName: current.name, nonConformities: nonConformitiesList, maintenanceOrders: maintenanceList, htmlContent: fullHtml };
     }
 
-    function openPrintWindow(htmlContent, checklistName, unit) {
+    function openPrintWindow(htmlContent) {
       const printWindow = window.open('', '_blank');
-      printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>${checklistName} - ${unit}</title>
-          <style>
-            @page { size: A4 portrait; margin: 12mm 10mm 12mm 10mm; }
-            body { font-family: Arial, sans-serif; margin: 0; padding: 0; color: #1c1917; background: #ffffff; }
-            table { width: 100%; border-collapse: collapse; }
-          </style>
-        </head>
-        <body>
-          ${htmlContent}
-        </body>
-        </html>
-      `);
-
+      printWindow.document.write(`<!DOCTYPE html><html><head><style>@page { size: A4 portrait; margin: 12mm; } body { font-family: Arial, sans-serif; color: #1c1917; }</style></head><body>${htmlContent}</body></html>`);
       printWindow.document.close();
       printWindow.focus();
-      setTimeout(() => {
-        printWindow.print();
-      }, 500);
+      setTimeout(() => printWindow.print(), 500);
     }
 
     function generatePDF() {
       const missingPhotos = validatePhotos();
-      if (missingPhotos.length > 0) {
-        alert("Atenção! Fotos obrigatórias pendentes:\n\n• " + missingPhotos.join("\n• "));
-        return;
-      }
-
+      if (missingPhotos.length > 0) return alert("Fotos obrigatórias pendentes:\n• " + missingPhotos.join("\n• "));
       const report = buildReportData();
       saveReportToCloud(report);
-      openPrintWindow(report.htmlContent, report.checklistName, report.unit);
+      openPrintWindow(report.htmlContent);
     }
 
     function shareWhatsApp() {
       const missingPhotos = validatePhotos();
-      if (missingPhotos.length > 0) {
-        alert("Atenção! Fotos obrigatórias pendentes:\n\n• " + missingPhotos.join("\n• "));
-        return;
-      }
-
+      if (missingPhotos.length > 0) return alert("Fotos obrigatórias pendentes.");
       const report = buildReportData();
       saveReportToCloud(report);
 
-      const current = getCurrentChecklist();
-      const unit = document.getElementById("unit-selector").value || "Não informada";
-      const supervisor = document.getElementById("supervisor-name").value || currentUser.name;
-      const notes = document.getElementById("notes").value || "Sem observações.";
-      const { score, total } = calculateScore();
-      const totalPhotos = Object.keys(attachedPhotos).length;
-
-      let text = `*CASA BAUDUCCO - RELATÓRIO OPERACIONAL*\n`;
-      text += `📋 *Checklist:* ${current.name}\n`;
-      text += `📍 *Unidade:* ${unit}\n`;
-      text += `👤 *Supervisor:* ${supervisor}\n`;
-      text += `📊 *Conformidade:* ${score}% (${total} avaliados)\n`;
-      text += `📸 *Evidências Registradas:* ${totalPhotos} fotos\n\n`;
-
-      let hasNC = false;
-      let ncText = `*QUADRO DE NÃO CONFORMIDADES & PLANOS DE AÇÃO:*\n`;
-
-      let hasOM = false;
-      let omText = `*🔧 ORDENS DE MANUTENÇÃO ABERTAS:*\n`;
-
-      current.categories.forEach((sec, sIdx) => {
-        sec.items.forEach((item, iIdx) => {
-          const key = `${sIdx}-${iIdx}`;
-          const itemType = item.type || "boolean";
-
-          if (itemType === "boolean") {
-            const selected = document.querySelector(`input[name="item-${key}"]:checked`);
-            if (selected && selected.value === "nao-conforme") {
-              hasNC = true;
-              const plan = actionPlans[key] || { action: '', date: '' };
-              const formattedDate = plan.date ? new Date(plan.date + 'T00:00:00').toLocaleDateString('pt-BR') : 'Não definida';
-
-              ncText += `❌ *${item.title}*\n`;
-              ncText += `   ↳ _Plano de Ação:_ ${plan.action ? plan.action : 'Não descrito'}\n`;
-              ncText += `   ↳ _Data de Entrega:_ ${formattedDate}\n`;
-              if (attachedPhotos[key]) ncText += `   ↳ [Foto Anexada]\n`;
-              ncText += `\n`;
-            }
-          } else if (itemType === "maintenance") {
-            const selected = document.querySelector(`input[name="item-${key}"]:checked`);
-            if (selected && selected.value === "abrir") {
-              hasOM = true;
-              const om = maintenanceOrders[key] || { equipment: '', action: '', date: '' };
-              const formattedDate = om.date ? new Date(om.date + 'T00:00:00').toLocaleDateString('pt-BR') : 'Não definida';
-
-              omText += `🔧 *Equipamento:* ${om.equipment ? om.equipment : 'Não especificado'}\n`;
-              omText += `   ↳ _Plano de Ação/Defeito:_ ${om.action ? om.action : 'Não descrito'}\n`;
-              omText += `   ↳ _Prazo para Conclusão:_ ${formattedDate}\n`;
-              if (attachedPhotos[key]) omText += `   ↳ [Foto Anexada]\n`;
-              omText += `\n`;
-            }
-          }
-        });
-      });
-
-      if (hasNC) {
-        text += ncText;
-      } else {
-        text += `✅ *Nenhuma não conformidade operacional registrada.*\n\n`;
-      }
-
-      if (hasOM) {
-        text += omText;
-      }
-
-      let otherFeedback = "";
-      current.categories.forEach((sec, sIdx) => {
-        sec.items.forEach((item, iIdx) => {
-          const key = `${sIdx}-${iIdx}`;
-          const itemType = item.type || "boolean";
-          if (itemType === "stars" && customAnswers[key]) {
-            otherFeedback += `⭐ *${item.title}*: ${customAnswers[key]}/5 estrelas\n`;
-          } else if (itemType === "text" && customAnswers[key]) {
-            otherFeedback += `📝 *${item.title}*: ${customAnswers[key]}\n`;
-          }
-        });
-      });
-
-      if (otherFeedback) {
-        text += `*AVALIAÇÕES & APONTAMENTOS GERAIS:*\n${otherFeedback}\n`;
-      }
-
-      text += `📝 *Observações Gerais:* \n${notes}`;
+      let text = `*RELATÓRIO OPERACIONAL*\n📍 *Unidade:* ${report.unit}\n📊 *Conformidade:* ${report.score}%\n\n`;
+      report.nonConformities.forEach(nc => { text += `❌ *${nc.title}*\n   ↳ Ação: ${nc.action} (Prazo: ${nc.date})\n\n`; });
+      report.maintenanceOrders.forEach(om => { text += `🔧 *OM:* ${om.equipment}\n   ↳ Ação: ${om.action} (Prazo: ${om.date})\n\n`; });
+      text += `📝 *Obs:* ${report.notes}`;
 
       window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, "_blank");
     }
@@ -1742,165 +1528,59 @@
     function toggleConfigModal() {
       const modal = document.getElementById("config-modal");
       modal.classList.toggle("hidden");
-      if (!modal.classList.contains("hidden")) {
-        switchConfigTab('units');
-      }
+      if (!modal.classList.contains("hidden")) switchConfigTab('units');
     }
 
     function renderModalItems() {
       const container = document.getElementById("modal-item-list");
       const catSelect = document.getElementById("new-item-category");
       const current = getCurrentChecklist();
-      
-      container.innerHTML = "";
-      catSelect.innerHTML = "";
+      container.innerHTML = ""; catSelect.innerHTML = "";
 
       current.categories.forEach((sec, sIdx) => {
-        const opt = document.createElement("option");
-        opt.value = sIdx;
-        opt.innerText = sec.category.split(".")[1] ? sec.category.split(".")[1].trim() : sec.category;
-        catSelect.appendChild(opt);
-
+        const opt = document.createElement("option"); opt.value = sIdx; opt.innerText = sec.category; catSelect.appendChild(opt);
         const secBox = document.createElement("div");
-        secBox.className = "border border-stone-200 rounded-xl p-3.5 bg-white shadow-sm space-y-2.5";
-        secBox.innerHTML = `
-          <div class="flex justify-between items-center border-b pb-2">
-            <div class="flex items-center gap-2">
-              <h4 class="font-bold text-xs text-cb-bordo uppercase">${sec.category}</h4>
-              <button onclick="editCategory(${sIdx})" class="text-stone-500 hover:text-cb-bordo text-[11px] font-bold underline">✏️ Editar</button>
-            </div>
-            <button onclick="removeCategory(${sIdx})" class="text-rose-600 hover:text-rose-800 text-xs font-bold">Excluir Setor</button>
-          </div>
-        `;
+        secBox.className = "border rounded-xl p-3.5 bg-white shadow-sm space-y-2.5 text-xs";
+        secBox.innerHTML = `<div class="flex justify-between items-center border-b pb-2"><div class="flex items-center gap-2"><h4 class="font-bold uppercase">${sec.category}</h4><button onclick="editCategory(${sIdx})" class="underline font-bold">✏️ Editar</button></div><button onclick="removeCategory(${sIdx})" class="text-rose-600 font-bold">Excluir</button></div>`;
 
         sec.items.forEach((item, iIdx) => {
-          let typeLabel = "🔘 Sim / Não / N/A";
-          if (item.type === "maintenance") typeLabel = "🔧 Ordem de Manutenção";
-          if (item.type === "stars") typeLabel = "⭐ 1 a 5 Estrelas";
-          if (item.type === "text") typeLabel = "📝 Texto Livre";
-
-          const row = document.createElement("div");
-          row.className = "flex flex-col bg-stone-50 p-2.5 rounded-lg border text-xs text-stone-800 gap-2";
-          row.innerHTML = `
-            <div class="flex justify-between items-start gap-2">
-              <div class="flex-1">
-                <span class="font-semibold leading-snug">${item.title}</span>
-                <span class="inline-block text-[10px] bg-stone-200 text-stone-700 px-2 py-0.5 rounded font-bold ml-1.5">${typeLabel}</span>
+          secBox.innerHTML += `
+            <div class="bg-stone-50 p-2 rounded border space-y-1">
+              <div class="flex justify-between items-center">
+                <span class="font-semibold">${item.title}</span>
+                <div class="flex gap-2">
+                  <button onclick="toggleEditItemBox(${sIdx}, ${iIdx})" class="font-bold">✏️</button>
+                  <button onclick="removeItem(${sIdx}, ${iIdx})" class="text-rose-600 font-bold">✕</button>
+                </div>
               </div>
-              <div class="flex items-center gap-2 shrink-0">
-                <button onclick="toggleEditItemBox(${sIdx}, ${iIdx})" class="text-stone-600 hover:text-cb-bordo font-bold px-2 py-0.5 hover:bg-stone-200 rounded transition">✏️ Editar</button>
-                <button onclick="removeItem(${sIdx}, ${iIdx})" class="text-rose-600 font-bold px-2 py-0.5 hover:bg-rose-50 rounded transition">Remover</button>
-              </div>
-            </div>
-
-            <!-- Painel de Edição da Pergunta -->
-            <div id="edit-item-box-${sIdx}-${iIdx}" class="hidden p-2.5 bg-white border border-cb-gold/40 rounded-lg space-y-2 mt-1 shadow-sm">
-              <span class="block text-[10px] font-bold text-cb-bordo uppercase">Editar Item / Pergunta</span>
-              <div>
-                <label class="block text-[10px] text-stone-500 font-semibold mb-0.5">Título da pergunta:</label>
-                <input type="text" id="edit-item-title-input-${sIdx}-${iIdx}" value="${item.title}" class="w-full text-xs border rounded p-1.5 bg-stone-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-cb-bordo">
-              </div>
-              <div>
-                <label class="block text-[10px] text-stone-500 font-semibold mb-0.5">Tipo de Resposta:</label>
-                <select id="edit-item-type-input-${sIdx}-${iIdx}" class="w-full text-xs border rounded p-1.5 bg-stone-50 font-medium">
-                  <option value="boolean" ${item.type === 'boolean' ? 'selected' : ''}>🔘 Sim / Não / N/A (Conformidade)</option>
-                  <option value="maintenance" ${item.type === 'maintenance' ? 'selected' : ''}>🔧 Ordem de Manutenção (Abrir / Regular / N/A)</option>
-                  <option value="stars" ${item.type === 'stars' ? 'selected' : ''}>⭐ Avaliação (1 a 5 Estrelas)</option>
-                  <option value="text" ${item.type === 'text' ? 'selected' : ''}>📝 Resposta Aberta (Texto Livre)</option>
+              <div id="edit-item-box-${sIdx}-${iIdx}" class="hidden space-y-1 pt-1 border-t">
+                <input type="text" id="edit-item-title-input-${sIdx}-${iIdx}" value="${item.title}" class="w-full border p-1 rounded">
+                <select id="edit-item-type-input-${sIdx}-${iIdx}" class="w-full border p-1 rounded">
+                  <option value="boolean" ${item.type==='boolean'?'selected':''}>Sim / Não / N/A</option>
+                  <option value="maintenance" ${item.type==='maintenance'?'selected':''}>Ordem de Manutenção</option>
+                  <option value="stars" ${item.type==='stars'?'selected':''}>Estrelas</option>
+                  <option value="text" ${item.type==='text'?'selected':''}>Texto</option>
                 </select>
+                <button onclick="saveItemEdit(${sIdx}, ${iIdx})" class="w-full bg-cb-bordo text-white py-1 font-bold rounded">Salvar</button>
               </div>
-              <div class="flex justify-end gap-1.5 pt-1">
-                <button onclick="toggleEditItemBox(${sIdx}, ${iIdx})" class="px-2 py-1 bg-stone-200 text-stone-700 text-[11px] font-bold rounded">Cancelar</button>
-                <button onclick="saveItemEdit(${sIdx}, ${iIdx})" class="px-2.5 py-1 bg-cb-bordo text-white text-[11px] font-bold rounded hover:bg-cb-bordo-dark">Salvar Alterações</button>
-              </div>
-            </div>
-
-            <label class="flex items-center gap-1.5 cursor-pointer text-stone-600 font-medium">
-              <input type="checkbox" ${item.requirePhoto ? 'checked' : ''} onchange="toggleItemPhotoReq(${sIdx}, ${iIdx})" class="rounded text-cb-bordo focus:ring-0">
-              <span>Exigir Foto Obrigatória</span>
-            </label>
-          `;
-          secBox.appendChild(row);
+            </div>`;
         });
-
         container.appendChild(secBox);
       });
     }
 
-    function removeCategory(sIdx) {
-      if (confirm("Excluir esta categoria e todas as suas perguntas?")) {
-        getCurrentChecklist().categories.splice(sIdx, 1);
-        localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
-        syncConfigToCloud();
-        renderModalItems();
-        renderChecklist();
-      }
-    }
-
-    function toggleItemPhotoReq(sIdx, iIdx) {
-      getCurrentChecklist().categories[sIdx].items[iIdx].requirePhoto = !getCurrentChecklist().categories[sIdx].items[iIdx].requirePhoto;
-      localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
-      syncConfigToCloud();
-      renderChecklist();
-    }
-
+    function removeCategory(sIdx) { getCurrentChecklist().categories.splice(sIdx, 1); syncConfigToCloud(); renderModalItems(); renderChecklist(); }
     function addNewItem() {
-      const current = getCurrentChecklist();
-      if (current.categories.length === 0) return alert("Crie pelo menos uma categoria.");
-      
       const catIdx = document.getElementById("new-item-category").value;
       const itemType = document.getElementById("new-item-type").value;
       const itemText = document.getElementById("new-item-text").value.trim();
-      const reqPhoto = document.getElementById("new-item-req-photo").checked;
-
-      if (!itemText) return alert("Digite o texto do item.");
-
-      current.categories[catIdx].items.push({
-        title: itemText,
-        type: itemType,
-        requirePhoto: reqPhoto
-      });
-
-      localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
-      syncConfigToCloud();
-      document.getElementById("new-item-text").value = "";
-      document.getElementById("new-item-req-photo").checked = false;
-      renderModalItems();
-      renderChecklist();
+      if (!itemText) return alert("Digite o texto.");
+      getCurrentChecklist().categories[catIdx].items.push({ title: itemText, type: itemType, requirePhoto: document.getElementById("new-item-req-photo").checked });
+      syncConfigToCloud(); document.getElementById("new-item-text").value = ""; renderModalItems(); renderChecklist();
     }
-
-    function removeItem(sIdx, iIdx) {
-      getCurrentChecklist().categories[sIdx].items.splice(iIdx, 1);
-      localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
-      syncConfigToCloud();
-      renderModalItems();
-      renderChecklist();
-    }
-
-    function restoreDefaultChecklist() {
-      if (confirm("Restaurar os modelos padrões da Casa Bauducco?")) {
-        allChecklists = JSON.parse(JSON.stringify(defaultTemplates));
-        activeChecklistId = allChecklists[0].id;
-        localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
-        localStorage.setItem("CB_LOCAL_ACTIVE_ID", activeChecklistId);
-        syncConfigToCloud();
-        updateSelectorUI();
-        renderModalItems();
-        renderChecklist();
-      }
-    }
-
-    function resetChecklist() {
-      if (confirm("Zerar todas as respostas, ordens de manutenção e fotos deste checklist?")) {
-        document.querySelectorAll('input[type="radio"]').forEach(r => r.checked = false);
-        document.getElementById("notes").value = "";
-        attachedPhotos = {};
-        actionPlans = {};
-        customAnswers = {};
-        maintenanceOrders = {};
-        renderChecklist();
-      }
-    }
+    function removeItem(sIdx, iIdx) { getCurrentChecklist().categories[sIdx].items.splice(iIdx, 1); syncConfigToCloud(); renderModalItems(); renderChecklist(); }
+    function restoreDefaultChecklist() { if (confirm("Restaurar padrões?")) { allChecklists = JSON.parse(JSON.stringify(defaultTemplates)); syncConfigToCloud(); updateSelectorUI(); renderModalItems(); renderChecklist(); } }
+    function resetChecklist() { if (confirm("Zerar respostas?")) { document.querySelectorAll('input[type="radio"]').forEach(r => r.checked = false); attachedPhotos = {}; actionPlans = {}; customAnswers = {}; maintenanceOrders = {}; renderChecklist(); } }
 
     initApp();
   </script>
