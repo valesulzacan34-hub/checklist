@@ -100,13 +100,16 @@
       <button onclick="toggleSidebar()" class="text-stone-300 hover:text-white text-lg font-bold p-1">✕</button>
     </div>
 
-    <div class="p-3 space-y-1.5 flex-1 text-xs font-semibold">
+    <div class="p-3 space-y-1.5 flex-1 text-xs font-semibold overflow-y-auto">
       <button onclick="openModulesScreen(); toggleSidebar();" class="w-full text-left px-3 py-2.5 rounded-lg hover:bg-cb-bordo transition">
         🏠 Tela Inicial (Módulos)
       </button>
       <button onclick="switchChecklistTab('history'); toggleSidebar();" class="w-full text-left px-3 py-2.5 rounded-lg hover:bg-cb-bordo transition flex justify-between items-center">
         <span>📂 Relatórios Salvos</span>
         <span id="history-badge-count" class="bg-cb-gold text-cb-bordo-dark px-1.5 py-0.2 rounded-full text-[10px] font-black">0</span>
+      </button>
+      <button onclick="switchActionsTab('technicians'); toggleSidebar();" class="w-full text-left px-3 py-2.5 rounded-lg hover:bg-cb-bordo transition flex items-center gap-1.5">
+        <span>🔧 Técnicos & Prestadores</span>
       </button>
       <button id="sidebar-btn-users" onclick="toggleUsersModal(); toggleSidebar();" class="hidden w-full text-left px-3 py-2.5 rounded-lg hover:bg-cb-bordo transition">
         👥 Gerenciar Unidades & Usuários
@@ -298,7 +301,7 @@
           <button id="actions-tab-completed" onclick="switchActionsTab('completed')" class="flex-1 py-2 border-b-2 border-transparent text-stone-400 transition">✅ Concluídos</button>
         </div>
 
-        <!-- Filtros Adicionais: Loja, Status, Tarja, Tipo de Ação e Datas -->
+        <!-- Filtros Adicionais -->
         <div class="grid grid-cols-1 sm:grid-cols-6 gap-2 text-xs pt-1">
           <div>
             <label class="block font-bold text-stone-600 mb-1">Filtrar Loja:</label>
@@ -338,6 +341,81 @@
       </div>
       <div id="centralized-actions-list" class="space-y-3"></div>
     </main>
+
+    <!-- MÓDULO 3: TÉCNICOS & PRESTADORES DE SERVIÇO -->
+    <main id="module-technicians-container" class="responsive-container space-y-4 hidden">
+      <div class="bg-white p-4 rounded-xl shadow-sm border border-stone-200 space-y-3">
+        <div class="flex justify-between items-center flex-wrap gap-2">
+          <div>
+            <h2 class="font-bold text-cb-bordo text-sm uppercase tracking-wider">🔧 Técnicos & Prestadores de Serviço</h2>
+            <p class="text-xs text-stone-500">Contatos rápidos por região e especialidade</p>
+          </div>
+          <button id="btn-add-tech" onclick="toggleTechModal()" class="hidden px-3 py-2 bg-cb-bordo text-white font-bold text-xs rounded-lg hover:bg-cb-bordo-dark transition">
+            + Novo Contato
+          </button>
+        </div>
+
+        <!-- Filtros de Região e Especialidade -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs pt-2">
+          <div>
+            <label class="block font-bold text-stone-600 mb-1">Filtrar por Região:</label>
+            <select id="filter-tech-region" onchange="renderTechniciansList()" class="w-full border rounded p-2 bg-stone-50 font-semibold">
+              <option value="">Todas as Regiões</option>
+              <option value="São José dos Campos">São José dos Campos</option>
+              <option value="Mogi">Mogi</option>
+              <option value="São Paulo">São Paulo</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-bold text-stone-600 mb-1">Filtrar por Serviço:</label>
+            <select id="filter-tech-service" onchange="renderTechniciansList()" class="w-full border rounded p-2 bg-stone-50 font-semibold">
+              <option value="">Todos os Serviços</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Alerta de Seguro da Loja -->
+      <div class="bg-amber-50 border border-amber-300 p-3 rounded-xl text-xs text-amber-900 flex justify-between items-center shadow-sm">
+        <span>🛡️ <strong>Emergências:</strong> Podemos acionar o seguro da loja — <strong>Luiz Parahyba:</strong> (12) 99121-5466</span>
+        <a href="https://api.whatsapp.com/send?phone=5512991215466" target="_blank" class="px-2.5 py-1 bg-emerald-600 text-white font-bold rounded hover:bg-emerald-700 whitespace-nowrap">💬 WhatsApp</a>
+      </div>
+
+      <div id="technicians-list-container" class="space-y-3"></div>
+    </main>
+  </div>
+
+  <!-- Modal de Cadastro de Novo Técnico (Admin) -->
+  <div id="tech-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-md rounded-2xl p-5 space-y-4 shadow-2xl border border-cb-gold/30 text-xs">
+      <div class="flex justify-between items-center border-b pb-2">
+        <h3 class="font-bold text-cb-bordo text-sm uppercase">Cadastrar Prestador de Serviço</h3>
+        <button onclick="toggleTechModal()" class="font-bold text-stone-400 hover:text-stone-700 text-base">✕</button>
+      </div>
+      <div class="space-y-3">
+        <div>
+          <label class="block font-bold text-stone-600 mb-1">Nome / Empresa:</label>
+          <input type="text" id="new-tech-name" placeholder="Ex: Wezley" class="w-full border rounded p-2 bg-stone-50 font-semibold">
+        </div>
+        <div>
+          <label class="block font-bold text-stone-600 mb-1">Serviço Prestado:</label>
+          <input type="text" id="new-tech-service" placeholder="Ex: Ar condicionado, Eletricista..." class="w-full border rounded p-2 bg-stone-50 font-semibold">
+        </div>
+        <div>
+          <label class="block font-bold text-stone-600 mb-1">Região:</label>
+          <select id="new-tech-region" class="w-full border rounded p-2 bg-stone-50 font-semibold">
+            <option value="São José dos Campos">São José dos Campos</option>
+            <option value="Mogi">Mogi</option>
+            <option value="São Paulo">São Paulo</option>
+          </select>
+        </div>
+        <div>
+          <label class="block font-bold text-stone-600 mb-1">Telefone / WhatsApp:</label>
+          <input type="text" id="new-tech-phone" placeholder="Ex: 12 974010864" class="w-full border rounded p-2 bg-stone-50 font-semibold">
+        </div>
+        <button onclick="addNewTechnician()" class="w-full py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded uppercase">Salvar Contato</button>
+      </div>
+    </div>
   </div>
 
   <!-- Modal de Chat com Descrição Completa e Foto -->
@@ -640,6 +718,47 @@
       { name: "Não Urgente", style: "bg-stone-200 text-stone-800 font-semibold" }
     ];
 
+    // Lista compilada de Técnicos e Prestadores de Serviço
+    const defaultTechnicians = [
+      { name: "Wezley", service: "Ar condicionado", region: "São José dos Campos", phone: "12 974010864" },
+      { name: "Messias", service: "Ar condicionado", region: "São José dos Campos", phone: "12 98851-4713" },
+      { name: "Emerson", service: "Eletricista", region: "São José dos Campos", phone: "12 98813-9737" },
+      { name: "Thiago", service: "Eletricista", region: "São José dos Campos", phone: "12 98842-2803" },
+      { name: "Sullivan", service: "Encanador", region: "São José dos Campos", phone: "12 98853-0008" },
+      { name: "Lucas", service: "Encanador", region: "São José dos Campos", phone: "12 98863-4594" },
+      { name: "Pardal", service: "Serralheiro", region: "São José dos Campos", phone: "12 98815-4179" },
+      { name: "Adilson", service: "Serralheiro", region: "São José dos Campos", phone: "12 99103-2777" },
+      { name: "Evelton", service: "TI", region: "São José dos Campos", phone: "12 997020169" },
+      { name: "João", service: "Refrigeração", region: "São José dos Campos", phone: "12 98830-8424" },
+      { name: "Átila - Casa das Balanças", service: "Grill", region: "São José dos Campos", phone: "12 99177-2866" },
+      { name: "Anderson", service: "Ar condicionado", region: "Mogi", phone: "11 98691-5882" },
+      { name: "Manoel Torres", service: "Eletricista", region: "Mogi", phone: "11 95787-5810" },
+      { name: "JD", service: "Eletricista", region: "Mogi", phone: "11 96588-6557" },
+      { name: "Laerte", service: "Eletricista", region: "Mogi", phone: "11 94710-1959" },
+      { name: "Fernando", service: "Encanador", region: "Mogi", phone: "11 99760-1057" },
+      { name: "Cleiton", service: "Encanador", region: "Mogi", phone: "11 99573-5180" },
+      { name: "Alex - Hidromack", service: "Encanador", region: "Mogi", phone: "11 91560-2004" },
+      { name: "Neno", service: "Serralheiro", region: "Mogi", phone: "11 99955-9689" },
+      { name: "Maciel", service: "Serralheiro", region: "Mogi", phone: "11 97411-0336" },
+      { name: "Matbig- Portas automáticas", service: "Serralheiro", region: "Mogi", phone: "11 99705-3786" },
+      { name: "Fernando", service: "TI", region: "Mogi", phone: "11 98128-1011" },
+      { name: "Pedro", service: "Refrigeração", region: "Mogi", phone: "11 94230-1695" },
+      { name: "Thiago", service: "Forno Turbochef/Pratica", region: "São José dos Campos / Mogi", phone: "11 95285-8927" },
+      { name: "Sérgio", service: "Forno Turbochef/Pratica", region: "São José dos Campos / Mogi", phone: "11 99777-8031" },
+      { name: "Plantão", service: "La Spaziale", region: "São José dos Campos / Mogi", phone: "11 5181-5043" },
+      { name: "Cleber", service: "Máquina de louça", region: "São José dos Campos / Mogi", phone: "11 91724-1975" },
+      { name: "Jonatan", service: "La Spaziale (Tecnico por fora)", region: "São José dos Campos / Mogi", phone: "12 988929441" },
+      { name: "Fabio - Omni Blend", service: "Blender", region: "Geral", phone: "11 98315-2020" },
+      { name: "Armando", service: "Máquina de crema", region: "Geral", phone: "11 97420-7794" },
+      { name: "Waldir", service: "FAZ TUDO - MARIDO DE ALUGUEL", region: "Mogi", phone: "11 91609-6563" },
+      { name: "Ricardo", service: "Serralheiro", region: "São Paulo", phone: "11 96417-5813" },
+      { name: "Tino Ti Ark", service: "TI", region: "São Paulo", phone: "11 98462-1133" },
+      { name: "Wellington", service: "TI", region: "São Paulo", phone: "11 97193-6740" },
+      { name: "Pedro", service: "Refrigeração", region: "São Paulo", phone: "11 94230-1695" }
+    ];
+
+    let techniciansList = JSON.parse(localStorage.getItem("CB_LOCAL_TECHNICIANS")) || defaultTechnicians;
+
     const defaultTemplates = [
       {
         id: "cb-supervisao",
@@ -758,6 +877,7 @@
           if (data.users) { users = data.users; localStorage.setItem("CB_LOCAL_USERS", JSON.stringify(users)); }
           if (data.statuses) { actionStatuses = data.statuses; localStorage.setItem("CB_LOCAL_STATUSES", JSON.stringify(actionStatuses)); }
           if (data.priorities) { actionPriorities = data.priorities; localStorage.setItem("CB_LOCAL_PRIORITIES", JSON.stringify(actionPriorities)); }
+          if (data.technicians) { techniciansList = data.technicians; localStorage.setItem("CB_LOCAL_TECHNICIANS", JSON.stringify(techniciansList)); }
           if (data.customStatus) { actionCustomStatus = data.customStatus; localStorage.setItem("CB_LOCAL_CUSTOM_STATUS", JSON.stringify(actionCustomStatus)); }
           if (data.customPriority) { actionCustomPriority = data.customPriority; localStorage.setItem("CB_LOCAL_CUSTOM_PRIORITY", JSON.stringify(actionCustomPriority)); }
 
@@ -839,6 +959,7 @@
         users: users,
         statuses: actionStatuses,
         priorities: actionPriorities,
+        technicians: techniciansList,
         customStatus: actionCustomStatus,
         customPriority: actionCustomPriority,
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -1078,6 +1199,7 @@
       document.getElementById("modules-screen").classList.add("hidden");
       const checklistsMod = document.getElementById("module-checklists-container");
       const actionsMod = document.getElementById("module-actions-container");
+      const techMod = document.getElementById("module-technicians-container");
       const auditFooter = document.getElementById("audit-footer");
       const badgeMod = document.getElementById("current-module-badge");
 
@@ -1089,23 +1211,33 @@
         if (sideBtnUsers) sideBtnUsers.classList.remove("hidden");
         if (sideBtnConfig) sideBtnConfig.classList.remove("hidden");
         if (homeBtnConfig) homeBtnConfig.classList.remove("hidden");
+        document.getElementById("btn-add-tech")?.classList.remove("hidden");
       } else {
         if (sideBtnUsers) sideBtnUsers.classList.add("hidden");
         if (sideBtnConfig) sideBtnConfig.classList.add("hidden");
         if (homeBtnConfig) homeBtnConfig.classList.add("hidden");
+        document.getElementById("btn-add-tech")?.classList.add("hidden");
       }
 
+      checklistsMod.classList.add("hidden");
+      actionsMod.classList.add("hidden");
+      techMod.classList.add("hidden");
+      auditFooter.classList.add("hidden");
+
       if (mod === 'checklists') {
-        checklistsMod.classList.remove("hidden"); actionsMod.classList.add("hidden");
-        auditFooter.classList.add("hidden");
+        checklistsMod.classList.remove("hidden");
+        auditFooter.classList.remove("hidden");
         badgeMod.innerText = "Checklists";
         switchChecklistTab('home');
       } else if (mod === 'actions') {
         if (currentUser.role === 'operador') return alert("Acesso não autorizado para operadores.");
-        checklistsMod.classList.add("hidden"); actionsMod.classList.remove("hidden");
-        auditFooter.classList.add("hidden");
+        actionsMod.classList.remove("hidden");
         badgeMod.innerText = "Planos de Ação";
         renderCentralizedActions();
+      } else if (mod === 'technicians') {
+        techMod.classList.remove("hidden");
+        badgeMod.innerText = "Técnicos";
+        renderTechniciansList();
       }
     }
 
@@ -1563,6 +1695,103 @@
       });
     }
 
+    // 🔧 Renderizar Lista de Técnicos e Prestadores de Serviço
+    function renderTechniciansList() {
+      const container = document.getElementById("technicians-list-container");
+      if (!container) return;
+      container.innerHTML = "";
+
+      const regionFilter = document.getElementById("filter-tech-region").value;
+      const serviceFilter = document.getElementById("filter-tech-service").value;
+
+      // Popular seletor de serviços se vazio
+      const serviceSelect = document.getElementById("filter-tech-service");
+      if (serviceSelect && serviceSelect.options.length <= 1) {
+        let uniqueServices = [...new Set(techniciansList.map(t => t.service))].sort();
+        uniqueServices.forEach(srv => {
+          let opt = document.createElement("option");
+          opt.value = srv;
+          opt.innerText = srv;
+          serviceSelect.appendChild(opt);
+        });
+        serviceSelect.value = serviceFilter;
+      }
+
+      let filtered = techniciansList.filter(t => {
+        let matchReg = !regionFilter || t.region.includes(regionFilter) || t.region === "Geral";
+        let matchSrv = !serviceFilter || t.service === serviceFilter;
+        return matchReg && matchSrv;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = `<div class="p-8 text-center bg-white rounded-xl border text-stone-400 text-xs">Nenhum técnico encontrado.</div>`;
+        return;
+      }
+
+      // Agrupar por Região para organização visual
+      let groups = {};
+      filtered.forEach(t => {
+        let reg = t.region || "Geral";
+        if (!groups[reg]) groups[reg] = [];
+        groups[reg].push(t);
+      });
+
+      for (let reg in groups) {
+        let section = document.createElement("div");
+        section.className = "bg-white p-4 rounded-xl border shadow-sm space-y-3";
+        section.innerHTML = `<h3 class="font-bold text-cb-bordo text-xs uppercase tracking-wider border-b pb-1.5">📍 ${reg}</h3>`;
+
+        let listDiv = document.createElement("div");
+        listDiv.className = "grid grid-cols-1 sm:grid-cols-2 gap-2";
+
+        groups[reg].forEach(tech => {
+          let cleanPhone = tech.phone.replace(/\D/g, '');
+          let whatsAppUrl = `https://api.whatsapp.com/send?phone=55${cleanPhone}`;
+
+          let card = document.createElement("div");
+          card.className = "p-3 bg-stone-50 border rounded-xl flex justify-between items-center text-xs";
+          card.innerHTML = `
+            <div class="space-y-0.5">
+              <span class="font-bold text-stone-900 block text-sm">${tech.name}</span>
+              <span class="inline-block bg-amber-100 text-amber-900 font-semibold px-2 py-0.5 rounded text-[10px]">${tech.service}</span>
+              <span class="block text-stone-500 font-mono">📞 ${tech.phone}</span>
+            </div>
+            <a href="${whatsAppUrl}" target="_blank" class="px-3 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-lg transition flex items-center gap-1 shadow-sm shrink-0">
+              <span>💬 WhatsApp</span>
+            </a>`;
+          listDiv.appendChild(card);
+        });
+
+        section.appendChild(listDiv);
+        container.appendChild(section);
+      }
+    }
+
+    function toggleTechModal() {
+      if (currentUser.role !== 'admin') return alert("Acesso restrito a administradores.");
+      document.getElementById("tech-modal").classList.toggle("hidden");
+    }
+
+    function addNewTechnician() {
+      const name = document.getElementById("new-tech-name").value.trim();
+      const service = document.getElementById("new-tech-service").value.trim();
+      const region = document.getElementById("new-tech-region").value;
+      const phone = document.getElementById("new-tech-phone").value.trim();
+
+      if (!name || !service || !phone) return alert("Preencha todos os campos.");
+
+      techniciansList.push({ name, service, region, phone });
+      localStorage.setItem("CB_LOCAL_TECHNICIANS", JSON.stringify(techniciansList));
+      syncConfigToCloud();
+
+      document.getElementById("new-tech-name").value = "";
+      document.getElementById("new-tech-service").value = "";
+      document.getElementById("new-tech-phone").value = "";
+      toggleTechModal();
+      renderTechniciansList();
+      alert("Técnico cadastrado com sucesso!");
+    }
+
     // 💬 Abrir Chat e mostrar Descrição Completa + Foto
     function openChatModal(chatId, reportId, type, index) {
       activeChatActionId = chatId;
@@ -1600,7 +1829,7 @@
       document.getElementById("image-viewer-modal").classList.remove("hidden");
     }
 
-    // 📎 Enviar Arquivo ou Foto no Chat (Corrigido para evitar erro 404 de rotas)
+    // 📎 Enviar Arquivo ou Foto no Chat
     function sendChatAttachment(event) {
       const file = event.target.files[0];
       if (!file || !activeChatActionId || !isFirebaseReady) return;
@@ -1695,7 +1924,7 @@
       }).then(() => input.value = "");
     }
 
-    // --- CORREÇÃO: MODAL DE CONFIGURAÇÃO DE CHECKLISTS ---
+    // --- MODAL DE CONFIGURAÇÃO DE CHECKLISTS ---
     function toggleConfigModal() {
       const modal = document.getElementById("config-modal");
       modal.classList.toggle("hidden");
