@@ -59,18 +59,16 @@
     </div>
   </div>
 
-  <!-- Tela Inicial com os Módulos em Quadrados (Cards) -->
+  <!-- Tela de Seleção de Módulos (Cards) -->
   <div id="modules-screen" class="fixed inset-0 bg-cb-bordo-dark z-40 hidden flex items-center justify-center p-4 overflow-y-auto">
-    <div class="bg-white w-full max-w-md rounded-2xl p-6 space-y-5 shadow-2xl border border-cb-gold/30 text-center">
+    <div class="bg-white w-full max-w-sm rounded-2xl p-6 space-y-5 shadow-2xl border border-cb-gold/30 text-center">
       <div>
         <img id="modules-logo-img" alt="Casa Bauducco" class="h-14 w-auto object-contain mx-auto mb-1">
         <h2 class="text-xs font-bold text-cb-bordo uppercase tracking-wider">Painel Principal</h2>
         <p class="text-[11px] text-stone-500">Selecione o módulo que deseja acessar</p>
       </div>
 
-      <div id="modules-grid" class="grid grid-cols-1 gap-3 text-left">
-        <!-- Renderizado dinamicamente por perfil (Admin, Gerente, Operador) -->
-      </div>
+      <div id="modules-grid" class="grid grid-cols-1 gap-3 text-left"></div>
 
       <button onclick="handleLogout()" class="text-xs text-rose-600 font-bold hover:underline pt-1 block mx-auto">
         Encerrar Sessão (Sair)
@@ -245,13 +243,19 @@
     </main>
   </div>
 
-  <!-- MÓDULO 2: PLANOS DE AÇÃO & MANUTENÇÃO -->
+  <!-- MÓDULO 2: PLANOS DE AÇÃO & MANUTENÇÃO (Em Linha + Abas Pendentes / Concluídos) -->
   <main id="module-actions-container" class="max-w-xl mx-auto p-4 space-y-4 hidden">
     <div class="bg-white p-4 rounded-xl shadow-sm border border-stone-200 space-y-3">
       <h2 class="font-bold text-cb-bordo text-xs uppercase tracking-wider">Agenda de Planos de Ação</h2>
       <p class="text-xs text-stone-500">Acompanhamento e chat com os responsáveis</p>
 
-      <div class="grid grid-cols-2 gap-2 text-xs pt-1 border-t pt-3">
+      <!-- Abas Internas: Pendentes / Concluídos -->
+      <div class="flex border-b border-stone-200 text-xs font-bold pt-2">
+        <button id="actions-tab-pending" onclick="switchActionsTab('pending')" class="flex-1 py-2 border-b-2 border-cb-bordo text-cb-bordo transition">📋 Pendentes</button>
+        <button id="actions-tab-completed" onclick="switchActionsTab('completed')" class="flex-1 py-2 border-b-2 border-transparent text-stone-400 transition">✅ Concluídos</button>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2 text-xs pt-1">
         <div>
           <label class="block font-bold text-stone-600 mb-1">A partir de:</label>
           <input type="date" id="action-date-start" onchange="renderCentralizedActions()" class="w-full border rounded p-2 bg-stone-50">
@@ -262,7 +266,7 @@
         </div>
       </div>
     </div>
-    <div id="centralized-actions-list" class="space-y-3"></div>
+    <div id="centralized-actions-list" class="space-y-2"></div>
   </main>
 
   <!-- Modal de Chat -->
@@ -301,6 +305,7 @@
       <div class="flex border-b border-stone-200 bg-stone-100 text-xs font-bold">
         <button id="admin-tab-units" onclick="switchAdminTab('units')" class="flex-1 py-2.5 border-b-2 border-cb-bordo text-cb-bordo bg-white transition">🏢 Lojas da Rede</button>
         <button id="admin-tab-users" onclick="switchAdminTab('users')" class="flex-1 py-2.5 border-b-2 border-transparent text-stone-500 transition">👥 Usuários & Vínculos</button>
+        <button id="admin-tab-status" onclick="switchAdminTab('status')" class="flex-1 py-2.5 border-b-2 border-transparent text-stone-500 transition">🏷️ Tipos de Status</button>
       </div>
 
       <!-- Aba Lojas (Admin) -->
@@ -345,6 +350,21 @@
           <button onclick="addNewUser()" class="w-full py-2 bg-cb-bordo hover:bg-cb-bordo-dark text-white font-bold rounded uppercase">
             + Criar Acesso
           </button>
+        </div>
+      </div>
+
+      <!-- Aba Status (Admin) -->
+      <div id="admin-content-status" class="hidden p-4 overflow-y-auto space-y-4 flex-1 bg-stone-50 text-xs">
+        <div class="bg-white p-3 rounded-xl border space-y-2 shadow-sm">
+          <span class="block font-bold text-cb-bordo uppercase">Cadastrar Novo Status</span>
+          <div class="flex gap-2">
+            <input type="text" id="admin-new-status-input" placeholder="Ex: Em Análise, Aguardando Peça..." class="flex-1 border rounded p-2 bg-stone-50 font-semibold">
+            <button onclick="adminAddNewStatus()" class="px-3 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded">Adicionar</button>
+          </div>
+        </div>
+        <div class="bg-white p-3 rounded-xl border space-y-2 shadow-sm">
+          <span class="block font-bold text-cb-bordo uppercase">Status Cadastrados</span>
+          <div id="admin-status-list" class="space-y-1.5 max-h-48 overflow-y-auto"></div>
         </div>
       </div>
 
@@ -494,6 +514,13 @@
       "CB Shopping Aricanduva"
     ];
 
+    const defaultStatuses = [
+      "Pendente",
+      "Em Andamento",
+      "Aguardando Peça",
+      "Concluído"
+    ];
+
     const defaultTemplates = [
       {
         id: "cb-supervisao",
@@ -569,6 +596,8 @@
 
     let users = JSON.parse(localStorage.getItem("CB_LOCAL_USERS")) || defaultUsers;
     let presetUnits = JSON.parse(localStorage.getItem("CB_LOCAL_UNITS")) || defaultUnits;
+    let actionStatuses = JSON.parse(localStorage.getItem("CB_LOCAL_STATUSES")) || defaultStatuses;
+    let actionCustomStatus = JSON.parse(localStorage.getItem("CB_LOCAL_CUSTOM_STATUS")) || {}; // Armazena alteração de status por ID do plano de ação
     let currentUser = JSON.parse(sessionStorage.getItem("CB_LOCAL_LOGGED_USER")) || null;
     let allChecklists = JSON.parse(localStorage.getItem("CB_LOCAL_CHECKLISTS")) || defaultTemplates;
     let activeChecklistId = localStorage.getItem("CB_LOCAL_ACTIVE_ID") || allChecklists[0].id;
@@ -580,6 +609,8 @@
     let actionPlans = {};
     let customAnswers = {};
     let maintenanceOrders = {};
+
+    let currentActionsTab = 'pending'; // 'pending' ou 'completed'
 
     function updateSyncUI(status, text) {
       const ind = document.getElementById("sync-indicator");
@@ -604,6 +635,8 @@
           if (data.checklists) { allChecklists = data.checklists; localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists)); }
           if (data.units) { presetUnits = data.units; localStorage.setItem("CB_LOCAL_UNITS", JSON.stringify(presetUnits)); }
           if (data.users) { users = data.users; localStorage.setItem("CB_LOCAL_USERS", JSON.stringify(users)); }
+          if (data.statuses) { actionStatuses = data.statuses; localStorage.setItem("CB_LOCAL_STATUSES", JSON.stringify(actionStatuses)); }
+          if (data.customStatus) { actionCustomStatus = data.customStatus; localStorage.setItem("CB_LOCAL_CUSTOM_STATUS", JSON.stringify(actionCustomStatus)); }
 
           renderPresetUnits();
           renderHomeChecklistSelect();
@@ -636,6 +669,8 @@
         checklists: allChecklists,
         units: presetUnits,
         users: users,
+        statuses: actionStatuses,
+        customStatus: actionCustomStatus,
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       }).catch(err => console.error(err));
     }
@@ -706,6 +741,7 @@
           listContainer.appendChild(item);
         });
       }
+      renderAdminStatusList();
     }
 
     function adminAddNewUnit() {
@@ -734,6 +770,38 @@
         localStorage.setItem("CB_LOCAL_UNITS", JSON.stringify(presetUnits));
         syncConfigToCloud(); renderPresetUnits(); renderUserUnitsCheckboxes();
       }
+    }
+
+    // GERENCIAMENTO DE STATUS PELO ADMIN
+    function adminAddNewStatus() {
+      const input = document.getElementById("admin-new-status-input");
+      const val = input.value.trim();
+      if (!val) return alert("Digite o nome do status.");
+      if (actionStatuses.includes(val)) return alert("Status já cadastrado.");
+      actionStatuses.push(val);
+      localStorage.setItem("CB_LOCAL_STATUSES", JSON.stringify(actionStatuses));
+      syncConfigToCloud(); input.value = ""; renderAdminStatusList();
+    }
+
+    function adminDeleteStatus(idx) {
+      if (actionStatuses.length <= 1) return alert("Mantenha ao menos um status.");
+      if (confirm("Excluir este status?")) {
+        actionStatuses.splice(idx, 1);
+        localStorage.setItem("CB_LOCAL_STATUSES", JSON.stringify(actionStatuses));
+        syncConfigToCloud(); renderAdminStatusList();
+      }
+    }
+
+    function renderAdminStatusList() {
+      const container = document.getElementById("admin-status-list");
+      if (!container) return;
+      container.innerHTML = "";
+      actionStatuses.forEach((st, idx) => {
+        const item = document.createElement("div");
+        item.className = "flex justify-between items-center p-2 bg-stone-50 rounded border text-xs";
+        item.innerHTML = `<span class="font-bold">${st}</span>${st !== 'Concluído' && st !== 'Pendente' ? `<button onclick="adminDeleteStatus(${idx})" class="text-rose-600 font-bold">Excluir</button>` : '<span class="text-[10px] text-stone-400">Padrão</span>'}`;
+        container.appendChild(item);
+      });
     }
 
     function handleLogin() {
@@ -775,14 +843,6 @@
           <button onclick="selectModule('checklists')" class="p-4 bg-stone-50 hover:bg-stone-100 border border-stone-200 rounded-xl transition shadow-sm text-center">
             <h3 class="font-bold text-cb-bordo text-xs uppercase tracking-wider">Checklists</h3>
             <p class="text-[11px] text-stone-500 mt-0.5">Realizar auditorias e relatórios</p>
-          </button>`;
-      }
-
-      if (currentUser.role === 'admin') {
-        grid.innerHTML += `
-          <button onclick="toggleUsersModal()" class="p-4 bg-stone-50 hover:bg-stone-100 border border-stone-200 rounded-xl transition shadow-sm text-center">
-            <h3 class="font-bold text-stone-900 text-xs uppercase tracking-wider">Gerenciar Unidades & Usuários</h3>
-            <p class="text-[11px] text-stone-500 mt-0.5">Lojas da rede e permissões</p>
           </button>`;
       }
     }
@@ -957,6 +1017,27 @@
       if (rep) openPrintWindow(rep.htmlContent);
     }
 
+    function switchActionsTab(tab) {
+      currentActionsTab = tab;
+      const btnPending = document.getElementById("actions-tab-pending");
+      const btnCompleted = document.getElementById("actions-tab-completed");
+      if (tab === 'pending') {
+        btnPending.className = "flex-1 py-2 border-b-2 border-cb-bordo text-cb-bordo transition";
+        btnCompleted.className = "flex-1 py-2 border-b-2 border-transparent text-stone-400 transition";
+      } else {
+        btnPending.className = "flex-1 py-2 border-b-2 border-transparent text-stone-400 transition";
+        btnCompleted.className = "flex-1 py-2 border-b-2 border-cb-bordo text-cb-bordo transition";
+      }
+      renderCentralizedActions();
+    }
+
+    function updateActionStatus(actionId, newStatus) {
+      actionCustomStatus[actionId] = newStatus;
+      localStorage.setItem("CB_LOCAL_CUSTOM_STATUS", JSON.stringify(actionCustomStatus));
+      syncConfigToCloud();
+      renderCentralizedActions();
+    }
+
     function renderCentralizedActions() {
       const container = document.getElementById("centralized-actions-list");
       container.innerHTML = "";
@@ -977,8 +1058,10 @@
             if (startFilter && iso < startFilter) matchDate = false;
             if (endFilter && iso > endFilter) matchDate = false;
           }
+          let actId = `${rep.id}_nc_${i}`;
+          let status = actionCustomStatus[actId] || 'Pendente';
           if (matchDate) {
-            allActions.push({ unit: rep.unit, title: `❌ ${nc.title}`, action: nc.action || 'Não descrita', date: dueDate || 'Indefinida', rawDate: dueDate, chatId: `${rep.id}_nc_${i}` });
+            allActions.push({ unit: rep.unit, title: nc.title, action: nc.action || 'Não descrita', date: dueDate || 'Indefinida', rawDate: dueDate, chatId: actId, status });
           }
         });
         rep.maintenanceOrders?.forEach((om, i) => {
@@ -990,26 +1073,63 @@
             if (startFilter && iso < startFilter) matchDate = false;
             if (endFilter && iso > endFilter) matchDate = false;
           }
+          let actId = `${rep.id}_om_${i}`;
+          let status = actionCustomStatus[actId] || 'Pendente';
           if (matchDate) {
-            allActions.push({ unit: rep.unit, title: `🔧 Manutenção: ${om.equipment}`, action: om.action || 'Não descrito', date: dueDate || 'Indefinida', rawDate: dueDate, chatId: `${rep.id}_om_${i}` });
+            allActions.push({ unit: rep.unit, title: `Manutenção: ${om.equipment}`, action: om.action || 'Não descrito', date: dueDate || 'Indefinida', rawDate: dueDate, chatId: actId, status });
           }
         });
       });
 
-      allActions.sort((a, b) => new Date(a.rawDate || '2099-12-31') - new Date(b.rawDate || '2099-12-31'));
+      // Filtrar por aba (Pendentes vs Concluídos)
+      let filteredActions = allActions.filter(act => {
+        if (currentActionsTab === 'completed') return act.status === 'Concluído';
+        else return act.status !== 'Concluído';
+      });
 
-      if (allActions.length === 0) {
-        container.innerHTML = `<div class="p-8 text-center bg-white rounded-xl border text-stone-400 text-xs">Nenhum plano de ação encontrado para o período.</div>`;
+      // Ordenar por data crescente (o que vence antes aparece primeiro)
+      filteredActions.sort((a, b) => new Date(a.rawDate || '2099-12-31') - new Date(b.rawDate || '2099-12-31'));
+
+      if (filteredActions.length === 0) {
+        container.innerHTML = `<div class="p-8 text-center bg-white rounded-xl border text-stone-400 text-xs">Nenhum plano de ação encontrado nesta aba.</div>`;
         return;
       }
 
-      allActions.forEach(act => {
+      filteredActions.forEach(act => {
+        let atrasoHtml = "";
+        if (act.status !== 'Concluído' && act.rawDate && act.rawDate !== 'Indefinida' && act.rawDate !== 'Não definida') {
+          let parts = act.rawDate.split('/');
+          let dueIso = `${parts[2]}-${parts[1]}-${parts[0]}`;
+          let todayIso = new Date().toISOString().split('T')[0];
+          if (dueIso < todayIso) {
+            let diffTime = Math.abs(new Date(todayIso) - new Date(dueIso));
+            let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            atrasoHtml = `<span class="bg-rose-100 text-rose-800 font-bold px-1.5 py-0.5 rounded text-[10px]">⚠️ ${diffDays} dia(s) em atraso</span>`;
+          }
+        }
+
+        // Montar opções de status
+        let statusOptions = actionStatuses.map(st => `<option value="${st}" ${act.status === st ? 'selected' : ''}>${st}</option>`).join("");
+
         const card = document.createElement("div");
-        card.className = "bg-white p-4 rounded-xl border border-stone-200 shadow-sm space-y-2 text-xs hover:border-cb-gold transition cursor-pointer";
-        card.onclick = () => openChatModal(act.chatId, act.title, act.unit, act.date);
+        card.className = "bg-white p-3 rounded-xl border border-stone-200 shadow-sm flex items-center justify-between gap-3 text-xs";
         card.innerHTML = `
-          <div class="flex justify-between items-center border-b pb-1.5"><span class="font-bold text-cb-bordo uppercase">${act.unit}</span><span class="bg-amber-100 text-amber-900 px-2 py-0.5 rounded font-bold">📅 Prazo: ${act.date}</span></div>
-          <div><strong class="text-stone-900 block text-sm">${act.title}</strong><span class="text-stone-700 block mt-1"><strong>Ação:</strong> ${act.action}</span><div class="mt-2 text-right text-[11px] text-cb-bordo font-bold underline">💬 Abrir Chat com o Gestor</div></div>`;
+          <div class="flex-1 min-w-0 space-y-1">
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-cb-bordo uppercase">${act.unit}</span>
+              <span class="text-stone-400">📅 ${act.date}</span>
+              ${atrasoHtml}
+            </div>
+            <div class="truncate"><strong class="text-stone-900">${act.title}</strong> — <span class="text-stone-600">${act.action}</span></div>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <select onchange="updateActionStatus('${act.chatId}', this.value)" class="border rounded p-1.5 text-xs font-semibold bg-stone-50">
+              ${statusOptions}
+            </select>
+            <button onclick="openChatModal('${act.chatId}', '${act.title}', '${act.unit}', '${act.date}')" class="px-2.5 py-1.5 bg-stone-100 hover:bg-stone-200 text-cb-bordo font-bold rounded">
+              💬 Chat
+            </button>
+          </div>`;
         container.appendChild(card);
       });
     }
@@ -1072,13 +1192,17 @@
     function switchAdminTab(tab) {
       const uContent = document.getElementById("admin-content-units");
       const uUsers = document.getElementById("admin-content-users");
+      const uStatus = document.getElementById("admin-content-status");
       const btnU = document.getElementById("admin-tab-units");
       const btnUs = document.getElementById("admin-tab-users");
+      const btnSt = document.getElementById("admin-tab-status");
 
       uContent.classList.add("hidden");
       uUsers.classList.add("hidden");
+      uStatus.classList.add("hidden");
       btnU.className = "flex-1 py-2.5 border-b-2 border-transparent text-stone-500 transition";
       btnUs.className = "flex-1 py-2.5 border-b-2 border-transparent text-stone-500 transition";
+      btnSt.className = "flex-1 py-2.5 border-b-2 border-transparent text-stone-500 transition";
 
       if (tab === 'units') {
         uContent.classList.remove("hidden");
@@ -1089,6 +1213,10 @@
         btnUs.className = "flex-1 py-2.5 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition";
         renderUsersList();
         renderUserUnitsCheckboxes();
+      } else if (tab === 'status') {
+        uStatus.classList.remove("hidden");
+        btnSt.className = "flex-1 py-2.5 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition";
+        renderAdminStatusList();
       }
     }
 
@@ -1179,7 +1307,7 @@
         renderModelsListInConfig();
       } else if (tab === 'items') {
         document.getElementById("tab-content-items").classList.remove("hidden");
-        document.getElementById("tab-btn-items").className = "flex-1 min-w-[100px] py-3 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition";
+        document.getElementById("tab-btn-items").className = "flex-1 min-w-[120px] py-3 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition";
         document.getElementById("config-active-model-name").innerText = getCurrentChecklist().name;
         renderModalItems();
       }
