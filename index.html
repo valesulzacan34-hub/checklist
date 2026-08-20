@@ -111,14 +111,8 @@
         <span>📂 Relatórios Salvos</span>
         <span id="history-badge-count" class="bg-cb-gold text-cb-bordo-dark px-1.5 py-0.2 rounded-full text-[10px] font-black">0</span>
       </button>
-      <button onclick="selectModule('actions'); toggleSidebar();" class="w-full text-left px-3 py-2.5 rounded-lg hover:bg-cb-bordo transition flex items-center gap-1.5">
-        <span>📋 Planos de Ação</span>
-      </button>
       <button onclick="selectModule('agenda'); toggleSidebar();" class="w-full text-left px-3 py-2.5 rounded-lg hover:bg-cb-bordo transition flex items-center gap-1.5">
         <span>📅 Agenda & Calendário</span>
-      </button>
-      <button onclick="selectModule('sales-dashboard'); toggleSidebar();" class="w-full text-left px-3 py-2.5 rounded-lg hover:bg-cb-bordo transition flex items-center gap-1.5">
-        <span>📊 Dashboard de Vendas</span>
       </button>
       <button onclick="selectModule('technicians'); toggleSidebar();" class="w-full text-left px-3 py-2.5 rounded-lg hover:bg-cb-bordo transition flex items-center gap-1.5">
         <span>🔧 Técnicos & Prestadores</span>
@@ -159,6 +153,7 @@
           <span id="global-notification-dot" class="absolute -top-1.5 -right-1.5 px-1.5 py-0.2 bg-rose-600 text-white rounded-full text-[9px] font-black border border-white hidden">0</span>
         </button>
         
+        <!-- Dropdown Estilo Rede Social -->
         <div id="notification-dropdown" class="hidden absolute right-0 top-11 w-72 bg-white text-stone-800 rounded-xl shadow-2xl border border-stone-200 z-50 overflow-hidden">
           <div class="bg-cb-bordo text-white px-3 py-2 text-xs font-bold flex justify-between items-center">
             <span>Notificações Pendentes</span>
@@ -271,6 +266,13 @@
                 <input type="date" id="filter-date-end" onchange="renderHistoryList()" class="w-full border rounded p-2 bg-stone-50">
               </div>
             </div>
+          </div>
+
+          <div id="undo-container" class="hidden flex items-center justify-between bg-amber-50 p-2 rounded-lg border border-amber-300">
+            <span class="text-xs text-amber-900 font-medium">Relatório excluído.</span>
+            <button onclick="undoDeleteReport()" class="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded transition shadow-sm">
+              Desfazer
+            </button>
           </div>
         </div>
 
@@ -386,6 +388,7 @@
 
     <!-- MÓDULO 4: AGENDA / CALENDÁRIO COM IA E DRAG & DROP -->
     <main id="module-agenda-container" class="responsive-container space-y-4 hidden">
+      <!-- BARRA DE IA -->
       <div class="bg-gradient-to-r from-cb-bordo to-rose-900 p-4 rounded-xl shadow-lg border border-cb-gold/30 space-y-2">
         <h3 class="text-white font-bold text-xs flex items-center gap-2">🤖 Agendamento Inteligente (IA)</h3>
         <div class="flex gap-2">
@@ -425,58 +428,13 @@
         </div>
       </div>
 
+      <!-- Display do Período Atual -->
       <div class="bg-cb-bordo text-cb-gold px-4 py-2 rounded-xl text-center font-bold text-sm uppercase tracking-wider shadow-sm" id="calendar-period-title">
         Mês / Ano
       </div>
 
+      <!-- Container do Calendário Interativo -->
       <div id="calendar-grid-container" class="bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden"></div>
-    </main>
-
-    <!-- MÓDULO 5: DASHBOARD DE VENDAS -->
-    <main id="module-sales-dashboard-container" class="responsive-container space-y-4 hidden">
-      <div class="bg-white p-4 rounded-xl shadow-sm border border-stone-200 space-y-3">
-        <div class="flex justify-between items-center flex-wrap gap-2">
-          <div>
-            <h2 class="font-bold text-cb-bordo text-sm uppercase tracking-wider">📊 Dashboard de Vendas</h2>
-            <p class="text-xs text-stone-500">Carregue o arquivo de vendas (.txt) para analisar faturamento e indicadores</p>
-          </div>
-          <label class="cursor-pointer px-3 py-2 bg-cb-bordo text-white font-bold text-xs rounded-lg hover:bg-cb-bordo-dark transition">
-            📁 Carregar Arquivo TXT
-            <input type="file" accept=".txt,.csv" class="hidden" onchange="processSalesFile(event)">
-          </label>
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
-          <div class="bg-cb-cream border border-cb-gold/30 p-3 rounded-xl shadow-sm text-center">
-            <span class="block text-[10px] font-bold text-cb-bordo uppercase tracking-wider">Faturamento Total</span>
-            <span id="kpi-total-revenue" class="text-xl font-black text-cb-bordo">R$ 0,00</span>
-          </div>
-          <div class="bg-stone-50 border border-stone-200 p-3 rounded-xl shadow-sm text-center">
-            <span class="block text-[10px] font-bold text-stone-600 uppercase tracking-wider">Total de Vendas</span>
-            <span id="kpi-total-count" class="text-xl font-black text-stone-800">0</span>
-          </div>
-          <div class="bg-emerald-50 border border-emerald-200 p-3 rounded-xl shadow-sm text-center">
-            <span class="block text-[10px] font-bold text-emerald-800 uppercase tracking-wider">Ticket Médio</span>
-            <span id="kpi-avg-ticket" class="text-xl font-black text-emerald-700">R$ 0,00</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div class="bg-white p-4 rounded-xl shadow-sm border border-stone-200 space-y-2">
-          <h3 class="font-bold text-cb-bordo text-xs uppercase tracking-wider border-b pb-2">👥 Desempenho por Operador</h3>
-          <div id="operators-breakdown" class="space-y-1.5 text-xs max-h-48 overflow-y-auto">
-            <p class="text-stone-400 italic">Nenhum dado carregado.</p>
-          </div>
-        </div>
-
-        <div class="bg-white p-4 rounded-xl shadow-sm border border-stone-200 space-y-2">
-          <h3 class="font-bold text-cb-bordo text-xs uppercase tracking-wider border-b pb-2">💳 Formas de Pagamento</h3>
-          <div id="payments-breakdown" class="space-y-1.5 text-xs max-h-48 overflow-y-auto">
-            <p class="text-stone-400 italic">Nenhum dado carregado.</p>
-          </div>
-        </div>
-      </div>
     </main>
   </div>
 
@@ -584,6 +542,8 @@
       <div class="flex border-b border-stone-200 bg-stone-100 text-xs font-bold overflow-x-auto">
         <button id="admin-tab-units" onclick="switchAdminTab('units')" class="flex-1 py-2.5 border-b-2 border-cb-bordo text-cb-bordo bg-white transition whitespace-nowrap">🏢 Lojas da Rede</button>
         <button id="admin-tab-users" onclick="switchAdminTab('users')" class="flex-1 py-2.5 border-b-2 border-transparent text-stone-500 transition whitespace-nowrap">👥 Usuários & Vínculos</button>
+        <button id="admin-tab-status" onclick="switchAdminTab('status')" class="flex-1 py-2.5 border-b-2 border-transparent text-stone-500 transition whitespace-nowrap">🏷️ Tipos de Status</button>
+        <button id="admin-tab-priorities" onclick="switchAdminTab('priorities')" class="flex-1 py-2.5 border-b-2 border-transparent text-stone-500 transition whitespace-nowrap">⚡ Tarjas / Prioridade</button>
       </div>
 
       <div id="admin-content-units" class="p-4 overflow-y-auto space-y-4 flex-1 bg-stone-50 text-xs">
@@ -623,20 +583,68 @@
           <button onclick="addNewUser()" class="w-full py-2 bg-cb-bordo hover:bg-cb-bordo-dark text-white font-bold rounded uppercase">+ Criar Acesso</button>
         </div>
       </div>
+
+      <div id="admin-content-status" class="hidden p-4 overflow-y-auto space-y-4 flex-1 bg-stone-50 text-xs">
+        <div class="bg-white p-3 rounded-xl border space-y-3 shadow-sm">
+          <span class="block font-bold text-cb-bordo uppercase">Cadastrar Novo Status & Cor</span>
+          <div class="space-y-2">
+            <input type="text" id="admin-new-status-input" placeholder="Ex: Em Análise..." class="w-full border rounded p-2 bg-stone-50 font-semibold">
+            <div class="flex items-center gap-2">
+              <label class="font-bold text-stone-600">Cor do Status:</label>
+              <select id="admin-new-status-color" class="border rounded p-1.5 bg-stone-50 font-semibold">
+                <option value="bg-amber-100 text-amber-900 border-amber-300">Amarelo (Em Andamento)</option>
+                <option value="bg-rose-100 text-rose-800 border-rose-300">Vermelho (Pendente)</option>
+                <option value="bg-emerald-100 text-emerald-800 border-emerald-300">Verde (Concluído)</option>
+                <option value="bg-sky-100 text-sky-800 border-sky-300">Azul</option>
+                <option value="bg-stone-100 text-stone-800 border-stone-300">Cinza</option>
+              </select>
+            </div>
+            <button onclick="adminAddNewStatus()" class="w-full py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded">Adicionar Status</button>
+          </div>
+        </div>
+        <div class="bg-white p-3 rounded-xl border space-y-2 shadow-sm">
+          <span class="block font-bold text-cb-bordo uppercase">Status Cadastrados</span>
+          <div id="admin-status-list" class="space-y-1.5 max-h-48 overflow-y-auto"></div>
+        </div>
+      </div>
+
+      <div id="admin-content-priorities" class="hidden p-4 overflow-y-auto space-y-4 flex-1 bg-stone-50 text-xs">
+        <div class="bg-white p-3 rounded-xl border space-y-3 shadow-sm">
+          <span class="block font-bold text-cb-bordo uppercase">Cadastrar Nova Tarja de Prioridade</span>
+          <div class="space-y-2">
+            <input type="text" id="admin-new-priority-input" placeholder="Ex: Urgente..." class="w-full border rounded p-2 bg-stone-50 font-semibold">
+            <div class="flex items-center gap-2">
+              <label class="font-bold text-stone-600">Estilo da Tarja:</label>
+              <select id="admin-new-priority-style" class="border rounded p-1.5 bg-stone-50 font-semibold">
+                <option value="bg-rose-600 text-white font-black animate-pulse">Vermelho Destaque (Urgente)</option>
+                <option value="bg-amber-500 text-white font-bold">Laranja/Amarelo (Importante)</option>
+                <option value="bg-stone-200 text-stone-800 font-semibold">Cinza (Não Urgente)</option>
+                <option value="bg-purple-600 text-white font-bold">Roxo</option>
+                <option value="bg-blue-600 text-white font-bold">Azul</option>
+              </select>
+            </div>
+            <button onclick="adminAddNewPriority()" class="w-full py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded">Adicionar Tarja</button>
+          </div>
+        </div>
+        <div class="bg-white p-3 rounded-xl border space-y-2 shadow-sm">
+          <span class="block font-bold text-cb-bordo uppercase">Tarjas Cadastradas</span>
+          <div id="admin-priorities-list" class="space-y-1.5 max-h-48 overflow-y-auto"></div>
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- Modal de Configuração de Checklists -->
+  <!-- Modal de Configuração -->
   <div id="config-modal" class="fixed inset-0 bg-black/70 z-50 hidden flex items-center justify-center p-2 sm:p-4">
     <div class="bg-white w-full max-w-2xl h-[92vh] rounded-2xl flex flex-col shadow-2xl overflow-hidden border border-cb-gold/30">
       
       <div class="p-3.5 border-b border-stone-200 flex justify-between items-center bg-cb-bordo text-white">
-        <div><h3 class="font-bold text-sm text-cb-gold">Configurações Gerais de Checklists</h3></div>
+        <div><h3 class="font-bold text-sm text-cb-gold">Configurações Gerais</h3></div>
         <button onclick="toggleConfigModal()" class="text-stone-300 hover:text-white text-xl font-bold px-2 py-0.5">✕</button>
       </div>
 
       <div class="flex border-b border-stone-200 bg-stone-100 text-xs font-bold overflow-x-auto">
-        <button id="tab-btn-models" onclick="switchConfigTab('models')" class="flex-1 py-3 border-b-2 border-cb-bordo text-cb-bordo bg-white transition">Modelos</button>
+        <button id="tab-btn-models" onclick="switchConfigTab('models')" class="flex-1 py-3 border-b-2 border-cb-bordo text-cb-bordo bg-white transition">Checklists</button>
         <button id="tab-btn-items" onclick="switchConfigTab('items')" class="flex-1 py-3 border-b-2 border-transparent text-stone-500 hover:text-cb-bordo transition">Setores & Perguntas</button>
       </div>
 
@@ -679,7 +687,7 @@
               <option value="stars">Estrelas (1 a 5)</option>
               <option value="text">Texto Aberto</option>
             </select>
-            <input type="text" id="new-item-text" placeholder="Título da Pergunta..." class="text-xs border rounded-lg p-2 bg-white">
+            <input type="text" id="new-item-text" placeholder="Título..." class="text-xs border rounded-lg p-2 bg-white">
           </div>
 
           <div class="flex items-center justify-between pt-1">
@@ -687,7 +695,7 @@
               <input type="checkbox" id="new-item-req-photo" class="rounded text-cb-bordo focus:ring-0">
               <span>Exigir Foto</span>
             </label>
-            <button onclick="addNewItem()" class="px-4 py-2 bg-cb-bordo hover:bg-cb-bordo-dark text-white text-xs font-bold rounded-lg transition shadow-sm">+ Inserir Pergunta</button>
+            <button onclick="addNewItem()" class="px-4 py-2 bg-cb-bordo hover:bg-cb-bordo-dark text-white text-xs font-bold rounded-lg transition shadow-sm">+ Inserir</button>
           </div>
         </div>
       </div>
@@ -697,41 +705,6 @@
         <button onclick="toggleConfigModal()" class="bg-stone-900 hover:bg-black text-white font-bold px-6 py-2 rounded-lg transition">Concluir</button>
       </div>
 
-    </div>
-  </div>
-
-  <!-- Modal de Edição de Pergunta Específica -->
-  <div id="edit-question-modal" class="fixed inset-0 bg-black/60 z-[60] hidden flex items-center justify-center p-4">
-    <div class="bg-white w-full max-w-md rounded-2xl p-5 space-y-4 shadow-2xl border text-xs">
-      <div class="flex justify-between items-center border-b pb-2">
-        <h3 class="font-bold text-cb-bordo text-sm uppercase">Editar Pergunta</h3>
-        <button onclick="closeEditQuestionModal()" class="font-bold text-stone-400 hover:text-stone-700 text-base">✕</button>
-      </div>
-      <input type="hidden" id="edit-q-sec-idx">
-      <input type="hidden" id="edit-q-item-idx">
-      <div class="space-y-3">
-        <div>
-          <label class="block font-bold text-stone-600 mb-1">Título da Pergunta:</label>
-          <input type="text" id="edit-q-title" class="w-full border rounded p-2 bg-stone-50 font-semibold">
-        </div>
-        <div>
-          <label class="block font-bold text-stone-600 mb-1">Tipo de Resposta:</label>
-          <select id="edit-q-type" class="w-full border rounded p-2 bg-stone-50 font-semibold">
-            <option value="boolean">Sim / Não / N/A</option>
-            <option value="maintenance">Ordem de Manutenção</option>
-            <option value="stars">Estrelas (1 a 5)</option>
-            <option value="text">Texto Aberto</option>
-          </select>
-        </div>
-        <div class="flex items-center gap-2 pt-2">
-          <input type="checkbox" id="edit-q-photo" class="rounded text-cb-bordo">
-          <label for="edit-q-photo" class="font-bold text-stone-700">Exigir foto obrigatoriamente</label>
-        </div>
-        <div class="flex justify-end gap-2 pt-3 border-t">
-          <button onclick="closeEditQuestionModal()" class="px-4 py-2 border rounded font-bold text-stone-600">Cancelar</button>
-          <button onclick="saveEditedQuestion()" class="px-5 py-2 bg-cb-bordo text-white font-bold rounded">Salvar Alterações</button>
-        </div>
-      </div>
     </div>
   </div>
 
@@ -767,6 +740,148 @@
     }
 
     const DEFAULT_EMBEDDED_LOGO = "./logo.png";
+    let currentLogo = DEFAULT_EMBEDDED_LOGO;
+
+    const defaultUsers = [
+      { username: "alcides", pass: "12345678", name: "Alcides Ramos", role: "admin", units: [] }
+    ];
+
+    const defaultUnits = [
+      "CB Vale Sul Shopping",
+      "CB Shopping CenterVale",
+      "CB Shopping Oriente",
+      "CB Shopping Aricanduva"
+    ];
+
+    const defaultStatuses = [
+      { name: "Pendente", color: "bg-rose-100 border-rose-300" },
+      { name: "Em Andamento", color: "bg-amber-100 border-amber-300" },
+      { name: "Concluído", color: "bg-emerald-100 border-emerald-300" }
+    ];
+
+    const defaultPriorities = [
+      { name: "Urgente", style: "bg-rose-600 text-white font-black" },
+      { name: "Importante", style: "bg-amber-500 text-white font-bold" },
+      { name: "Não Urgente", style: "bg-stone-200 text-stone-800 font-semibold" }
+    ];
+
+    const defaultTechnicians = [
+      { name: "Wezley", service: "Ar condicionado", region: "São José dos Campos", phone: "12 974010864" },
+      { name: "Messias", service: "Ar condicionado", region: "São José dos Campos", phone: "12 98851-4713" },
+      { name: "Emerson", service: "Eletricista", region: "São José dos Campos", phone: "12 98813-9737" },
+      { name: "Thiago", service: "Eletricista", region: "São José dos Campos", phone: "12 98842-2803" },
+      { name: "Sullivan", service: "Encanador", region: "São José dos Campos", phone: "12 98853-0008" },
+      { name: "Lucas", service: "Encanador", region: "São José dos Campos", phone: "12 98863-4594" },
+      { name: "Pardal", service: "Serralheiro", region: "São José dos Campos", phone: "12 98815-4179" },
+      { name: "Adilson", service: "Serralheiro", region: "São José dos Campos", phone: "12 99103-2777" },
+      { name: "Evelton", service: "TI", region: "São José dos Campos", phone: "12 997020169" },
+      { name: "João", service: "Refrigeração", region: "São José dos Campos", phone: "12 98830-8424" },
+      { name: "Átila - Casa das Balanças", service: "Grill", region: "São José dos Campos", phone: "12 99177-2866" },
+      { name: "Anderson", service: "Ar condicionado", region: "Mogi", phone: "11 98691-5882" },
+      { name: "Manoel Torres", service: "Eletricista", region: "Mogi", phone: "11 95787-5810" },
+      { name: "JD", service: "Eletricista", region: "Mogi", phone: "11 96588-6557" },
+      { name: "Laerte", service: "Eletricista", region: "Mogi", phone: "11 94710-1959" },
+      { name: "Fernando", service: "Encanador", region: "Mogi", phone: "11 99760-1057" },
+      { name: "Cleiton", service: "Encanador", region: "Mogi", phone: "11 99573-5180" },
+      { name: "Alex - Hidromack", service: "Encanador", region: "Mogi", phone: "11 91560-2004" },
+      { name: "Neno", service: "Serralheiro", region: "Mogi", phone: "11 99955-9689" },
+      { name: "Maciel", service: "Serralheiro", region: "Mogi", phone: "11 97411-0336" },
+      { name: "Matbig- Portas automáticas", service: "Serralheiro", region: "Mogi", phone: "11 99705-3786" },
+      { name: "Fernando", service: "TI", region: "Mogi", phone: "11 98128-1011" },
+      { name: "Pedro", service: "Refrigeração", region: "Mogi", phone: "11 94230-1695" },
+      { name: "Thiago", service: "Forno Turbochef/Pratica", region: "São José dos Campos / Mogi", phone: "11 95285-8927" },
+      { name: "Sérgio", service: "Forno Turbochef/Pratica", region: "São José dos Campos / Mogi", phone: "11 99777-8031" },
+      { name: "Plantão", service: "La Spaziale", region: "São José dos Campos / Mogi", phone: "11 5181-5043" },
+      { name: "Cleber", service: "Máquina de louça", region: "São José dos Campos / Mogi", phone: "11 91724-1975" },
+      { name: "Jonatan", service: "La Spaziale (Tecnico por fora)", region: "São José dos Campos / Mogi", phone: "12 988929441" },
+      { name: "Fabio - Omni Blend", service: "Blender", region: "Geral", phone: "11 98315-2020" },
+      { name: "Armando", service: "Máquina de crema", region: "Geral", phone: "11 97420-7794" },
+      { name: "Waldir", service: "FAZ TUDO - MARIDO DE ALUGUEL", region: "Mogi", phone: "11 91609-6563" },
+      { name: "Ricardo", service: "Serralheiro", region: "São Paulo", phone: "11 96417-5813" },
+      { name: "Tino Ti Ark", service: "TI", region: "São Paulo", phone: "11 98462-1133" },
+      { name: "Wellington", service: "TI", region: "São Paulo", phone: "11 97193-6740" },
+      { name: "Pedro", service: "Refrigeração", region: "São Paulo", phone: "11 94230-1695" }
+    ];
+
+    let techniciansList = JSON.parse(localStorage.getItem("CB_LOCAL_TECHNICIANS")) || defaultTechnicians;
+    let calendarEvents = JSON.parse(localStorage.getItem("CB_LOCAL_CALENDAR_EVENTS")) || [];
+
+    let currentCalendarDate = new Date();
+    let currentCalendarView = 'month';
+
+    const defaultTemplates = [
+      {
+        id: "cb-supervisao",
+        name: "Casa Bauducco - Rota de Supervisão",
+        categories: [
+          {
+            category: "1. Estrutura, Salão & Visual",
+            items: [
+              { title: "Fachada da loja, luzes, letreiros, Leds", type: "boolean", requirePhoto: true },
+              { title: "Ambiente interno", type: "boolean", requirePhoto: true },
+              { title: "A comunicação visual está dentro do padrão?", type: "boolean", requirePhoto: true },
+              { title: "Mesas de atendimento", type: "boolean", requirePhoto: false },
+              { title: "Avaliar som ambiente", type: "boolean", requirePhoto: false },
+              { title: "Temperatura da Loja", type: "boolean", requirePhoto: false },
+              { title: "Todas áreas da loja estão sendo utilizadas para sua devida finalidade?", type: "boolean", requirePhoto: false },
+              { title: "Condição de móveis, utensílios e equipamentos", type: "boolean", requirePhoto: true }
+            ]
+          },
+          {
+            category: "2. Atendimento, Caixa & Equipe",
+            items: [
+              { title: "Avaliar apresentação dos colaboradores", type: "boolean", requirePhoto: true },
+              { title: "Escala de horários e Plano de posicionamento do dia está preenchido?", type: "boolean", requirePhoto: true },
+              { title: "Checar cumprimento da jornada do cliente durante o atendimento", type: "boolean", requirePhoto: false },
+              { title: "Verificar realização de venda sugestiva", type: "boolean", requirePhoto: false },
+              { title: "Conhecimentos gerais sobre marca e produtos?", type: "boolean", requirePhoto: false },
+              { title: "Formou fila maior que 3 clientes?", type: "boolean", requirePhoto: false },
+              { title: "Verificar organização da área do caixa", type: "boolean", requirePhoto: true },
+              { title: "PDV 1 e PDV 2 abertos?", type: "boolean", requirePhoto: true },
+              { title: "Tabela nutricional e Código de defesa do consumidor", type: "boolean", requirePhoto: false },
+              { title: "Cardápios disponíveis e em bom estado de conservação?", type: "boolean", requirePhoto: false }
+            ]
+          },
+          {
+            category: "3. Produtos, Exposição & Café",
+            items: [
+              { title: "Vitrine refrigerada com exposição adequada?", type: "boolean", requirePhoto: true },
+              { title: "Máquina de café e moinho regulados?", type: "boolean", requirePhoto: true },
+              { title: "Fatias dentro do padrão de peso e visual?", type: "boolean", requirePhoto: true },
+              { title: "Exposição do empório", type: "boolean", requirePhoto: true },
+              { title: "Insumos repostos de acordo com o movimento?", type: "boolean", requirePhoto: true }
+            ]
+          },
+          {
+            category: "4. Equipamentos, Limpeza & Segurança Alimentar",
+            items: [
+              { title: "Equipamentos operacionais em boas condições de uso e limpos?", type: "boolean", requirePhoto: true },
+              { title: "Inspecionar segurança de alimentos e boas práticas", type: "boolean", requirePhoto: true },
+              { title: "Tabela de validades impressa e disponível", type: "boolean", requirePhoto: true },
+              { title: "PAPs impressos e disponíveis", type: "boolean", requirePhoto: true },
+              { title: "Organização dos estoques", type: "boolean", requirePhoto: true }
+            ]
+          },
+          {
+            category: "5. Gestão, Controles & Administrativo",
+            items: [
+              { title: "Cadernos de controles estão sendo preenchidos?", type: "boolean", requirePhoto: false },
+              { title: "Loja está batendo a meta da semana?", type: "boolean", requirePhoto: false },
+              { title: "CAFs de reembolso foram abertos?", type: "boolean", requirePhoto: false },
+              { title: "Notas fiscais estão lançadas no GCOM?", type: "boolean", requirePhoto: false }
+            ]
+          },
+          {
+            category: "6. Ordens de Manutenção & Equipamentos",
+            items: [
+              { title: "Necessidade de Manutenção em Equipamentos do Salão ou Balcão?", type: "maintenance", requirePhoto: true },
+              { title: "Necessidade de Manutenção Predial / Hidráulica / Elétrica?", type: "maintenance", requirePhoto: false }
+            ]
+          }
+        ]
+      }
+    ];
+
     let users = JSON.parse(localStorage.getItem("CB_LOCAL_USERS")) || defaultUsers;
     let presetUnits = JSON.parse(localStorage.getItem("CB_LOCAL_UNITS")) || defaultUnits;
     let actionStatuses = JSON.parse(localStorage.getItem("CB_LOCAL_STATUSES")) || defaultStatuses;
@@ -777,16 +892,14 @@
     let allChecklists = JSON.parse(localStorage.getItem("CB_LOCAL_CHECKLISTS")) || defaultTemplates;
     let activeChecklistId = localStorage.getItem("CB_LOCAL_ACTIVE_ID") || allChecklists[0].id;
     let savedReports = JSON.parse(localStorage.getItem("CB_LOCAL_REPORTS")) || [];
-    let techniciansList = JSON.parse(localStorage.getItem("CB_LOCAL_TECHNICIANS")) || defaultTechnicians;
-    let calendarEvents = JSON.parse(localStorage.getItem("CB_LOCAL_CALENDAR_EVENTS")) || [];
-
-    let currentCalendarDate = new Date();
-    let currentCalendarView = 'month';
+    let lastDeletedReport = null;
+    let activeChatActionId = null;
     
     let attachedPhotos = {};
     let actionPlans = {};
     let customAnswers = {};
     let maintenanceOrders = {};
+
     let currentActionsTab = 'pending';
 
     function updateSyncUI(status, text) {
@@ -796,19 +909,29 @@
       if (time) time.innerText = text;
     }
 
+    let isInitialConfigLoad = true;
+
     function setupCloudListeners() {
       if (!isFirebaseReady) {
         updateSyncUI("🟡 Modo Local", "Sem conexão");
         return;
       }
+
+      updateSyncUI("🟢 Conectando...", "Sincronizando");
+
       db.collection("app_config").doc("main").onSnapshot(doc => {
         if (doc.exists) {
           const data = doc.data();
           if (data.checklists) { allChecklists = data.checklists; localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists)); }
           if (data.units) { presetUnits = data.units; localStorage.setItem("CB_LOCAL_UNITS", JSON.stringify(presetUnits)); }
           if (data.users) { users = data.users; localStorage.setItem("CB_LOCAL_USERS", JSON.stringify(users)); }
+          if (data.statuses) { actionStatuses = data.statuses; localStorage.setItem("CB_LOCAL_STATUSES", JSON.stringify(actionStatuses)); }
+          if (data.priorities) { actionPriorities = data.priorities; localStorage.setItem("CB_LOCAL_PRIORITIES", JSON.stringify(actionPriorities)); }
           if (data.technicians) { techniciansList = data.technicians; localStorage.setItem("CB_LOCAL_TECHNICIANS", JSON.stringify(techniciansList)); }
           if (data.calendarEvents) { calendarEvents = data.calendarEvents; localStorage.setItem("CB_LOCAL_CALENDAR_EVENTS", JSON.stringify(calendarEvents)); }
+          if (data.customStatus) { actionCustomStatus = data.customStatus; localStorage.setItem("CB_LOCAL_CUSTOM_STATUS", JSON.stringify(actionCustomStatus)); }
+          if (data.customPriority) { actionCustomPriority = data.customPriority; localStorage.setItem("CB_LOCAL_CUSTOM_PRIORITY", JSON.stringify(actionCustomPriority)); }
+
           renderPresetUnits();
           renderHomeChecklistSelect();
           updateSyncUI("🟢 Sincronizado na Nuvem", new Date().toLocaleTimeString('pt-BR'));
@@ -819,9 +942,65 @@
 
       db.collection("reports").orderBy("createdAt", "desc").onSnapshot(snapshot => {
         savedReports = [];
-        snapshot.forEach(doc => { savedReports.push({ id: doc.id, ...doc.data() }); });
+        snapshot.forEach(doc => {
+          savedReports.push({ id: doc.id, ...doc.data() });
+        });
         localStorage.setItem("CB_LOCAL_REPORTS", JSON.stringify(savedReports));
         updateHistoryBadge();
+        
+        const historyView = document.getElementById("history-view");
+        const actionsView = document.getElementById("module-actions-container");
+        const agendaView = document.getElementById("module-agenda-container");
+
+        if (historyView && !historyView.classList.contains("hidden")) renderHistoryList();
+        if (actionsView && !actionsView.classList.contains("hidden")) renderCentralizedActions();
+        if (agendaView && !agendaView.classList.contains("hidden")) renderAgendaCalendar();
+        
+        setupGlobalChatListeners();
+      });
+    }
+
+    function playAudioBeep() {
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+        gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        osc.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.15);
+      } catch (e) {
+        console.log("Áudio restrito pelo navegador");
+      }
+    }
+
+    let activeChatListeners = {};
+    function setupGlobalChatListeners() {
+      if (!isFirebaseReady) return;
+      let allowedUnits = getAllowedUnits();
+
+      savedReports.forEach(rep => {
+        if (!allowedUnits.includes(rep.unit)) return;
+        rep.nonConformities?.forEach((nc, i) => {
+          let actId = `${rep.id}_nc_${i}`;
+          if (!activeChatListeners[actId]) {
+            activeChatListeners[actId] = db.collection("chats").doc(actId).collection("messages").orderBy("createdAt", "desc").limit(1).onSnapshot(snap => {
+              snap.docChanges().forEach(change => {
+                if (change.type === "added") {
+                  let m = change.doc.data();
+                  if (m.sender !== currentUser?.name && !m.seen) {
+                    playAudioBeep();
+                    updateNotificationBadgeCount();
+                    document.getElementById(`chat-dot-${actId}`)?.classList.remove("hidden");
+                  }
+                }
+              });
+            });
+          }
+        });
       });
     }
 
@@ -831,15 +1010,34 @@
         checklists: allChecklists,
         units: presetUnits,
         users: users,
+        statuses: actionStatuses,
+        priorities: actionPriorities,
         technicians: techniciansList,
         calendarEvents: calendarEvents,
+        customStatus: actionCustomStatus,
+        customPriority: actionCustomPriority,
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       }).catch(err => console.error(err));
     }
 
+    function saveReportToCloud(reportData) {
+      if (!isFirebaseReady) {
+        savedReports.unshift(reportData);
+        localStorage.setItem("CB_LOCAL_REPORTS", JSON.stringify(savedReports));
+        updateHistoryBadge();
+        updateNotificationBadgeCount();
+        return;
+      }
+
+      reportData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+      db.collection("reports").add(reportData).catch(err => console.error(err));
+    }
+
     function toggleSidebar() {
-      document.getElementById("sidebar").classList.toggle("-translate-x-full");
-      document.getElementById("sidebar-backdrop").classList.toggle("hidden");
+      const sidebar = document.getElementById("sidebar");
+      const backdrop = document.getElementById("sidebar-backdrop");
+      sidebar.classList.toggle("-translate-x-full");
+      backdrop.classList.toggle("hidden");
     }
 
     function updateLogos() {
@@ -866,29 +1064,68 @@
       const allowedUnits = getAllowedUnits();
 
       if (select) {
-        const val = select.value;
+        const currentVal = select.value;
         select.innerHTML = "";
-        allowedUnits.forEach(u => { select.innerHTML += `<option value="${u}">${u}</option>`; });
-        if (val && allowedUnits.includes(val)) select.value = val;
+        allowedUnits.forEach(u => {
+          const opt = document.createElement("option"); opt.value = u; opt.innerText = u; select.appendChild(opt);
+        });
+        if (currentVal && allowedUnits.includes(currentVal)) select.value = currentVal;
       }
+
       if (filterStore) {
-        let f = filterStore.value;
+        const currentFilter = filterStore.value;
         filterStore.innerHTML = `<option value="">Todas as Lojas Permitidas</option>`;
-        allowedUnits.forEach(u => { filterStore.innerHTML += `<option value="${u}">${u}</option>`; });
-        filterStore.value = f;
+        allowedUnits.forEach(u => {
+          const opt = document.createElement("option"); opt.value = u; opt.innerText = u; filterStore.appendChild(opt);
+        });
+        filterStore.value = currentFilter;
       }
+
       if (filterActionStore) {
-        let fa = filterActionStore.value;
+        const currentFilterAct = filterActionStore.value;
         filterActionStore.innerHTML = `<option value="">Todas as Lojas</option>`;
-        allowedUnits.forEach(u => { filterActionStore.innerHTML += `<option value="${u}">${u}</option>`; });
-        filterActionStore.value = fa;
+        allowedUnits.forEach(u => {
+          const opt = document.createElement("option"); opt.value = u; opt.innerText = u; filterActionStore.appendChild(opt);
+        });
+        filterActionStore.value = currentFilterAct;
       }
+
+      if (filterAgendaStore) {
+        const curAgenda = filterAgendaStore.value;
+        if (currentUser && currentUser.role === 'gerente') {
+          filterAgendaStore.innerHTML = "";
+          let managerUnit = currentUser.units && currentUser.units.length > 0 ? currentUser.units[0] : presetUnits[0];
+          let opt = document.createElement("option"); opt.value = managerUnit; opt.innerText = managerUnit; filterAgendaStore.appendChild(opt);
+          filterAgendaStore.value = managerUnit;
+          filterAgendaStore.disabled = true;
+        } else {
+          filterAgendaStore.innerHTML = `<option value="GERAL">⭐ Eventos em Comum (Todas as Lojas)</option>`;
+          allowedUnits.forEach(u => {
+            const opt = document.createElement("option"); opt.value = u; opt.innerText = u; filterAgendaStore.appendChild(opt);
+          });
+          if (curAgenda) filterAgendaStore.value = curAgenda;
+        }
+      }
+
+      if (eventStoreSelect) {
+        eventStoreSelect.innerHTML = "";
+        let unitsToDisplay = currentUser && currentUser.role === 'gerente' && currentUser.units ? currentUser.units : presetUnits;
+        unitsToDisplay.forEach(u => {
+          const opt = document.createElement("option"); opt.value = u; opt.innerText = u; eventStoreSelect.appendChild(opt);
+        });
+      }
+
       if (listContainer) {
         listContainer.innerHTML = "";
         presetUnits.forEach((u, idx) => {
-          listContainer.innerHTML += `<div class="flex justify-between items-center p-2 bg-stone-50 rounded border text-xs"><span class="font-bold">${u}</span><div class="flex gap-2"><button onclick="adminEditUnit(${idx})" class="text-stone-600 font-bold">Editar</button><button onclick="adminDeleteUnit(${idx})" class="text-rose-600 font-bold">Excluir</button></div></div>`;
+          const item = document.createElement("div");
+          item.className = "flex justify-between items-center p-2 bg-stone-50 rounded border text-xs";
+          item.innerHTML = `<span class="font-bold">${u}</span><div class="flex gap-2"><button onclick="adminEditUnit(${idx})" class="text-stone-600 font-bold">Editar</button><button onclick="adminDeleteUnit(${idx})" class="text-rose-600 font-bold">Excluir</button></div>`;
+          listContainer.appendChild(item);
         });
       }
+      renderAdminStatusList();
+      renderAdminPrioritiesList();
     }
 
     function adminAddNewUnit() {
@@ -919,6 +1156,70 @@
       }
     }
 
+    function adminAddNewStatus() {
+      const input = document.getElementById("admin-new-status-input");
+      const val = input.value.trim();
+      const color = document.getElementById("admin-new-status-color").value;
+      if (!val) return alert("Digite o nome do status.");
+      if (actionStatuses.some(s => s.name.toLowerCase() === val.toLowerCase())) return alert("Status já cadastrado.");
+      actionStatuses.push({ name: val, color });
+      localStorage.setItem("CB_LOCAL_STATUSES", JSON.stringify(actionStatuses));
+      syncConfigToCloud(); input.value = ""; renderAdminStatusList();
+    }
+
+    function adminDeleteStatus(idx) {
+      if (actionStatuses.length <= 1) return alert("Mantenha ao menos um status.");
+      if (confirm("Excluir este status?")) {
+        actionStatuses.splice(idx, 1);
+        localStorage.setItem("CB_LOCAL_STATUSES", JSON.stringify(actionStatuses));
+        syncConfigToCloud(); renderAdminStatusList();
+      }
+    }
+
+    function renderAdminStatusList() {
+      const container = document.getElementById("admin-status-list");
+      if (!container) return;
+      container.innerHTML = "";
+      actionStatuses.forEach((st, idx) => {
+        const item = document.createElement("div");
+        item.className = "flex justify-between items-center p-2 bg-stone-50 rounded border text-xs";
+        item.innerHTML = `<span class="font-bold px-2 py-0.5 rounded border ${st.color}">${st.name}</span>${st.name !== 'Concluído' && st.name !== 'Pendente' ? `<button onclick="adminDeleteStatus(${idx})" class="text-rose-600 font-bold">Excluir</button>` : '<span class="text-[10px] text-stone-400">Padrão</span>'}`;
+        container.appendChild(item);
+      });
+    }
+
+    function adminAddNewPriority() {
+      const input = document.getElementById("admin-new-priority-input");
+      const val = input.value.trim();
+      const style = document.getElementById("admin-new-priority-style").value;
+      if (!val) return alert("Digite o nome da tarja.");
+      if (actionPriorities.some(p => p.name.toLowerCase() === val.toLowerCase())) return alert("Tarja já cadastrada.");
+      actionPriorities.push({ name: val, style });
+      localStorage.setItem("CB_LOCAL_PRIORITIES", JSON.stringify(actionPriorities));
+      syncConfigToCloud(); input.value = ""; renderAdminPrioritiesList();
+    }
+
+    function adminDeletePriority(idx) {
+      if (actionPriorities.length <= 1) return alert("Mantenha ao menos uma tarja.");
+      if (confirm("Excluir esta tarja?")) {
+        actionPriorities.splice(idx, 1);
+        localStorage.setItem("CB_LOCAL_PRIORITIES", JSON.stringify(actionPriorities));
+        syncConfigToCloud(); renderAdminPrioritiesList();
+      }
+    }
+
+    function renderAdminPrioritiesList() {
+      const container = document.getElementById("admin-priorities-list");
+      if (!container) return;
+      container.innerHTML = "";
+      actionPriorities.forEach((pr, idx) => {
+        const item = document.createElement("div");
+        item.className = "flex justify-between items-center p-2 bg-stone-50 rounded border text-xs";
+        item.innerHTML = `<span class="font-bold px-2 py-0.5 rounded ${pr.style}">${pr.name}</span><button onclick="adminDeletePriority(${idx})" class="text-rose-600 font-bold">Excluir</button>`;
+        container.appendChild(item);
+      });
+    }
+
     function handleLogin() {
       const u = document.getElementById("login-user").value.trim().toLowerCase();
       const p = document.getElementById("login-pass").value.trim();
@@ -941,57 +1242,124 @@
       document.getElementById("modules-screen").classList.remove("hidden");
       document.getElementById("current-user-badge").innerText = currentUser ? currentUser.name : '';
       updateLogos();
+      
       const grid = document.getElementById("modules-grid");
       grid.innerHTML = "";
 
       if (currentUser.role === 'admin' || currentUser.role === 'gerente') {
         grid.innerHTML += `
-          <button onclick="selectModule('checklists')" class="p-3.5 bg-stone-50 hover:bg-stone-100 border rounded-xl transition text-center block w-full"><h3 class="font-bold text-cb-bordo text-xs uppercase">Checklists</h3></button>
-          <button onclick="selectModule('actions')" class="p-3.5 bg-stone-50 hover:bg-stone-100 border rounded-xl transition text-center block w-full"><h3 class="font-bold text-amber-900 text-xs uppercase">Planos de Ação</h3></button>
-          <button onclick="selectModule('agenda')" class="p-3.5 bg-stone-50 hover:bg-stone-100 border rounded-xl transition text-center block w-full"><h3 class="font-bold text-cb-bordo text-xs uppercase">Agenda & Calendário</h3></button>
-          <button onclick="selectModule('sales-dashboard')" class="p-3.5 bg-stone-50 hover:bg-stone-100 border rounded-xl transition text-center block w-full"><h3 class="font-bold text-emerald-900 text-xs uppercase">Dashboard de Vendas</h3></button>`;
-      } else {
-        grid.innerHTML += `<button onclick="selectModule('checklists')" class="p-3.5 bg-stone-50 hover:bg-stone-100 border rounded-xl transition text-center block w-full"><h3 class="font-bold text-cb-bordo text-xs uppercase">Checklists</h3></button>`;
+          <button onclick="selectModule('checklists')" class="p-3.5 bg-stone-50 hover:bg-stone-100 border border-stone-200 rounded-xl transition shadow-sm text-center block w-full">
+            <h3 class="font-bold text-cb-bordo text-xs uppercase tracking-wider">Checklists</h3>
+            <p class="text-[11px] text-stone-500 mt-0.5">Realizar auditorias e relatórios</p>
+          </button>
+          <button onclick="selectModule('actions')" class="p-3.5 bg-stone-50 hover:bg-stone-100 border border-stone-200 rounded-xl transition shadow-sm text-center block w-full">
+            <h3 class="font-bold text-amber-900 text-xs uppercase tracking-wider">Planos de Ação</h3>
+            <p class="text-[11px] text-stone-500 mt-0.5">Acompanhamento e chat de correções</p>
+          </button>
+          <button onclick="selectModule('agenda')" class="p-3.5 bg-stone-50 hover:bg-stone-100 border border-stone-200 rounded-xl transition shadow-sm text-center block w-full">
+            <h3 class="font-bold text-cb-bordo text-xs uppercase tracking-wider">Agenda & Calendário</h3>
+            <p class="text-[11px] text-stone-500 mt-0.5">Eventos e prazos da rede</p>
+          </button>`;
+      } else if (currentUser.role === 'operador') {
+        grid.innerHTML += `
+          <button onclick="selectModule('checklists')" class="p-3.5 bg-stone-50 hover:bg-stone-100 border border-stone-200 rounded-xl transition shadow-sm text-center block w-full">
+            <h3 class="font-bold text-cb-bordo text-xs uppercase tracking-wider">Checklists</h3>
+            <p class="text-[11px] text-stone-500 mt-0.5">Realizar auditorias e relatórios</p>
+          </button>`;
       }
+
       if (currentUser.role === 'admin') {
-        grid.innerHTML += `<button onclick="toggleUsersModal()" class="p-3.5 bg-stone-50 hover:bg-stone-100 border rounded-xl transition text-center block w-full"><h3 class="font-bold text-stone-900 text-xs uppercase">Gerenciar Unidades & Usuários</h3></button>`;
+        grid.innerHTML += `
+          <button onclick="toggleUsersModal()" class="p-3.5 bg-stone-50 hover:bg-stone-100 border border-stone-200 rounded-xl transition shadow-sm text-center block w-full">
+            <h3 class="font-bold text-stone-900 text-xs uppercase tracking-wider">Gerenciar Unidades & Usuários</h3>
+            <p class="text-[11px] text-stone-500 mt-0.5">Lojas da rede e permissões</p>
+          </button>`;
       }
     }
 
     function selectModule(mod) {
-      if (mod === 'users') { toggleUsersModal(); return; }
+      if (mod === 'users') {
+        toggleUsersModal();
+        return;
+      }
+
       document.getElementById("modules-screen").classList.add("hidden");
-      
-      const mods = ['checklists', 'actions', 'technicians', 'agenda', 'sales-dashboard'];
-      mods.forEach(m => document.getElementById(`module-${m}-container`)?.classList.add("hidden"));
-      document.getElementById("audit-footer")?.classList.add("hidden");
+      const checklistsMod = document.getElementById("module-checklists-container");
+      const actionsMod = document.getElementById("module-actions-container");
+      const techMod = document.getElementById("module-technicians-container");
+      const agendaMod = document.getElementById("module-agenda-container");
+      const auditFooter = document.getElementById("audit-footer");
+      const badgeMod = document.getElementById("current-module-badge");
+
+      const sideBtnUsers = document.getElementById("sidebar-btn-users");
+      const sideBtnConfig = document.getElementById("sidebar-btn-config");
+      const homeBtnConfig = document.getElementById("home-btn-config");
+
+      if (currentUser.role === 'admin') {
+        if (sideBtnUsers) sideBtnUsers.classList.remove("hidden");
+        if (sideBtnConfig) sideBtnConfig.classList.remove("hidden");
+        if (homeBtnConfig) homeBtnConfig.classList.remove("hidden");
+        document.getElementById("btn-add-tech")?.classList.remove("hidden");
+      } else {
+        if (sideBtnUsers) sideBtnUsers.classList.add("hidden");
+        if (sideBtnConfig) sideBtnConfig.classList.add("hidden");
+        if (homeBtnConfig) homeBtnConfig.classList.add("hidden");
+        document.getElementById("btn-add-tech")?.classList.add("hidden");
+      }
+
+      checklistsMod.classList.add("hidden");
+      actionsMod.classList.add("hidden");
+      techMod.classList.add("hidden");
+      agendaMod.classList.add("hidden");
+      auditFooter.classList.add("hidden");
 
       if (mod === 'checklists') {
-        document.getElementById("module-checklists-container").classList.remove("hidden");
-        document.getElementById("audit-footer").classList.remove("hidden");
+        checklistsMod.classList.remove("hidden");
+        auditFooter.classList.remove("hidden");
+        badgeMod.innerText = "Checklists";
         switchChecklistTab('home');
-      } else {
-        document.getElementById(`module-${mod}-container`)?.classList.remove("hidden");
-        if (mod === 'actions') renderCentralizedActions();
-        if (mod === 'technicians') renderTechniciansList();
-        if (mod === 'agenda') renderAgendaCalendar();
+      } else if (mod === 'actions') {
+        if (currentUser.role === 'operador') return alert("Acesso não autorizado para operadores.");
+        actionsMod.classList.remove("hidden");
+        badgeMod.innerText = "Planos de Ação";
+        renderCentralizedActions();
+      } else if (mod === 'technicians') {
+        techMod.classList.remove("hidden");
+        badgeMod.innerText = "Técnicos";
+        renderTechniciansList();
+      } else if (mod === 'agenda') {
+        if (currentUser.role === 'operador') return alert("Acesso não autorizado para operadores.");
+        agendaMod.classList.remove("hidden");
+        badgeMod.innerText = "Agenda";
+        
+        if (currentUser.role === 'gerente' && currentUser.units && currentUser.units.length > 0) {
+          document.getElementById("filter-agenda-store").value = currentUser.units[0];
+          document.getElementById("filter-agenda-store").disabled = true;
+        }
+
+        renderAgendaCalendar();
       }
     }
 
     function switchChecklistTab(tab) {
-      document.getElementById("checklist-home-view").classList.add("hidden");
-      document.getElementById("audit-view").classList.add("hidden");
-      document.getElementById("history-view").classList.add("hidden");
-      document.getElementById("audit-footer").classList.add("hidden");
+      const homeView = document.getElementById("checklist-home-view");
+      const auditView = document.getElementById("audit-view");
+      const historyView = document.getElementById("history-view");
+      const footer = document.getElementById("audit-footer");
+
+      homeView.classList.add("hidden");
+      auditView.classList.add("hidden");
+      historyView.classList.add("hidden");
+      footer.classList.add("hidden");
 
       if (tab === 'home') {
-        document.getElementById("checklist-home-view").classList.remove("hidden");
+        homeView.classList.remove("hidden");
         renderHomeChecklistSelect();
       } else if (tab === 'audit') {
-        document.getElementById("audit-view").classList.remove("hidden");
-        document.getElementById("audit-footer").classList.remove("hidden");
+        auditView.classList.remove("hidden");
+        footer.classList.remove("hidden");
       } else if (tab === 'history') {
-        document.getElementById("history-view").classList.remove("hidden");
+        historyView.classList.remove("hidden");
         renderHistoryList();
       }
     }
@@ -1000,57 +1368,99 @@
       const select = document.getElementById("home-checklist-select");
       if (!select) return;
       select.innerHTML = "";
-      allChecklists.forEach(c => { select.innerHTML += `<option value="${c.id}">${c.name}</option>`; });
+      allChecklists.forEach(c => {
+        const opt = document.createElement("option");
+        opt.value = c.id;
+        opt.innerText = c.name;
+        select.appendChild(opt);
+      });
     }
 
     function startSelectedChecklist() {
       const select = document.getElementById("home-checklist-select");
       if (!select || !select.value) return alert("Selecione um checklist.");
       activeChecklistId = select.value;
-      attachedPhotos = {}; actionPlans = {}; customAnswers = {}; maintenanceOrders = {};
+      attachedPhotos = {};
+      actionPlans = {};
+      customAnswers = {};
+      maintenanceOrders = {};
       localStorage.setItem("CB_LOCAL_ACTIVE_ID", activeChecklistId);
       document.getElementById("active-model-title-badge").innerText = getCurrentChecklist().name;
       renderChecklist();
-      switchChecklistTab('audit');
+      
+      document.getElementById("checklist-home-view").classList.add("hidden");
+      document.getElementById("audit-view").classList.remove("hidden");
+      document.getElementById("audit-footer").classList.remove("hidden");
     }
 
     function updateHistoryBadge() {
       const badge = document.getElementById("history-badge-count");
       if (badge) badge.innerText = savedReports.length;
+      updateNotificationBadgeCount();
     }
 
     function renderHistoryList() {
       const container = document.getElementById("history-list-container");
       container.innerHTML = ""; updateHistoryBadge();
       const storeFilter = document.getElementById("filter-store").value;
+      const startFilter = document.getElementById("filter-date-start").value;
+      const endFilter = document.getElementById("filter-date-end").value;
       const allowedUnits = getAllowedUnits();
 
-      let filtered = savedReports.filter(rep => allowedUnits.includes(rep.unit) && (!storeFilter || rep.unit === storeFilter));
+      let filtered = savedReports.filter(rep => {
+        if (!allowedUnits.includes(rep.unit)) return false;
+        let matchStore = !storeFilter || rep.unit === storeFilter;
+        let matchDate = true;
+        if (rep.date) {
+          let parts = rep.date.split(',')[0].split('/');
+          let repIso = `${parts[2]}-${parts[1]}-${parts[0]}`;
+          if (startFilter && repIso < startFilter) matchDate = false;
+          if (endFilter && repIso > endFilter) matchDate = false;
+        }
+        return matchStore && matchDate;
+      });
+
       if (filtered.length === 0) {
-        container.innerHTML = `<div class="p-8 text-center bg-white rounded-xl border text-stone-400 text-xs">Nenhum relatório encontrado.</div>`;
+        container.innerHTML = `<div class="p-8 text-center bg-white rounded-xl border text-stone-400 text-xs">Nenhum relatório encontrado para o período.</div>`;
         return;
       }
 
       filtered.forEach((rep, idx) => {
-        container.innerHTML += `
-          <div class="bg-white rounded-xl border shadow-sm overflow-hidden text-xs">
-            <div onclick="toggleHistoryDetails(${idx})" class="p-3.5 bg-stone-50 hover:bg-stone-100 flex justify-between items-center cursor-pointer">
-              <span class="font-black text-cb-bordo text-sm">${rep.unit} — ${rep.date}</span>
-              <span class="px-2 py-0.5 rounded font-bold text-white ${rep.score >= 90 ? 'bg-emerald-600' : 'bg-rose-600'}">${rep.score}%</span>
+        const itemCard = document.createElement("div");
+        itemCard.className = "bg-white rounded-xl border border-stone-200 shadow-sm overflow-hidden text-xs";
+        
+        let ncListHtml = rep.nonConformities?.map(nc => `<div class="p-2 bg-rose-50 border border-rose-200 rounded text-xs mb-1"><strong>❌ ${nc.title}</strong><br>Ação: ${nc.action} (Prazo: ${nc.date})</div>`).join("") || "";
+        let omListHtml = rep.maintenanceOrders?.map(om => `<div class="p-2 bg-amber-50 border border-amber-300 rounded text-xs mb-1"><strong>🔧 ${om.equipment}</strong><br>Defeito: ${om.action} (Prazo: ${om.date})</div>`).join("") || "";
+
+        itemCard.innerHTML = `
+          <div onclick="toggleHistoryDetails(${idx})" class="p-3.5 bg-stone-50 hover:bg-stone-100 flex justify-between items-center cursor-pointer transition">
+            <div class="flex items-center gap-3">
+              <span class="font-black text-cb-bordo text-sm">${rep.unit}</span>
+              <span class="text-stone-500">${rep.date}</span>
             </div>
-            <div id="history-details-${idx}" class="hidden p-4 border-t space-y-3 bg-white">
-              <div><strong>Supervisor:</strong> ${rep.supervisor}</div>
-              <div class="pt-2 border-t flex justify-end gap-2">
-                <button onclick="reopenPDFFromHistoryByIndex('${rep.id}')" class="px-3 py-1.5 bg-cb-bordo text-white font-bold rounded-lg">Imprimir PDF</button>
-                <button onclick="deleteReportFromHistory('${rep.id}')" class="text-rose-600 font-bold">Excluir</button>
-              </div>
+            <div class="flex items-center gap-3">
+              <span class="px-2 py-0.5 rounded font-bold text-white ${rep.score >= 90 ? 'bg-emerald-600' : rep.score >= 75 ? 'bg-amber-600' : 'bg-rose-600'}">${rep.score}%</span>
+              <span id="chevron-${idx}" class="text-stone-400 font-bold">▼</span>
+            </div>
+          </div>
+          <div id="history-details-${idx}" class="hidden p-4 border-t space-y-3 bg-white">
+            <div><strong>Supervisor:</strong> ${rep.supervisor}</div>
+            <div><strong>Não Conformidades:</strong><br>${ncListHtml || 'Nenhuma'}</div>
+            ${omListHtml ? `<div><strong>Ordens de Manutenção:</strong><br>${omListHtml}</div>` : ''}
+            <div class="pt-2 border-t flex justify-end gap-2">
+              <button onclick="reopenPDFFromHistoryByIndex('${rep.id}')" class="px-3 py-1.5 bg-cb-bordo text-white font-bold rounded-lg">Visualizar / Imprimir PDF</button>
+              <button onclick="deleteReportFromHistory('${rep.id}')" class="px-2.5 py-1.5 text-rose-600 font-bold">Excluir</button>
             </div>
           </div>`;
+        container.appendChild(itemCard);
       });
     }
 
     function toggleHistoryDetails(idx) {
-      document.getElementById(`history-details-${idx}`).classList.toggle("hidden");
+      const details = document.getElementById(`history-details-${idx}`);
+      const chevron = document.getElementById(`chevron-${idx}`);
+      details.classList.toggle("hidden");
+      chevron.innerText = details.classList.contains("hidden") ? "▼" : "▲";
     }
 
     function deleteReportFromHistory(docId) {
@@ -1059,6 +1469,7 @@
         localStorage.setItem("CB_LOCAL_REPORTS", JSON.stringify(savedReports));
         if (isFirebaseReady && docId) db.collection("reports").doc(docId).delete();
         renderHistoryList();
+        updateNotificationBadgeCount();
       }
     }
 
@@ -1067,19 +1478,977 @@
       if (rep) openPrintWindow(rep.htmlContent);
     }
 
+    function switchActionsTab(tab) {
+      currentActionsTab = tab;
+      const btnPending = document.getElementById("actions-tab-pending");
+      const btnCompleted = document.getElementById("actions-tab-completed");
+      if (tab === 'pending') {
+        btnPending.className = "flex-1 py-2 border-b-2 border-cb-bordo text-cb-bordo transition";
+        btnCompleted.className = "flex-1 py-2 border-b-2 border-transparent text-stone-400 transition";
+      } else {
+        btnPending.className = "flex-1 py-2 border-b-2 border-transparent text-stone-400 transition";
+        btnCompleted.className = "flex-1 py-2 border-b-2 border-cb-bordo text-cb-bordo transition";
+      }
+      renderCentralizedActions();
+    }
+
+    function updateActionStatus(actionId, newStatus) {
+      actionCustomStatus[actionId] = newStatus;
+      localStorage.setItem("CB_LOCAL_CUSTOM_STATUS", JSON.stringify(actionCustomStatus));
+      syncConfigToCloud();
+      renderCentralizedActions();
+      updateNotificationBadgeCount();
+    }
+
+    function updateActionPriority(actionId, newPriority) {
+      actionCustomPriority[actionId] = newPriority;
+      localStorage.setItem("CB_LOCAL_CUSTOM_PRIORITY", JSON.stringify(actionCustomPriority));
+      syncConfigToCloud();
+      renderCentralizedActions();
+    }
+
+    function updateNotificationBadgeCount() {
+      let unreadCount = 0;
+      let allowedUnits = getAllowedUnits();
+
+      savedReports.forEach(rep => {
+        if (!allowedUnits.includes(rep.unit)) return;
+        rep.nonConformities?.forEach((nc, i) => {
+          let actId = `${rep.id}_nc_${i}`;
+          let status = actionCustomStatus[actId] || 'Pendente';
+          if (!status.toLowerCase().includes('concluído')) {
+            unreadCount++;
+          }
+        });
+      });
+
+      const badge = document.getElementById("global-notification-dot");
+      if (badge) {
+        if (unreadCount > 0) {
+          badge.innerText = unreadCount;
+          badge.classList.remove("hidden");
+        } else {
+          badge.classList.add("hidden");
+        }
+      }
+    }
+
+    function toggleNotificationDropdown(event) {
+      event.stopPropagation();
+      const dropdown = document.getElementById("notification-dropdown");
+      const listContainer = document.getElementById("notification-list");
+      const countBadge = document.getElementById("notif-count-badge");
+      
+      dropdown.classList.toggle("hidden");
+      if (!dropdown.classList.contains("hidden")) {
+        listContainer.innerHTML = "";
+        let unreadList = [];
+        let allowedUnits = getAllowedUnits();
+
+        savedReports.forEach(rep => {
+          if (!allowedUnits.includes(rep.unit)) return;
+          rep.nonConformities?.forEach((nc, i) => {
+            let actId = `${rep.id}_nc_${i}`;
+            let status = actionCustomStatus[actId] || 'Pendente';
+            if (!status.toLowerCase().includes('concluído')) {
+              unreadList.push({ unit: rep.unit, title: nc.title, date: nc.date || 'Indefinido', chatId: actId, reportId: rep.id, type: 'nc', index: i });
+            }
+          });
+        });
+
+        countBadge.innerText = unreadList.length;
+
+        if (unreadList.length === 0) {
+          listContainer.innerHTML = `<div class="p-4 text-center text-stone-400 text-xs">Nenhum plano pendente.</div>`;
+          return;
+        }
+
+        unreadList.forEach(item => {
+          const div = document.createElement("div");
+          div.className = "p-2.5 hover:bg-stone-50 cursor-pointer transition space-y-0.5";
+          div.onclick = () => {
+            dropdown.classList.add("hidden");
+            selectModule('actions');
+            openChatModal(item.chatId, item.reportId, item.type, item.index);
+          };
+          div.innerHTML = `
+            <div class="font-bold text-cb-bordo uppercase text-[11px]">${item.unit}</div>
+            <div class="text-stone-700 truncate">${item.title}</div>
+            <div class="text-[10px] text-stone-400">📅 Prazo: ${item.date}</div>
+          `;
+          listContainer.appendChild(div);
+        });
+      }
+    }
+
+    window.onclick = function(event) {
+      if (!event.target.closest('#notification-dropdown') && !event.target.closest('button[onclick*="toggleNotificationDropdown"]')) {
+        document.getElementById("notification-dropdown")?.classList.add("hidden");
+      }
+    };
+
+    function renderCentralizedActions() {
+      const container = document.getElementById("centralized-actions-list");
+      container.innerHTML = "";
+      const startFilter = document.getElementById("action-date-start").value;
+      const endFilter = document.getElementById("action-date-end").value;
+      const storeFilter = document.getElementById("filter-action-store").value;
+      const statusFilter = document.getElementById("filter-status").value;
+      const priorityFilter = document.getElementById("filter-priority").value;
+      const actionTypeFilter = document.getElementById("filter-action-type").value;
+      const allowedUnits = getAllowedUnits();
+
+      const statusSelect = document.getElementById("filter-status");
+      if (statusSelect && statusSelect.options.length <= 1) {
+        actionStatuses.forEach(st => {
+          let opt = document.createElement("option");
+          opt.value = st.name;
+          opt.innerText = st.name;
+          statusSelect.appendChild(opt);
+        });
+        statusSelect.value = statusFilter;
+      }
+
+      const prioritySelect = document.getElementById("filter-priority");
+      if (prioritySelect && prioritySelect.options.length <= 1) {
+        actionPriorities.forEach(pr => {
+          let opt = document.createElement("option");
+          opt.value = pr.name;
+          opt.innerText = pr.name;
+          prioritySelect.appendChild(opt);
+        });
+        prioritySelect.value = priorityFilter;
+      }
+
+      let allActions = [];
+      let counts = { pending: 0, progress: 0, completed: 0 };
+
+      savedReports.forEach(rep => {
+        if (!allowedUnits.includes(rep.unit)) return;
+        
+        let storeMatchForCounters = !storeFilter || rep.unit === storeFilter;
+
+        rep.nonConformities?.forEach((nc, i) => {
+          let dueDate = nc.date || '';
+          let matchDate = true;
+          if (dueDate && dueDate !== 'Não definida') {
+            let parts = dueDate.split('/');
+            let iso = `${parts[2]}-${parts[1]}-${parts[0]}`;
+            if (startFilter && iso < startFilter) matchDate = false;
+            if (endFilter && iso > endFilter) matchDate = false;
+          }
+          let actId = `${rep.id}_nc_${i}`;
+          let statusObj = actionCustomStatus[actId] || 'Pendente';
+          let priorityObj = actionCustomPriority[actId] || 'Urgente';
+
+          if (storeMatchForCounters) {
+            let sLower = statusObj.toLowerCase();
+            if (sLower.includes('concluído')) counts.completed++;
+            else if (sLower.includes('andamento')) counts.progress++;
+            else counts.pending++;
+          }
+
+          let storeMatchCard = !storeFilter || rep.unit === storeFilter;
+          if (matchDate && storeMatchCard) {
+            allActions.push({ 
+              unit: rep.unit, 
+              title: nc.title, 
+              action: nc.action || 'Não descrita', 
+              date: dueDate || 'Indefinida', 
+              rawDate: dueDate, 
+              chatId: actId, 
+              status: statusObj,
+              priority: priorityObj,
+              fullReportId: rep.id,
+              type: 'nc',
+              index: i
+            });
+          }
+        });
+
+        rep.maintenanceOrders?.forEach((om, i) => {
+          let dueDate = om.date || '';
+          let matchDate = true;
+          if (dueDate && dueDate !== 'Não definida') {
+            let parts = dueDate.split('/');
+            let iso = `${parts[2]}-${parts[1]}-${parts[0]}`;
+            if (startFilter && iso < startFilter) matchDate = false;
+            if (endFilter && iso > endFilter) matchDate = false;
+          }
+          let actId = `${rep.id}_om_${i}`;
+          let statusObj = actionCustomStatus[actId] || 'Pendente';
+          let priorityObj = actionCustomPriority[actId] || 'Urgente';
+
+          if (storeMatchForCounters) {
+            let sLower = statusObj.toLowerCase();
+            if (sLower.includes('concluído')) counts.completed++;
+            else if (sLower.includes('andamento')) counts.progress++;
+            else counts.pending++;
+          }
+
+          let storeMatchCard = !storeFilter || rep.unit === storeFilter;
+          if (matchDate && storeMatchCard) {
+            allActions.push({ 
+              unit: rep.unit, 
+              title: `Manutenção: ${om.equipment}`, 
+              action: om.action || 'Não descrito', 
+              date: dueDate || 'Indefinida', 
+              rawDate: dueDate, 
+              chatId: actId, 
+              status: statusObj,
+              priority: priorityObj,
+              fullReportId: rep.id,
+              type: 'om',
+              index: i
+            });
+          }
+        });
+      });
+
+      document.getElementById("counter-pending").innerText = counts.pending;
+      document.getElementById("counter-progress").innerText = counts.progress;
+      document.getElementById("counter-completed").innerText = counts.completed;
+
+      let filteredActions = allActions.filter(act => {
+        let isDone = act.status.toLowerCase().includes('concluído');
+        let tabMatch = (currentActionsTab === 'completed') ? isDone : !isDone;
+        let statusMatch = !statusFilter || act.status === statusFilter;
+        let priorityMatch = !priorityFilter || act.priority === priorityFilter;
+        let typeMatch = !actionTypeFilter || act.type === actionTypeFilter;
+        return tabMatch && statusMatch && priorityMatch && typeMatch;
+      });
+
+      filteredActions.sort((a, b) => {
+        let dateA = a.rawDate && a.rawDate !== 'Indefinida' && a.rawDate !== 'Não definida' ? new Date(a.rawDate.split('/').reverse().join('-')) : new Date('2099-12-31');
+        let dateB = b.rawDate && b.rawDate !== 'Indefinida' && b.rawDate !== 'Não definida' ? new Date(b.rawDate.split('/').reverse().join('-')) : new Date('2099-12-31');
+        return dateA - dateB;
+      });
+
+      if (filteredActions.length === 0) {
+        container.innerHTML = `<div class="p-8 text-center bg-white rounded-xl border text-stone-400 text-xs">Nenhum plano de ação encontrado nesta aba/filtro.</div>`;
+        return;
+      }
+
+      filteredActions.forEach(act => {
+        let atrasoHtml = "";
+        let isDone = act.status.toLowerCase().includes('concluído');
+        if (!isDone && act.rawDate && act.rawDate !== 'Indefinida' && act.rawDate !== 'Não definida') {
+          let parts = act.rawDate.split('/');
+          let dueIso = `${parts[2]}-${parts[1]}-${parts[0]}`;
+          let todayIso = new Date().toISOString().split('T')[0];
+          if (dueIso < todayIso) {
+            let diffTime = Math.abs(new Date(todayIso) - new Date(dueIso));
+            let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            atrasoHtml = `<span class="bg-rose-100 text-rose-800 font-bold px-1.5 py-0.5 rounded text-[10px]">⚠️ ${diffDays}d atraso</span>`;
+          }
+        }
+
+        let statusOptions = actionStatuses.map(st => `<option value="${st.name}" ${act.status === st.name ? 'selected' : ''}>${st.name}</option>`).join("");
+        let currentStatusObj = actionStatuses.find(s => s.name === act.status) || { color: 'bg-white border-stone-200' };
+
+        let priorityOptions = actionPriorities.map(pr => `<option value="${pr.name}" ${act.priority === pr.name ? 'selected' : ''}>${pr.name}</option>`).join("");
+        let currentPriorityObj = actionPriorities.find(p => p.name === act.priority) || { style: 'bg-stone-200 text-stone-800 font-semibold' };
+
+        const card = document.createElement("div");
+        card.className = `p-4 rounded-xl border shadow-sm flex flex-col gap-2.5 text-xs ${currentStatusObj.color}`;
+        card.innerHTML = `
+          <div class="flex items-center justify-between gap-2 flex-wrap">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="font-bold text-sm text-cb-bordo uppercase">${act.unit}</span>
+              <span class="text-stone-500 font-medium">📅 ${act.date}</span>
+              <select onchange="updateActionPriority('${act.chatId}', this.value)" class="border rounded px-2 py-0.5 text-[10px] ${currentPriorityObj.style} focus:outline-none cursor-pointer">
+                ${priorityOptions}
+              </select>
+              ${atrasoHtml}
+            </div>
+            <div class="flex items-center gap-2">
+              <select onchange="updateActionStatus('${act.chatId}', this.value)" class="border rounded px-2.5 py-1 text-xs font-bold bg-white shadow-sm cursor-pointer">
+                ${statusOptions}
+              </select>
+              <button id="btn-chat-${act.chatId}" onclick="openChatModal('${act.chatId}', '${act.fullReportId}', '${act.type}', ${act.index})" class="relative px-3 py-1 bg-white text-cb-bordo font-bold rounded shadow-sm border border-stone-200 hover:bg-stone-50 transition">
+                💬 Chat & Detalhes
+                <span id="chat-dot-${act.chatId}" class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-white hidden"></span>
+              </button>
+            </div>
+          </div>
+          <div class="text-stone-800 text-sm leading-relaxed pt-1 border-t border-stone-200/60">
+            <strong>${act.title}</strong> — <span class="text-stone-700">${act.action}</span>
+          </div>`;
+        container.appendChild(card);
+        
+        if (isFirebaseReady) {
+          db.collection("chats").doc(act.chatId).collection("messages").orderBy("createdAt", "desc").limit(1).get().then(snap => {
+            if (!snap.empty) {
+              let lastMsg = snap.docs[0].data();
+              if (lastMsg.sender !== currentUser.name && !lastMsg.seen) {
+                document.getElementById(`chat-dot-${act.chatId}`)?.classList.remove("hidden");
+                updateNotificationBadgeCount();
+              }
+            }
+          });
+        }
+      });
+    }
+
+    // 📅 Lógica do Calendário Interativo Avançado (Drag & Drop e Redimensionamento)
+    function changeCalendarView(view) {
+      currentCalendarView = view;
+      document.getElementById("btn-view-month").className = `px-3 py-1.5 font-bold rounded transition ${view === 'month' ? 'bg-cb-bordo text-white' : 'bg-stone-200 text-stone-700'}`;
+      document.getElementById("btn-view-week").className = `px-3 py-1.5 font-bold rounded transition ${view === 'week' ? 'bg-cb-bordo text-white' : 'bg-stone-200 text-stone-700'}`;
+      document.getElementById("btn-view-day").className = `px-3 py-1.5 font-bold rounded transition ${view === 'day' ? 'bg-cb-bordo text-white' : 'bg-stone-200 text-stone-700'}`;
+      renderAgendaCalendar();
+    }
+
+    function navigateCalendar(dir) {
+      if (dir === 0) {
+        currentCalendarDate = new Date();
+      } else {
+        if (currentCalendarView === 'month') {
+          currentCalendarDate.setMonth(currentCalendarDate.getMonth() + dir);
+        } else if (currentCalendarView === 'week') {
+          currentCalendarDate.setDate(currentCalendarDate.getDate() + (dir * 7));
+        } else if (currentCalendarView === 'day') {
+          currentCalendarDate.setDate(currentCalendarDate.getDate() + dir);
+        }
+      }
+      renderAgendaCalendar();
+    }
+
+    function renderAgendaCalendar() {
+      const gridContainer = document.getElementById("calendar-grid-container");
+      const titleEl = document.getElementById("calendar-period-title");
+      if (!gridContainer) return;
+      gridContainer.innerHTML = "";
+
+      let storeSelection = document.getElementById("filter-agenda-store").value;
+      if (currentUser.role === 'gerente' && currentUser.units && currentUser.units.length > 0) {
+        storeSelection = currentUser.units[0];
+      }
+
+      let allEvents = [...calendarEvents];
+
+      savedReports.forEach(rep => {
+        if (currentUser.role === 'gerente' && rep.unit !== storeSelection) return;
+        rep.nonConformities?.forEach((nc, i) => {
+          if (nc.date && nc.date !== 'Não definida' && nc.date !== 'Indefinida') {
+            allEvents.push({
+              id: `rep_nc_${rep.id}_${i}`,
+              title: `[Ação] ${nc.title}`,
+              date: nc.date.split('/').reverse().join('-'),
+              time: '09:00',
+              timeEnd: '10:00',
+              store: rep.unit,
+              scope: 'INDIVIDUAL',
+              desc: nc.action || 'Não descrita',
+              type: 'action'
+            });
+          }
+        });
+        rep.maintenanceOrders?.forEach((om, i) => {
+          if (om.date && om.date !== 'Não definida' && om.date !== 'Indefinida') {
+            allEvents.push({
+              id: `rep_om_${rep.id}_${i}`,
+              title: `[Manutenção] ${om.equipment}`,
+              date: om.date.split('/').reverse().join('-'),
+              time: '10:00',
+              timeEnd: '11:00',
+              store: rep.unit,
+              scope: 'INDIVIDUAL',
+              desc: om.action || om.defect || 'Sem descrição',
+              type: 'maintenance'
+            });
+          }
+        });
+      });
+
+      let filteredEvents = allEvents.filter(ev => {
+        if (storeSelection === 'GERAL') return ev.scope === 'GERAL';
+        return ev.scope === 'GERAL' || ev.store === storeSelection;
+      });
+
+      let year = currentCalendarDate.getFullYear();
+      let month = currentCalendarDate.getMonth();
+      const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+
+      if (currentCalendarView === 'month') {
+        titleEl.innerText = `${monthNames[month]} de ${year}`;
+        let firstDayIndex = new Date(year, month, 1).getDay();
+        let totalDays = new Date(year, month + 1, 0).getDate();
+
+        let table = document.createElement("div");
+        table.className = "grid grid-cols-7 text-xs text-center border-stone-200";
+
+        ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].forEach(d => {
+          let cell = document.createElement("div");
+          cell.className = "bg-cb-bordo text-cb-gold font-bold p-2 border-b";
+          cell.innerText = d;
+          table.appendChild(cell);
+        });
+
+        for (let i = 0; i < firstDayIndex; i++) {
+          let emptyCell = document.createElement("div");
+          emptyCell.className = "bg-stone-50/50 p-2 border-b border-r min-h-[90px]";
+          table.appendChild(emptyCell);
+        }
+
+        for (let d = 1; d <= totalDays; d++) {
+          let dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+          let dayEvents = filteredEvents.filter(e => e.date === dateStr);
+
+          let cell = document.createElement("div");
+          cell.className = "bg-white p-1.5 border-b border-r min-h-[90px] flex flex-col justify-start text-left overflow-hidden cursor-pointer hover:bg-stone-50 relative";
+          cell.setAttribute('data-date', dateStr);
+          
+          // Eventos de Drag & Drop sobre o dia
+          cell.ondragover = (e) => e.preventDefault();
+          cell.ondrop = (e) => {
+            e.preventDefault();
+            let evId = e.dataTransfer.getData("text/plain");
+            moveEventToDate(evId, dateStr);
+          };
+
+          cell.onclick = (e) => {
+            if (e.target.tagName !== 'DIV' && e.target.tagName !== 'SPAN') return;
+            openEventModalForDate(dateStr);
+          };
+          
+          let todayStr = new Date().toISOString().split('T')[0];
+          let isToday = dateStr === todayStr;
+
+          let eventsHtml = dayEvents.map(ev => {
+            let isAuto = ev.type === 'action' || ev.type === 'maintenance';
+            let bgClass = isAuto ? 'bg-amber-100 text-amber-900 border-amber-300' : (ev.scope === 'GERAL' ? 'bg-purple-100 text-purple-900 border-purple-300' : 'bg-sky-100 text-sky-900 border-sky-300');
+            return `
+              <div draggable="true" 
+                   ondragstart="event.dataTransfer.setData('text/plain', '${ev.id}')"
+                   onclick="event.stopPropagation(); openEventDetail('${ev.id}')" 
+                   class="event-card px-1.5 py-0.5 rounded border text-[10px] font-semibold truncate cursor-pointer mb-0.5 ${bgClass} relative group" 
+                   title="${ev.title}">
+                • ${ev.time ? ev.time + ' ' : ''}${ev.title}
+                <div class="resize-handle opacity-0 group-hover:opacity-100 bg-black/20" onmousedown="initResize(event, '${ev.id}')" title="Redimensionar horário"></div>
+              </div>`;
+          }).join("");
+
+          cell.innerHTML = `
+            <div class="font-bold text-stone-700 mb-1 flex justify-between items-center pointer-events-none">
+              <span class="${isToday ? 'bg-cb-bordo text-cb-gold px-1.5 py-0.5 rounded-full' : ''}">${d}</span>
+            </div>
+            <div class="flex-1 overflow-y-auto space-y-0.5 max-h-[70px]">${eventsHtml}</div>`;
+          table.appendChild(cell);
+        }
+        gridContainer.appendChild(table);
+
+      } else if (currentCalendarView === 'week') {
+        let currDate = new Date(currentCalendarDate);
+        let firstDayOfWeek = new Date(currDate.setDate(currDate.getDate() - currDate.getDay()));
+        let lastDayOfWeek = new Date(firstDayOfWeek);
+        lastDayOfWeek.setDate(lastDayOfWeek.getDate() + 6);
+
+        titleEl.innerText = `Semana: ${firstDayOfWeek.toLocaleDateString('pt-BR')} a ${lastDayOfWeek.toLocaleDateString('pt-BR')}`;
+
+        let table = document.createElement("div");
+        table.className = "divide-y text-xs";
+
+        for (let i = 0; i < 7; i++) {
+          let loopDate = new Date(firstDayOfWeek);
+          loopDate.setDate(loopDate.getDate() + i);
+          let dateStr = loopDate.toISOString().split('T')[0];
+          let dayEvents = filteredEvents.filter(e => e.date === dateStr);
+
+          let row = document.createElement("div");
+          row.className = "p-3 flex flex-col sm:flex-row gap-2 justify-between items-start sm:items-center bg-white hover:bg-stone-50 transition cursor-pointer";
+          row.ondragover = (e) => e.preventDefault();
+          row.ondrop = (e) => {
+            e.preventDefault();
+            let evId = e.dataTransfer.getData("text/plain");
+            moveEventToDate(evId, dateStr);
+          };
+          row.onclick = () => openEventModalForDate(dateStr);
+          
+          let eventsHtml = dayEvents.map(ev => `
+            <span draggable="true" 
+                  ondragstart="event.dataTransfer.setData('text/plain', '${ev.id}')"
+                  onclick="event.stopPropagation(); openEventDetail('${ev.id}')" 
+                  class="event-card px-2.5 py-1 bg-amber-100 text-amber-900 border rounded font-semibold text-[11px] cursor-pointer hover:bg-amber-200">
+              ${ev.time ? ev.time + ' - ' : ''}${ev.title}
+            </span>`).join(" ");
+
+          row.innerHTML = `
+            <div class="font-bold text-cb-bordo w-36 pointer-events-none">${loopDate.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit' })}</div>
+            <div class="flex-1 flex gap-2 flex-wrap items-center">${eventsHtml || '<span class="text-stone-400 italic">Nenhum evento neste dia</span>'}</div>`;
+          table.appendChild(row);
+        }
+        gridContainer.appendChild(table);
+
+      } else if (currentCalendarView === 'day') {
+        let dateStr = currentCalendarDate.toISOString().split('T')[0];
+        titleEl.innerText = `Dia: ${currentCalendarDate.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}`;
+
+        let dayEvents = filteredEvents.filter(e => e.date === dateStr);
+        let listDiv = document.createElement("div");
+        listDiv.className = "p-4 space-y-3 text-xs";
+
+        if (dayEvents.length === 0) {
+          listDiv.innerHTML = `<div class="text-center text-stone-400 py-6">Nenhum compromisso ou evento agendado para hoje. <button onclick="openEventModalForDate('${dateStr}')" class="text-cb-bordo font-bold underline block mx-auto mt-1">+ Criar Evento</button></div>`;
+        } else {
+          dayEvents.forEach(ev => {
+            let item = document.createElement("div");
+            item.className = "p-3 bg-stone-50 border rounded-xl flex justify-between items-center";
+            item.innerHTML = `
+              <div class="space-y-1">
+                <span class="font-bold text-sm text-cb-bordo block">${ev.time ? '⏰ ' + ev.time + ' — ' : ''}${ev.title}</span>
+                <span class="text-stone-600">${ev.desc}</span>
+                <span class="text-[10px] text-stone-400 block">Loja: ${ev.store}</span>
+              </div>
+              <button onclick="openEventDetail('${ev.id}')" class="px-3 py-1.5 bg-cb-bordo text-white font-bold rounded">Detalhes / Editar</button>`;
+            listDiv.appendChild(item);
+          });
+        }
+        gridContainer.appendChild(listDiv);
+      }
+    }
+
+    // 🖱️ Dinâmica de Arrastar entre Dias e Redimensionar Horário
+    function moveEventToDate(eventId, newDate) {
+      let ev = calendarEvents.find(e => e.id === eventId);
+      if (!ev) return;
+      if (ev.scope === 'GERAL' && currentUser.role !== 'admin') {
+        return alert("Apenas administradores podem alterar eventos em comum.");
+      }
+      if (currentUser.role === 'gerente' && ev.store !== currentUser.units?.[0]) {
+        return alert("Você só pode mover eventos da sua própria unidade.");
+      }
+
+      ev.date = newDate;
+      ev.displayDate = newDate.split('-').reverse().join('/');
+      localStorage.setItem("CB_LOCAL_CALENDAR_EVENTS", JSON.stringify(calendarEvents));
+      syncConfigToCloud();
+      renderAgendaCalendar();
+    }
+
+    function initResize(e, eventId) {
+      e.stopPropagation();
+      e.preventDefault();
+      let ev = calendarEvents.find(e => e.id === eventId);
+      if (!ev) return;
+
+      let startY = e.clientY;
+      function onMouseMove(moveEvent) {
+        let diff = moveEvent.clientY - startY;
+        if (Math.abs(diff) > 25) { // A cada 25px de arraste vertical, altera 30 min no horário fim
+          let [h, m] = (ev.timeEnd || '10:00').split(':').map(Number);
+          m += diff > 0 ? 30 : -30;
+          if (m >= 60) { h += 1; m = 0; }
+          if (m < 0) { h -= 1; m = 30; }
+          ev.timeEnd = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+          startY = moveEvent.clientY;
+          localStorage.setItem("CB_LOCAL_CALENDAR_EVENTS", JSON.stringify(calendarEvents));
+          syncConfigToCloud();
+          renderAgendaCalendar();
+        }
+      }
+
+      function onMouseUp() {
+        window.removeEventListener('mousemove', onMouseMove);
+        window.removeEventListener('mouseup', onMouseUp);
+      }
+
+      window.addEventListener('mousemove', onMouseMove);
+      window.addEventListener('mouseup', onMouseUp);
+    }
+
+    function processarAgendaIA() {
+      const texto = document.getElementById("ia-input").value;
+      if (!texto) return alert("Digite um comando para a IA.");
+
+      let novoEvento = { title: texto.split(/dia|às/i)[0].trim(), data: "", hora: "09:00", loja: "" };
+      
+      const dataMatch = texto.match(/\d{2}\/\d{2}(\/\d{4})?/);
+      if (dataMatch) {
+          let partes = dataMatch[0].split('/');
+          let ano = partes[2] || new Date().getFullYear();
+          novoEvento.data = `${ano}-${partes[1]}-${partes[0]}`;
+      }
+
+      presetUnits.forEach(u => {
+          if (texto.toLowerCase().includes(u.toLowerCase().split(' ').slice(1).join(' '))) novoEvento.loja = u;
+      });
+
+      document.getElementById("event-title").value = novoEvento.title;
+      document.getElementById("event-date").value = novoEvento.data || new Date().toISOString().split('T')[0];
+      document.getElementById("event-time-start").value = novoEvento.hora;
+      
+      if (novoEvento.loja) {
+          document.getElementById("event-scope").value = "INDIVIDUAL";
+          document.getElementById("event-store").value = novoEvento.loja;
+          toggleEventStoreSelect();
+      }
+
+      document.getElementById("event-modal").classList.remove("hidden");
+      document.getElementById("ia-input").value = "";
+    }
+
+    function openEventModalForDate(dateStr) {
+      if (currentUser.role === 'operador') return alert("Acesso não autorizado.");
+      document.getElementById("event-modal-title").innerText = "Novo Evento na Agenda";
+      document.getElementById("event-edit-id").value = "";
+      document.getElementById("event-title").value = "";
+      document.getElementById("event-date").value = dateStr;
+      document.getElementById("event-time-start").value = "09:00";
+      document.getElementById("event-time-end").value = "10:00";
+      document.getElementById("event-recurrence").value = "none";
+      document.getElementById("event-desc").value = "";
+      
+      let scopeSelect = document.getElementById("event-scope");
+      if (currentUser.role === 'gerente') {
+        scopeSelect.value = 'INDIVIDUAL';
+        scopeSelect.disabled = true;
+      } else {
+        scopeSelect.value = 'GERAL';
+        scopeSelect.disabled = false;
+      }
+      toggleEventStoreSelect();
+      document.getElementById("btn-delete-event").classList.add("hidden");
+      document.getElementById("event-modal").classList.remove("hidden");
+    }
+
+    function openEventDetail(id) {
+      let ev = calendarEvents.find(e => e.id === id);
+      if (!ev) return;
+
+      if (ev.scope === 'GERAL' && currentUser.role !== 'admin') {
+        return alert(`Evento em Comum da Rede: ${ev.title}\nData: ${ev.displayDate || ev.date}\n${ev.desc}\n\n(Apenas administradores podem editar este evento).`);
+      }
+      if (currentUser.role === 'gerente' && ev.store !== currentUser.units?.[0]) {
+        return alert("Você só pode editar eventos da sua própria unidade.");
+      }
+
+      document.getElementById("event-modal-title").innerText = "Editar Evento";
+      document.getElementById("event-edit-id").value = ev.id;
+      document.getElementById("event-title").value = ev.title;
+      document.getElementById("event-date").value = ev.date;
+      document.getElementById("event-scope").value = ev.scope;
+      document.getElementById("event-store").value = ev.store || '';
+      document.getElementById("event-time-start").value = ev.time || '09:00';
+      document.getElementById("event-time-end").value = ev.timeEnd || '10:00';
+      document.getElementById("event-recurrence").value = ev.recurrence || 'none';
+      document.getElementById("event-desc").value = ev.desc || '';
+      
+      toggleEventStoreSelect();
+      document.getElementById("btn-delete-event").classList.remove("hidden");
+      document.getElementById("event-modal").classList.remove("hidden");
+    }
+
+    function openEventModal() {
+      openEventModalForDate(new Date().toISOString().split('T')[0]);
+    }
+
+    function toggleEventModal() {
+      document.getElementById("event-modal").classList.toggle("hidden");
+    }
+
+    function toggleEventStoreSelect() {
+      let scope = document.getElementById("event-scope").value;
+      let box = document.getElementById("event-store-box");
+      if (scope === 'INDIVIDUAL') box.classList.remove("hidden");
+      else box.classList.add("hidden");
+    }
+
+    function saveCalendarEvent() {
+      let id = document.getElementById("event-edit-id").value || "ev_" + Date.now();
+      let title = document.getElementById("event-title").value.trim();
+      let date = document.getElementById("event-date").value;
+      let scope = document.getElementById("event-scope").value;
+      let store = scope === 'INDIVIDUAL' ? (currentUser.role === 'gerente' ? currentUser.units[0] : document.getElementById("event-store").value) : 'GERAL';
+      let time = document.getElementById("event-time-start").value;
+      let timeEnd = document.getElementById("event-time-end").value;
+      let recurrence = document.getElementById("event-recurrence").value;
+      let desc = document.getElementById("event-desc").value.trim();
+
+      if (!title || !date) return alert("Preencha o título e a data do evento.");
+      if (scope === 'GERAL' && currentUser.role !== 'admin') return alert("Apenas administradores podem criar ou editar eventos em comum para toda a rede.");
+
+      let existingIdx = calendarEvents.findIndex(e => e.id === id);
+      let evObj = { id, title, date, displayDate: date.split('-').reverse().join('/'), store, scope, time, timeEnd, recurrence, desc, type: 'manual' };
+
+      if (existingIdx >= 0) {
+        if (calendarEvents[existingIdx].scope === 'GERAL' && currentUser.role !== 'admin') {
+          return alert("Apenas administradores podem modificar eventos em comum.");
+        }
+        calendarEvents[existingIdx] = evObj;
+      } else {
+        calendarEvents.push(evObj);
+      }
+
+      localStorage.setItem("CB_LOCAL_CALENDAR_EVENTS", JSON.stringify(calendarEvents));
+      syncConfigToCloud();
+      toggleEventModal();
+      renderAgendaCalendar();
+      alert("Evento salvo com sucesso na agenda!");
+    }
+
+    function deleteCalendarEventFromModal() {
+      let id = document.getElementById("event-edit-id").value;
+      if (!id) return;
+      let ev = calendarEvents.find(e => e.id === id);
+      if (ev && ev.scope === 'GERAL' && currentUser.role !== 'admin') {
+        return alert("Apenas administradores podem excluir eventos em comum.");
+      }
+
+      if (confirm("Deseja realmente excluir este evento?")) {
+        calendarEvents = calendarEvents.filter(e => e.id !== id);
+        localStorage.setItem("CB_LOCAL_CALENDAR_EVENTS", JSON.stringify(calendarEvents));
+        syncConfigToCloud();
+        toggleEventModal();
+        renderAgendaCalendar();
+      }
+    }
+
+    // --- CHAT E TÉCNICOS ---
+    function renderTechniciansList() {
+      const container = document.getElementById("technicians-list-container");
+      if (!container) return;
+      container.innerHTML = "";
+
+      const regionFilter = document.getElementById("filter-tech-region").value;
+      const serviceFilter = document.getElementById("filter-tech-service").value;
+
+      const serviceSelect = document.getElementById("filter-tech-service");
+      if (serviceSelect && serviceSelect.options.length <= 1) {
+        let uniqueServices = [...new Set(techniciansList.map(t => t.service))].sort();
+        uniqueServices.forEach(srv => {
+          let opt = document.createElement("option");
+          opt.value = srv;
+          opt.innerText = srv;
+          serviceSelect.appendChild(opt);
+        });
+        serviceSelect.value = serviceFilter;
+      }
+
+      let filtered = techniciansList.filter(t => {
+        let matchReg = !regionFilter || t.region.includes(regionFilter) || t.region === "Geral";
+        let matchSrv = !serviceFilter || t.service === serviceFilter;
+        return matchReg && matchSrv;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = `<div class="p-8 text-center bg-white rounded-xl border text-stone-400 text-xs">Nenhum técnico encontrado.</div>`;
+        return;
+      }
+
+      let groups = {};
+      filtered.forEach(t => {
+        let reg = t.region || "Geral";
+        if (!groups[reg]) groups[reg] = [];
+        groups[reg].push(t);
+      });
+
+      for (let reg in groups) {
+        let section = document.createElement("div");
+        section.className = "bg-white p-4 rounded-xl border shadow-sm space-y-3";
+        section.innerHTML = `<h3 class="font-bold text-cb-bordo text-xs uppercase tracking-wider border-b pb-1.5">📍 ${reg}</h3>`;
+
+        let listDiv = document.createElement("div");
+        listDiv.className = "grid grid-cols-1 sm:grid-cols-2 gap-2";
+
+        groups[reg].forEach(tech => {
+          let cleanPhone = tech.phone.replace(/\D/g, '');
+          let whatsAppUrl = `https://api.whatsapp.com/send?phone=55${cleanPhone}`;
+
+          let card = document.createElement("div");
+          card.className = "p-3 bg-stone-50 border rounded-xl flex justify-between items-center text-xs";
+          card.innerHTML = `
+            <div class="space-y-0.5">
+              <span class="font-bold text-stone-900 block text-sm">${tech.name}</span>
+              <span class="inline-block bg-amber-100 text-amber-900 font-semibold px-2 py-0.5 rounded text-[10px]">${tech.service}</span>
+              <span class="block text-stone-500 font-mono">📞 ${tech.phone}</span>
+            </div>
+            <a href="${whatsAppUrl}" target="_blank" class="px-3 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-lg transition flex items-center gap-1 shadow-sm shrink-0">
+              <span>💬 WhatsApp</span>
+            </a>`;
+          listDiv.appendChild(card);
+        });
+
+        section.appendChild(listDiv);
+        container.appendChild(section);
+      }
+    }
+
+    function toggleTechModal() {
+      if (currentUser.role !== 'admin') return alert("Acesso restrito a administradores.");
+      document.getElementById("tech-modal").classList.toggle("hidden");
+    }
+
+    function addNewTechnician() {
+      const name = document.getElementById("new-tech-name").value.trim();
+      const service = document.getElementById("new-tech-service").value.trim();
+      const region = document.getElementById("new-tech-region").value;
+      const phone = document.getElementById("new-tech-phone").value.trim();
+
+      if (!name || !service || !phone) return alert("Preencha todos os campos.");
+
+      techniciansList.push({ name, service, region, phone });
+      localStorage.setItem("CB_LOCAL_TECHNICIANS", JSON.stringify(techniciansList));
+      syncConfigToCloud();
+
+      document.getElementById("new-tech-name").value = "";
+      document.getElementById("new-tech-service").value = "";
+      document.getElementById("new-tech-phone").value = "";
+      toggleTechModal();
+      renderTechniciansList();
+      alert("Técnico cadastrado com sucesso!");
+    }
+
+    function openChatModal(chatId, reportId, type, index) {
+      activeChatActionId = chatId;
+      const rep = savedReports.find(r => r.id === reportId);
+      const detailsContainer = document.getElementById("chat-action-details");
+      detailsContainer.innerHTML = "";
+
+      if (rep) {
+        let itemData = type === 'nc' ? rep.nonConformities?.[index] : rep.maintenanceOrders?.[index];
+        if (itemData) {
+          document.getElementById("chat-modal-title").innerText = type === 'nc' ? itemData.title : `Manutenção: ${itemData.equipment}`;
+          document.getElementById("chat-modal-subtitle").innerText = `${rep.unit} • Prazo: ${itemData.date}`;
+          
+          detailsContainer.innerHTML = `
+            <div><strong>Descrição / Ação Sugerida:</strong> ${itemData.action || itemData.defect || 'Não especificada'}</div>
+            ${itemData.photoUrl ? `<div class="mt-2"><span class="block font-bold mb-1">Foto do Checklist:</span><img src="${itemData.photoUrl}" onclick="openImageViewer('${itemData.photoUrl}')" class="h-28 w-auto rounded-lg border object-cover cursor-pointer hover:opacity-90"></div>` : ''}
+          `;
+        }
+      }
+
+      document.getElementById("chat-modal").classList.remove("hidden");
+      loadChatMessages(chatId);
+      document.getElementById(`chat-dot-${chatId}`)?.classList.add("hidden");
+    }
+
+    function toggleChatModal() {
+      document.getElementById("chat-modal").classList.add("hidden");
+      activeChatActionId = null;
+      renderCentralizedActions();
+    }
+
+    function openImageViewer(url) {
+      document.getElementById("viewer-img").src = url;
+      document.getElementById("image-viewer-modal").classList.remove("hidden");
+    }
+
+    function sendChatAttachment(event) {
+      const file = event.target.files[0];
+      if (!file || !activeChatActionId || !isFirebaseReady) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const fileData = e.target.result;
+        let isImage = file.type.startsWith('image/');
+
+        db.collection("chats").doc(activeChatActionId).collection("messages").add({
+          text: fileData, 
+          sender: currentUser.name, 
+          seen: false, 
+          isAttachment: true,
+          fileType: isImage ? 'image' : 'file',
+          fileName: file.name,
+          time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }), 
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        }).then(() => {
+          event.target.value = '';
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function loadChatMessages(chatId) {
+      if (!isFirebaseReady) return;
+      db.collection("chats").doc(chatId).collection("messages").orderBy("createdAt", "asc").onSnapshot(snapshot => {
+        const container = document.getElementById("chat-messages-container");
+        container.innerHTML = "";
+        
+        snapshot.docChanges().forEach(change => {
+          if (change.type === "added") {
+            const m = change.doc.data();
+            if (m.sender !== currentUser.name && !m.seen) {
+              playAudioBeep();
+              updateNotificationBadgeCount();
+              document.getElementById(`chat-dot-${chatId}`)?.classList.remove("hidden");
+            }
+          }
+        });
+
+        if (snapshot.empty) {
+          container.innerHTML = `<div class="text-center text-stone-400 py-6">Nenhuma mensagem ainda. Inicie a conversa.</div>`;
+          return;
+        }
+
+        snapshot.forEach(doc => {
+          const m = doc.data();
+          const isMe = m.sender === currentUser.name;
+          
+          if (!isMe && !m.seen) {
+            db.collection("chats").doc(chatId).collection("messages").doc(doc.id).update({ seen: true });
+          }
+
+          const msgDiv = document.createElement("div");
+          msgDiv.className = `flex flex-col ${isMe ? 'items-end' : 'items-start'}`;
+          
+          let bubbleContent = "";
+          if (m.isAttachment) {
+            if (m.fileType === 'image') {
+              bubbleContent = `<img src="${m.text}" onclick="openImageViewer('${m.text}')" class="max-h-40 rounded-lg cursor-pointer border hover:opacity-90 object-cover mb-1"><a href="${m.text}" download="anexo" class="text-[10px] underline block font-bold">Baixar Imagem</a>`;
+            } else {
+              bubbleContent = `<a href="${m.text}" download="${m.fileName || 'arquivo'}" class="underline font-bold text-blue-600 block">📄 Baixar: ${m.fileName || 'Arquivo'}</a>`;
+            }
+          } else {
+            bubbleContent = `<span>${m.text}</span>`;
+          }
+
+          msgDiv.innerHTML = `
+            <div class="max-w-[80%] p-2.5 rounded-xl ${isMe ? 'bg-cb-bordo text-white' : 'bg-stone-200 text-stone-800'}">
+              <span class="block text-[9px] font-bold opacity-75 mb-0.5">${m.sender}</span>
+              ${bubbleContent}
+            </div>
+            <div class="flex items-center gap-1 mt-0.5">
+              <span class="text-[9px] text-stone-400">${m.time || ''}</span>
+              ${isMe ? `<span class="text-[9px] font-bold ${m.seen ? 'text-emerald-600' : 'text-stone-400'}">${m.seen ? '✓✓ Visto' : '✓ Enviado'}</span>` : ''}
+            </div>`;
+          container.appendChild(msgDiv);
+        });
+        container.scrollTop = container.scrollHeight;
+      });
+    }
+
+    function sendChatMessage() {
+      const input = document.getElementById("chat-input-msg");
+      const text = input.value.trim();
+      if (!text || !activeChatActionId || !isFirebaseReady) return;
+      db.collection("chats").doc(activeChatActionId).collection("messages").add({
+        text: text, sender: currentUser.name, seen: false, time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }), createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      }).then(() => input.value = "");
+    }
+
     function toggleConfigModal() {
-      document.getElementById("config-modal").classList.toggle("hidden");
-      if (!document.getElementById("config-modal").classList.contains("hidden")) switchConfigTab('models');
+      const modal = document.getElementById("config-modal");
+      modal.classList.toggle("hidden");
+      if (!modal.classList.contains("hidden")) {
+        switchConfigTab('models');
+      }
     }
 
     function switchConfigTab(tab) {
       document.getElementById("tab-content-models").classList.add("hidden");
       document.getElementById("tab-content-items").classList.add("hidden");
+
+      document.getElementById("tab-btn-models").className = "flex-1 py-3 border-b-2 border-transparent text-stone-500 transition";
+      document.getElementById("tab-btn-items").className = "flex-1 py-3 border-b-2 border-transparent text-stone-500 transition";
+
       if (tab === 'models') {
         document.getElementById("tab-content-models").classList.remove("hidden");
+        document.getElementById("tab-btn-models").className = "flex-1 py-3 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition";
         renderModelsListInConfig();
-      } else {
+      } else if (tab === 'items') {
         document.getElementById("tab-content-items").classList.remove("hidden");
+        document.getElementById("tab-btn-items").className = "flex-1 py-3 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition";
         document.getElementById("config-active-model-name").innerText = getCurrentChecklist().name;
         renderModalItems();
       }
@@ -1089,8 +2458,52 @@
       const container = document.getElementById("models-list-container");
       container.innerHTML = "";
       allChecklists.forEach((c, idx) => {
-        container.innerHTML += `<div class="flex justify-between items-center p-2.5 bg-stone-50 rounded border text-xs"><span class="font-bold">${c.name}</span><button onclick="activeChecklistId='${c.id}'; switchConfigTab('items');" class="text-cb-bordo font-bold underline">Configurar Setores/Perguntas</button></div>`;
+        const div = document.createElement("div");
+        div.className = "flex justify-between items-center p-2.5 bg-stone-50 rounded border text-xs";
+        div.innerHTML = `
+          <span class="font-bold">${c.name}</span>
+          <div class="flex gap-2">
+            <button onclick="editChecklistName(${idx})" class="text-blue-600 font-bold underline">Editar Nome</button>
+            <button onclick="activeChecklistId='${c.id}'; switchConfigTab('items');" class="text-cb-bordo font-bold underline">Setores/Perguntas</button>
+            ${allChecklists.length > 1 ? `<button onclick="deleteModel('${c.id}')" class="text-rose-600 font-bold">Excluir</button>` : ''}
+          </div>`;
+        container.appendChild(div);
       });
+    }
+
+    function editChecklistName(idx) {
+      const currentName = allChecklists[idx].name;
+      const newName = prompt("Editar nome do checklist:", currentName);
+      if (newName && newName.trim()) {
+        allChecklists[idx].name = newName.trim();
+        localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
+        syncConfigToCloud();
+        renderModelsListInConfig();
+        renderHomeChecklistSelect();
+        alert("Nome atualizado com sucesso!");
+      }
+    }
+
+    function editQuestion(sIdx, iIdx) {
+      const currentItem = getCurrentChecklist().categories[sIdx].items[iIdx];
+      const newTitle = prompt("Editar título da pergunta:", currentItem.title);
+      if (newTitle && newTitle.trim()) {
+        currentItem.title = newTitle.trim();
+        localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
+        syncConfigToCloud();
+        renderModalItems();
+        alert("Pergunta atualizada com sucesso!");
+      }
+    }
+
+    function editCategory(sIdx) {
+      const current = getCurrentChecklist();
+      const newName = prompt("Editar setor:", current.categories[sIdx].category);
+      if (newName?.trim()) {
+        current.categories[sIdx].category = newName.trim();
+        localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
+        syncConfigToCloud(); renderModalItems();
+      }
     }
 
     function renderModalItems() {
@@ -1100,58 +2513,179 @@
       container.innerHTML = ""; catSelect.innerHTML = "";
 
       current.categories.forEach((sec, sIdx) => {
-        catSelect.innerHTML += `<option value="${sIdx}">${sec.category}</option>`;
-        let secBox = `<div class="border rounded-xl p-3 bg-white space-y-2 text-xs"><div class="font-bold uppercase border-b pb-1">${sec.category}</div>`;
+        const opt = document.createElement("option"); opt.value = sIdx; opt.innerText = sec.category; catSelect.appendChild(opt);
+        const secBox = document.createElement("div");
+        secBox.className = "border rounded-xl p-3 bg-white space-y-2 text-xs";
+        secBox.innerHTML = `<div class="flex justify-between items-center border-b pb-1"><span class="font-bold uppercase">${sec.category}</span><button onclick="editCategory(${sIdx})" class="underline font-bold">Editar Setor</button></div>`;
         sec.items.forEach((item, iIdx) => {
-          secBox += `<div class="bg-stone-50 p-2 rounded border flex justify-between items-center"><span>${item.title}</span><div class="flex gap-2"><button onclick="openEditQuestionModal(${sIdx}, ${iIdx})" class="text-blue-600 font-bold">Configurar</button><button onclick="removeItem(${sIdx}, ${iIdx})" class="text-rose-600 font-bold">Remover</button></div></div>`;
+          secBox.innerHTML += `<div class="bg-stone-50 p-2 rounded border flex justify-between items-center"><span>${item.title}</span><div class="flex gap-2"><button onclick="editQuestion(${sIdx}, ${iIdx})" class="text-blue-600 font-bold">Editar</button><button onclick="removeItem(${sIdx}, ${iIdx})" class="text-rose-600 font-bold">Remover</button></div></div>`;
         });
-        secBox += `</div>`;
-        container.innerHTML += secBox;
+        container.appendChild(secBox);
       });
     }
 
-    function openEditQuestionModal(sIdx, iIdx) {
-      const item = getCurrentChecklist().categories[sIdx].items[iIdx];
-      document.getElementById("edit-q-sec-idx").value = sIdx;
-      document.getElementById("edit-q-item-idx").value = iIdx;
-      document.getElementById("edit-q-title").value = item.title;
-      document.getElementById("edit-q-type").value = item.type || 'boolean';
-      document.getElementById("edit-q-photo").checked = !!item.requirePhoto;
-      document.getElementById("edit-question-modal").classList.remove("hidden");
+    function toggleUsersModal() {
+      if (currentUser.role !== 'admin') return alert("Acesso restrito a administradores.");
+      const m = document.getElementById("users-modal");
+      m.classList.toggle("hidden");
+      if (!m.classList.contains("hidden")) {
+        renderUsersList();
+        renderPresetUnits();
+        switchAdminTab('units');
+      }
     }
 
-    function closeEditQuestionModal() { document.getElementById("edit-question-modal").classList.add("hidden"); }
+    function switchAdminTab(tab) {
+      const uContent = document.getElementById("admin-content-units");
+      const uUsers = document.getElementById("admin-content-users");
+      const uStatus = document.getElementById("admin-content-status");
+      const uPriorities = document.getElementById("admin-content-priorities");
+      const btnU = document.getElementById("admin-tab-units");
+      const btnUs = document.getElementById("admin-tab-users");
+      const btnSt = document.getElementById("admin-tab-status");
+      const btnPr = document.getElementById("admin-tab-priorities");
 
-    function saveEditedQuestion() {
-      const sIdx = parseInt(document.getElementById("edit-q-sec-idx").value);
-      const iIdx = parseInt(document.getElementById("edit-q-item-idx").value);
-      let item = getCurrentChecklist().categories[sIdx].items[iIdx];
-      item.title = document.getElementById("edit-q-title").value.trim();
-      item.type = document.getElementById("edit-q-type").value;
-      item.requirePhoto = document.getElementById("edit-q-photo").checked;
-      localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
+      uContent.classList.add("hidden");
+      uUsers.classList.add("hidden");
+      uStatus.classList.add("hidden");
+      uPriorities.classList.add("hidden");
+      btnU.className = "flex-1 py-2.5 border-b-2 border-transparent text-stone-500 transition whitespace-nowrap";
+      btnUs.className = "flex-1 py-2.5 border-b-2 border-transparent text-stone-500 transition whitespace-nowrap";
+      btnSt.className = "flex-1 py-2.5 border-b-2 border-transparent text-stone-500 transition whitespace-nowrap";
+      btnPr.className = "flex-1 py-2.5 border-b-2 border-transparent text-stone-500 transition whitespace-nowrap";
+
+      if (tab === 'units') {
+        uContent.classList.remove("hidden");
+        btnU.className = "flex-1 py-2.5 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition whitespace-nowrap";
+        renderPresetUnits();
+      } else if (tab === 'users') {
+        uUsers.classList.remove("hidden");
+        btnUs.className = "flex-1 py-2.5 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition whitespace-nowrap";
+        renderUsersList();
+        renderUserUnitsCheckboxes();
+      } else if (tab === 'status') {
+        uStatus.classList.remove("hidden");
+        btnSt.className = "flex-1 py-2.5 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition whitespace-nowrap";
+        renderAdminStatusList();
+      } else if (tab === 'priorities') {
+        uPriorities.classList.remove("hidden");
+        btnPr.className = "flex-1 py-2.5 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition whitespace-nowrap";
+        renderAdminPrioritiesList();
+      }
+    }
+
+    function toggleUnitSelectionBox() {
+      const role = document.getElementById("new-user-role").value;
+      const box = document.getElementById("new-user-units-box");
+      if (role === 'admin') box.classList.add("hidden");
+      else box.classList.remove("hidden");
+    }
+
+    function renderUserUnitsCheckboxes() {
+      const select = document.getElementById("new-user-units");
+      if (!select) return;
+      select.innerHTML = "";
+      presetUnits.forEach(u => {
+        const opt = document.createElement("option");
+        opt.value = u;
+        opt.innerText = u;
+        select.appendChild(opt);
+      });
+    }
+
+    function renderUsersList() {
+      const list = document.getElementById("users-list");
+      list.innerHTML = "";
+      users.forEach((u, idx) => {
+        const item = document.createElement("div");
+        item.className = "bg-stone-50 border p-2.5 rounded-xl text-xs space-y-1";
+        let unitsText = u.units && u.units.length > 0 ? u.units.join(", ") : "Todas as Lojas";
+        item.innerHTML = `
+          <div class="flex justify-between items-center">
+            <span class="font-bold text-cb-bordo text-sm">${u.name} (${u.role})</span>
+            ${u.username !== 'alcides' ? `<button onclick="removeUser(${idx})" class="text-rose-600 font-bold hover:underline">Excluir</button>` : '<span class="text-[10px] text-stone-400 font-bold">Principal</span>'}
+          </div>
+          <div class="text-stone-500">Login: ${u.username} | Senha: ${u.pass}</div>
+          <div class="text-stone-600"><strong>Lojas Vinculadas:</strong> ${unitsText}</div>`;
+        list.appendChild(item);
+      });
+    }
+
+    function addNewUser() {
+      const username = document.getElementById("new-user-name").value.trim().toLowerCase();
+      const pass = document.getElementById("new-user-pass").value.trim();
+      const name = document.getElementById("new-user-fullname").value.trim();
+      const role = document.getElementById("new-user-role").value;
+      
+      let assignedUnits = [];
+      if (role !== 'admin') {
+        const select = document.getElementById("new-user-units");
+        for (let opt of select.selectedOptions) {
+          assignedUnits.push(opt.value);
+        }
+      }
+
+      if (!username || !pass || !name) return alert("Preencha todos os campos obrigatórios.");
+      if (users.some(item => item.username === username)) return alert("Login já existente!");
+
+      users.push({ username, pass, name, role, units: assignedUnits });
+      localStorage.setItem("CB_LOCAL_USERS", JSON.stringify(users));
       syncConfigToCloud();
-      closeEditQuestionModal();
-      renderModalItems();
-      alert("Pergunta atualizada!");
+
+      document.getElementById("new-user-name").value = "";
+      document.getElementById("new-user-pass").value = "";
+      document.getElementById("new-user-fullname").value = "";
+      renderUsersList();
+      alert("Usuário criado com sucesso!");
     }
 
-    function getCurrentChecklist() { return allChecklists.find(c => c.id === activeChecklistId) || allChecklists[0]; }
+    function removeUser(idx) {
+      if (confirm("Excluir este acesso?")) {
+        users.splice(idx, 1);
+        localStorage.setItem("CB_LOCAL_USERS", JSON.stringify(users));
+        syncConfigToCloud();
+        renderUsersList();
+      }
+    }
+
+    function deleteModel(id) {
+      if (confirm("Excluir este modelo de checklist?")) {
+        allChecklists = allChecklists.filter(c => c.id !== id);
+        localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
+        syncConfigToCloud();
+        renderModelsListInConfig();
+      }
+    }
+
     function toggleNewCategoryInput() { document.getElementById("new-cat-box").classList.toggle("hidden"); }
+    function getCurrentChecklist() { return allChecklists.find(c => c.id === activeChecklistId) || allChecklists[0]; }
+
+    function createNewChecklistType() {
+      const name = document.getElementById("new-checklist-name").value.trim();
+      if (!name) return alert("Nome vazio.");
+      const newId = "checklist-" + Date.now();
+      allChecklists.push({ id: newId, name: name, categories: [{ category: "1. Itens Gerais", items: [] }] });
+      activeChecklistId = newId;
+      localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
+      localStorage.setItem("CB_LOCAL_ACTIVE_ID", activeChecklistId);
+      syncConfigToCloud(); document.getElementById("new-checklist-name").value = "";
+      renderModelsListInConfig(); switchConfigTab('items'); alert("Modelo criado com sucesso!");
+    }
 
     function addNewCategory() {
-      let t = document.getElementById("new-cat-text").value.trim();
-      if (!t) return;
-      getCurrentChecklist().categories.push({ category: t, items: [] });
+      const catText = document.getElementById("new-cat-text").value.trim();
+      if (!catText) return alert("Nome vazio.");
+      getCurrentChecklist().categories.push({ category: catText, items: [] });
       localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
-      syncConfigToCloud(); document.getElementById("new-cat-text").value = ""; renderModalItems();
+      syncConfigToCloud(); document.getElementById("new-cat-text").value = "";
+      document.getElementById("new-cat-box").classList.add("hidden"); renderModalItems();
     }
 
     function addNewItem() {
-      let catIdx = document.getElementById("new-item-category").value;
-      let title = document.getElementById("new-item-text").value.trim();
-      if (!title) return;
-      getCurrentChecklist().categories[catIdx].items.push({ title, type: document.getElementById("new-item-type").value, requirePhoto: document.getElementById("new-item-req-photo").checked });
+      const catIdx = document.getElementById("new-item-category").value;
+      const itemText = document.getElementById("new-item-text").value.trim();
+      if (!itemText) return alert("Digite o título da pergunta.");
+      getCurrentChecklist().categories[catIdx].items.push({ title: itemText, type: document.getElementById("new-item-type").value, requirePhoto: document.getElementById("new-item-req-photo").checked });
       localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
       syncConfigToCloud(); document.getElementById("new-item-text").value = ""; renderModalItems();
     }
@@ -1166,23 +2700,54 @@
       if (confirm("Restaurar padrões?")) {
         allChecklists = JSON.parse(JSON.stringify(defaultTemplates));
         localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
-        syncConfigToCloud(); renderModalItems(); alert("Restaurado!");
+        syncConfigToCloud(); renderModelsListInConfig(); alert("Restaurado!");
       }
     }
 
     function resetChecklist() {
-      if (confirm("Zerar respostas?")) { attachedPhotos = {}; actionPlans = {}; customAnswers = {}; maintenanceOrders = {}; renderChecklist(); }
+      if (confirm("Zerar respostas?")) {
+        document.querySelectorAll('input[type="radio"]').forEach(r => r.checked = false);
+        attachedPhotos = {}; actionPlans = {}; customAnswers = {}; maintenanceOrders = {}; renderChecklist();
+      }
+    }
+
+    function initApp() {
+      updateLogos(); renderPresetUnits(); updateHistoryBadge(); setupCloudListeners();
+      
+      if (!currentUser) {
+        document.getElementById("login-screen").classList.remove("hidden");
+        document.getElementById("modules-screen").classList.add("hidden");
+        return;
+      }
+      
+      document.getElementById("login-screen").classList.add("hidden");
+      document.getElementById("sidebar-user-name").innerText = `${currentUser.name} (${currentUser.role})`;
+      document.getElementById("supervisor-name").value = currentUser.name;
+      
+      if (currentUser.role === "admin") {
+        document.getElementById("sidebar-btn-users").classList.remove("hidden");
+        document.getElementById("sidebar-btn-config").classList.remove("hidden");
+        document.getElementById("home-btn-config").classList.remove("hidden");
+      } else {
+        document.getElementById("sidebar-btn-users").classList.add("hidden");
+        document.getElementById("sidebar-btn-config").classList.add("hidden");
+        document.getElementById("home-btn-config").classList.add("hidden");
+      }
+      
+      openModulesScreen();
     }
 
     function handleEvaluationChange(itemKey, value) {
-      customAnswers[itemKey] = value;
-      document.getElementById(`plan-box-${itemKey}`)?.classList.toggle("hidden", value !== "nao-conforme");
+      const planBox = document.getElementById(`plan-box-${itemKey}`);
+      if (value === "nao-conforme") planBox?.classList.remove("hidden");
+      else planBox?.classList.add("hidden");
       calculateScore();
     }
 
     function handleMaintenanceChange(itemKey, value) {
-      customAnswers[itemKey] = value;
-      document.getElementById(`maintenance-box-${itemKey}`)?.classList.toggle("hidden", value !== "abrir");
+      const omBox = document.getElementById(`maintenance-box-${itemKey}`);
+      if (value === "abrir") omBox?.classList.remove("hidden");
+      else omBox?.classList.add("hidden");
       calculateScore();
     }
 
@@ -1193,6 +2758,11 @@
 
     function setStarRating(itemKey, stars) {
       customAnswers[itemKey] = stars;
+      for (let i = 1; i <= 5; i++) {
+        const starBtn = document.getElementById(`star-${itemKey}-${s}`);
+        if (starBtn) starBtn.className = `text-xl ${i <= stars ? 'text-amber-400 scale-110' : 'text-stone-300'}`;
+      }
+      document.getElementById(`star-label-${itemKey}`).innerText = `${stars} de 5`;
       calculateScore();
     }
 
@@ -1203,23 +2773,29 @@
     }
 
     function calculateScore() {
-      let total = 0, earned = 0;
+      let totalQuestionsEvaluated = 0, pointsEarned = 0;
       getCurrentChecklist().categories.forEach((sec, sIdx) => {
         sec.items.forEach((item, iIdx) => {
-          let key = `${sIdx}-${iIdx}`;
-          let ans = customAnswers[key];
-          if (item.type === 'boolean' && ans) { earned += (ans === 'conforme' ? 1 : 0); total++; }
-          else if (item.type === 'maintenance' && ans) { earned += (ans === 'regular' ? 1 : 0); total++; }
-          else if (item.type === 'stars' && ans) { earned += (parseInt(ans) / 5); total++; }
+          const itemKey = `${sIdx}-${iIdx}`;
+          const itemType = item.type || "boolean";
+          if (itemType === "boolean") {
+            const selected = document.querySelector(`input[name="item-${itemKey}"]:checked`);
+            if (selected) { pointsEarned += (selected.value === "conforme" ? 1.0 : 0.0); totalQuestionsEvaluated += 1.0; }
+          } else if (itemType === "maintenance") {
+            const selected = document.querySelector(`input[name="item-${itemKey}"]:checked`);
+            if (selected) { pointsEarned += (selected.value === "regular" ? 1.0 : 0.0); totalQuestionsEvaluated += 1.0; }
+          } else if (itemType === "stars") {
+            const rating = parseInt(customAnswers[itemKey]) || 0;
+            if (rating > 0) { pointsEarned += (rating / 5); totalQuestionsEvaluated += 1.0; }
+          }
         });
       });
-      let score = total > 0 ? Math.round((earned / total) * 100) : 100;
+      const score = totalQuestionsEvaluated > 0 ? Math.round((pointsEarned / totalQuestionsEvaluated) * 100) : 100;
       document.getElementById("score-display").innerText = score + "%";
-      document.getElementById("evaluated-count-display").innerText = `${total} avaliado(s)`;
-      return { score, total };
+      document.getElementById("evaluated-count-display").innerText = `${Math.round(totalQuestionsEvaluated)} item(ns) avaliado(s)`;
+      return { score, total: Math.round(totalQuestionsEvaluated) };
     }
 
-    // Renderização do Checklist preservando estado (evita perda de dados ao responder)
     function renderChecklist() {
       const container = document.getElementById("checklist-container");
       const current = getCurrentChecklist();
@@ -1227,102 +2803,98 @@
 
       current.categories.forEach((sec, sIdx) => {
         if (sec.items.length === 0) return;
-        let secEl = document.createElement("div");
-        secEl.className = "bg-white rounded-xl shadow-sm border overflow-hidden";
+        const secEl = document.createElement("div");
+        secEl.className = "bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden";
         
         let itemsHtml = sec.items.map((item, iIdx) => {
-          let key = `${sIdx}-${iIdx}`;
-          let ans = customAnswers[key];
-          let photo = attachedPhotos[key];
-          let plan = actionPlans[key] || { action: '', date: '' };
-          let om = maintenanceOrders[key] || { equipment: '', action: '', date: '' };
-          let ctrl = "";
+          const itemKey = `${sIdx}-${iIdx}`;
+          const itemType = item.type || "boolean";
+          const photoData = attachedPhotos[itemKey];
+          const planData = actionPlans[itemKey] || { action: '', date: '' };
+          const omData = maintenanceOrders[itemKey] || { equipment: '', action: '', date: '' };
+          const savedAnswer = customAnswers[itemKey];
+          let controlHtml = "";
 
-          if (item.type === 'boolean' || !item.type) {
-            ctrl = `
+          if (itemType === "boolean") {
+            controlHtml = `
               <div class="flex gap-2 text-xs">
-                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${key}" value="conforme" ${ans === 'conforme' ? 'checked' : ''} class="hidden peer" onchange="handleEvaluationChange('${key}', 'conforme')"><div class="text-center py-2 rounded border peer-checked:bg-emerald-600 peer-checked:text-white font-bold">Sim</div></label>
-                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${key}" value="nao-conforme" ${ans === 'nao-conforme' ? 'checked' : ''} class="hidden peer" onchange="handleEvaluationChange('${key}', 'nao-conforme')"><div class="text-center py-2 rounded border peer-checked:bg-rose-700 peer-checked:text-white font-bold">Não</div></label>
-                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${key}" value="na" ${ans === 'na' ? 'checked' : ''} class="hidden peer" onchange="handleEvaluationChange('${key}', 'na')"><div class="text-center py-2 rounded border peer-checked:bg-stone-500 peer-checked:text-white font-bold">N/A</div></label>
+                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="conforme" class="hidden peer" onchange="handleEvaluationChange('${itemKey}', 'conforme')"><div class="text-center py-2 rounded-md border peer-checked:bg-emerald-600 peer-checked:text-white font-bold">Sim</div></label>
+                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="nao-conforme" class="hidden peer" onchange="handleEvaluationChange('${itemKey}', 'nao-conforme')"><div class="text-center py-2 rounded-md border peer-checked:bg-rose-700 peer-checked:text-white font-bold">Não</div></label>
+                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="na" class="hidden peer" onchange="handleEvaluationChange('${itemKey}', 'na')"><div class="text-center py-2 rounded-md border peer-checked:bg-stone-500 peer-checked:text-white font-bold">N/A</div></label>
               </div>
-              <div id="plan-box-${key}" class="${ans === 'nao-conforme' ? '' : 'hidden'} p-3 bg-rose-50 border rounded space-y-2 text-xs">
-                <span class="block font-bold text-rose-800 uppercase">Plano de Ação</span>
-                <input type="text" value="${plan.action}" placeholder="Ação..." oninput="updateActionPlan('${key}', 'action', this.value)" class="w-full border p-2 bg-white rounded">
-                <input type="date" value="${plan.date}" oninput="updateActionPlan('${key}', 'date', this.value)" class="w-full border p-2 bg-white rounded">
+              <div id="plan-box-${itemKey}" class="hidden p-3 bg-rose-50 border rounded-lg space-y-2 text-xs">
+                <span class="block font-bold text-rose-800 uppercase text-[10px]">⚠️ Plano de Ação</span>
+                <input type="text" value="${planData.action}" placeholder="Ação..." oninput="updateActionPlan('${itemKey}', 'action', this.value)" class="w-full border p-2 bg-white rounded">
+                <input type="date" value="${planData.date}" oninput="updateActionPlan('${itemKey}', 'date', this.value)" class="w-full border p-2 bg-white rounded">
               </div>`;
-          } else if (item.type === 'maintenance') {
-            ctrl = `
+          } else if (itemType === "maintenance") {
+            controlHtml = `
               <div class="flex gap-2 text-xs">
-                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${key}" value="abrir" ${ans === 'abrir' ? 'checked' : ''} class="hidden peer" onchange="handleMaintenanceChange('${key}', 'abrir')"><div class="text-center py-2 rounded border peer-checked:bg-amber-600 peer-checked:text-white font-bold">Abrir</div></label>
-                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${key}" value="regular" ${ans === 'regular' ? 'checked' : ''} class="hidden peer" onchange="handleMaintenanceChange('${key}', 'regular')"><div class="text-center py-2 rounded border peer-checked:bg-emerald-600 peer-checked:text-white font-bold">Regular</div></label>
+                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="abrir" class="hidden peer" onchange="handleMaintenanceChange('${itemKey}', 'abrir')"><div class="text-center py-2 rounded-md border peer-checked:bg-amber-600 peer-checked:text-white font-bold">Abrir</div></label>
+                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="regular" class="hidden peer" onchange="handleMaintenanceChange('${itemKey}', 'regular')"><div class="text-center py-2 rounded-md border peer-checked:bg-emerald-600 peer-checked:text-white font-bold">Regular / Ok</div></label>
+                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="na" class="hidden peer" onchange="handleMaintenanceChange('${itemKey}', 'na')"><div class="text-center py-2 rounded-md border peer-checked:bg-stone-500 peer-checked:text-white font-bold">N/A</div></label>
               </div>
-              <div id="maintenance-box-${key}" class="${ans === 'abrir' ? '' : 'hidden'} p-3 bg-amber-50 border rounded space-y-2 text-xs">
-                <input type="text" value="${om.equipment}" placeholder="Equipamento..." oninput="updateMaintenanceOrder('${key}', 'equipment', this.value)" class="w-full border p-2 bg-white rounded">
-                <input type="text" value="${om.action}" placeholder="Defeito..." oninput="updateMaintenanceOrder('${key}', 'action', this.value)" class="w-full border p-2 bg-white rounded">
-                <input type="date" value="${om.date}" oninput="updateMaintenanceOrder('${key}', 'date', this.value)" class="w-full border p-2 bg-white rounded">
+              <div id="maintenance-box-${itemKey}" class="hidden p-3 bg-amber-50 border rounded-lg space-y-2 text-xs">
+                <span class="block font-bold text-amber-900 uppercase text-[10px]">Abertura de Ordem de Manutenção</span>
+                <input type="text" value="${omData.equipment}" placeholder="Equipamento..." oninput="updateMaintenanceOrder('${itemKey}', 'equipment', this.value)" class="w-full border p-2 bg-white rounded">
+                <input type="text" value="${omData.action}" placeholder="Defeito..." oninput="updateMaintenanceOrder('${itemKey}', 'action', this.value)" class="w-full border p-2 bg-white rounded">
+                <input type="date" value="${omData.date}" oninput="updateMaintenanceOrder('${itemKey}', 'date', this.value)" class="w-full border p-2 bg-white rounded">
               </div>`;
-          } else if (item.type === 'text') {
-            ctrl = `<textarea rows="2" placeholder="Digite..." oninput="updateTextInput('${key}', this.value)" class="w-full border p-2 text-xs bg-stone-50 rounded">${ans || ''}</textarea>`;
+          } else if (itemType === "stars") {
+            let starsSpans = "";
+            for (let s = 1; s <= 5; s++) starsSpans += `<button type="button" id="star-${itemKey}-${s}" onclick="setStarRating('${itemKey}', ${s})" class="text-xl ${s <= (savedAnswer||0) ? 'text-amber-400' : 'text-stone-300'}">★</button>`;
+            controlHtml = `<div class="flex items-center justify-between bg-stone-50 p-2.5 rounded border"><div class="flex gap-2">${starsSpans}</div><span id="star-label-${itemKey}" class="text-xs font-bold">${savedAnswer ? savedAnswer + ' de 5' : 'Avalie'}</span></div>`;
+          } else if (itemType === "text") {
+            controlHtml = `<div><textarea rows="2" placeholder="Digite..." oninput="updateTextInput('${itemKey}', this.value)" class="w-full border p-2 text-xs bg-stone-50 rounded">${savedAnswer || ''}</textarea></div>`;
           }
 
-          return `<div class="p-3.5 border-t flex flex-col gap-2">
-            <div class="flex justify-between font-medium"><span>${item.title}</span>${item.requirePhoto ? '<span class="text-[10px] bg-amber-50 text-amber-800 border px-1.5 rounded font-bold">Foto Obrigatória</span>' : ''}</div>
-            ${ctrl}
-            <label class="cursor-pointer inline-flex items-center gap-1.5 text-xs bg-stone-100 px-3 py-1.5 rounded border w-fit">
-              <span>${photo ? 'Alterar Foto' : 'Adicionar Foto'}</span>
-              <input type="file" accept="image/*" class="hidden" onchange="handlePhotoUpload(event, '${key}')">
-            </label>
-            ${photo ? '<span class="text-xs text-emerald-700 font-bold">✓ Foto Anexada</span>' : ''}
+          return `
+          <div class="p-3.5 border-t flex flex-col gap-2.5">
+            <div class="flex justify-between items-start gap-2"><span class="text-sm font-medium">${item.title}</span>${item.requirePhoto ? '<span class="text-[10px] bg-amber-50 text-amber-800 border px-1.5 rounded font-bold">Foto Obrigatória</span>' : ''}</div>
+            ${controlHtml}
+            <div class="flex items-center gap-2 pt-1">
+              <label class="cursor-pointer inline-flex items-center gap-1.5 text-xs font-semibold bg-cb-cream px-3 py-1.5 rounded border">
+                <span>${photoData ? 'Alterar Foto' : 'Adicionar Foto'}</span>
+                <input type="file" accept="image/*" class="hidden" onchange="handlePhotoUpload(event, '${itemKey}')">
+              </label>
+              ${photoData ? `<span class="text-xs text-emerald-800 bg-emerald-50 px-2 py-1 rounded border font-medium">✓ Foto</span>` : ''}
+            </div>
           </div>`;
         }).join("");
 
-        secEl.innerHTML = `<div class="bg-cb-cream px-4 py-2.5 font-bold text-xs uppercase text-cb-bordo border-b">${sec.category}</div><div>${itemsHtml}</div>`;
+        secEl.innerHTML = `<div class="bg-cb-cream px-4 py-2.5 font-bold text-xs uppercase text-cb-bordo border-b"><span>${sec.category}</span></div><div>${itemsHtml}</div>`;
         container.appendChild(secEl);
       });
+
       calculateScore();
     }
 
     function handlePhotoUpload(event, key) {
-      let file = event.target.files[0];
+      const file = event.target.files[0];
       if (file) {
-        let r = new FileReader();
-        r.onload = e => { attachedPhotos[key] = e.target.result; renderChecklist(); };
-        r.readAsDataURL(file);
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          attachedPhotos[key] = e.target.result;
+          renderChecklist();
+        };
+        reader.readAsDataURL(file);
       }
     }
 
-    function processSalesFile(event) {
-      let file = event.target.files[0];
-      if (!file) return;
-      let reader = new FileReader();
-      reader.onload = function(e) {
-        let lines = e.target.result.split('\n');
-        let rev = 0, count = 0, ops = {}, pays = {};
-        lines.forEach(l => {
-          let cols = l.split(';');
-          if (cols.length >= 15) {
-            let val = parseFloat(cols[5].replace(',', '.')) || 0;
-            rev += val; count++;
-            let op = cols[14]?.trim() || 'Geral';
-            let pay = cols[10]?.trim() || 'Outros';
-            if (!ops[op]) ops[op] = { count: 0, total: 0 };
-            ops[op].count++; ops[op].total += val;
-            if (!pays[pay]) pays[pay] = { count: 0, total: 0 };
-            pays[pay].count++; pays[pay].total += val;
+    function validatePhotos() {
+      let missing = [];
+      const current = getCurrentChecklist();
+      current.categories.forEach((sec, sIdx) => {
+        sec.items.forEach((item, iIdx) => {
+          const key = `${sIdx}-${iIdx}`;
+          if (item.requirePhoto && !attachedPhotos[key]) {
+            const isNc = document.querySelector(`input[name="item-${key}"][value="nao-conforme"]`)?.checked;
+            const isOm = document.querySelector(`input[name="item-${key}"][value="abrir"]`)?.checked;
+            if (isNc || isOm) missing.push(item.title);
           }
         });
-        document.getElementById("kpi-total-revenue").innerText = `R$ ${rev.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
-        document.getElementById("kpi-total-count").innerText = count;
-        document.getElementById("kpi-avg-ticket").innerText = `R$ ${(count > 0 ? rev/count : 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
-        
-        let opDiv = document.getElementById("operators-breakdown"); opDiv.innerHTML = "";
-        for (let o in ops) opDiv.innerHTML += `<div class="flex justify-between p-2 bg-stone-50 rounded border"><span>${o}</span><span>R$ ${ops[o].total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span></div>`;
-        
-        let payDiv = document.getElementById("payments-breakdown"); payDiv.innerHTML = "";
-        for (let p in pays) payDiv.innerHTML += `<div class="flex justify-between p-2 bg-stone-50 rounded border"><span>${p}</span><span>R$ ${pays[p].total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span></div>`;
-        alert("Dashboard de vendas atualizado!");
-      };
-      reader.readAsText(file, 'ISO-8859-1');
+      });
+      return missing;
     }
 
     initApp();
