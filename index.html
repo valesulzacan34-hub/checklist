@@ -116,7 +116,7 @@
     </div>
   </div>
 
-  <!-- Header Global -->
+  <!-- Header Global Limpo -->
   <header class="bg-cb-bordo text-white sticky top-0 z-30 shadow-lg border-b-2 border-cb-gold">
     <div class="max-w-xl mx-auto px-4 py-2 flex justify-between items-center">
       <div class="flex items-center gap-2.5">
@@ -132,7 +132,7 @@
         </div>
       </div>
       <div>
-        <span id="current-module-badge" class="text-[10px] bg-cb-bordo-dark border border-cb-gold/30 px-2 py-1 rounded-full text-cb-gold font-bold">Checklists</span>
+        <span id="current-module-badge" class="text-[10px] bg-cb-bordo-dark border border-cb-gold/30 px-2.5 py-1 rounded-full text-cb-gold font-bold uppercase tracking-wider">Checklists</span>
       </div>
     </div>
 
@@ -276,6 +276,33 @@
         <input type="text" id="chat-input-msg" placeholder="Escreva uma mensagem ou atualização..." class="flex-1 text-xs border rounded-lg p-2.5 focus:outline-none focus:ring-1 focus:ring-cb-bordo">
         <button onclick="sendChatMessage()" class="px-4 py-2.5 bg-cb-bordo hover:bg-cb-bordo-dark text-white text-xs font-bold rounded-lg transition">
           Enviar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Usuários -->
+  <div id="users-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-md rounded-2xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden border border-cb-gold/30">
+      <div class="p-4 border-b border-stone-200 flex justify-between items-center bg-cb-cream">
+        <div>
+          <h3 class="font-bold text-cb-bordo text-sm">Gerenciar Usuários</h3>
+          <p class="text-xs text-stone-500">Crie ou remova logins de acesso (Nuvem)</p>
+        </div>
+        <button onclick="toggleUsersModal()" class="text-stone-400 hover:text-stone-700 text-lg font-bold p-1">✕</button>
+      </div>
+
+      <div id="users-list" class="p-4 overflow-y-auto space-y-2 flex-1 text-sm"></div>
+
+      <div class="p-4 border-t border-stone-200 bg-cb-cream space-y-2">
+        <span class="block text-xs font-bold text-cb-bordo uppercase">Novo Usuário</span>
+        <div class="grid grid-cols-2 gap-2">
+          <input type="text" id="new-user-name" placeholder="Login" class="text-xs border rounded-lg p-2 bg-white">
+          <input type="text" id="new-user-pass" placeholder="Senha" class="text-xs border rounded-lg p-2 bg-white">
+        </div>
+        <input type="text" id="new-user-fullname" placeholder="Nome Completo" class="w-full text-xs border rounded-lg p-2 bg-white">
+        <button onclick="addNewUser()" class="w-full py-2 bg-cb-bordo hover:bg-cb-bordo-dark text-white text-xs font-bold rounded-lg transition uppercase tracking-wider">
+          + Criar Acesso
         </button>
       </div>
     </div>
@@ -789,7 +816,6 @@
       maintenanceOrders = {};
       localStorage.setItem("CB_LOCAL_ACTIVE_ID", activeChecklistId);
       document.getElementById("active-model-title-badge").innerText = getCurrentChecklist().name;
-      document.getElementById("header-app-title").innerText = getCurrentChecklist().name;
       renderChecklist();
       
       document.getElementById("checklist-home-view").classList.add("hidden");
@@ -968,7 +994,7 @@
         renderModelsListInConfig();
       } else if (tab === 'items') {
         document.getElementById("tab-content-items").classList.remove("hidden");
-        document.getElementById("tab-btn-items").className = "flex-1 min-w-[120px] py-3 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition";
+        document.getElementById("tab-btn-items").className = "flex-1 min-w-[100px] py-3 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition";
         document.getElementById("config-active-model-name").innerText = getCurrentChecklist().name;
         renderModalItems();
       }
@@ -1083,12 +1109,19 @@
 
     function initApp() {
       updateLogos(); renderPresetUnits(); updateHistoryBadge(); setupCloudListeners();
-      if (!currentUser) { document.getElementById("login-screen").classList.add("hidden"); return; }
+      
+      if (!currentUser) {
+        document.getElementById("login-screen").classList.remove("hidden");
+        document.getElementById("modules-screen").classList.add("hidden");
+        return;
+      }
+      
       document.getElementById("login-screen").classList.add("hidden");
       document.getElementById("sidebar-user-name").innerText = currentUser.name;
       document.getElementById("supervisor-name").value = currentUser.name;
       if (currentUser.role === "admin") document.getElementById("sidebar-btn-users").classList.remove("hidden");
-      renderHomeChecklistCards();
+      
+      openModulesScreen();
     }
 
     function handleEvaluationChange(itemKey, value) {
@@ -1148,6 +1181,79 @@
       document.getElementById("score-display").innerText = score + "%";
       document.getElementById("evaluated-count-display").innerText = `${Math.round(totalQuestionsEvaluated)} item(ns) avaliado(s)`;
       return { score, total: Math.round(totalQuestionsEvaluated) };
+    }
+
+    function renderChecklist() {
+      const container = document.getElementById("checklist-container");
+      const current = getCurrentChecklist();
+      container.innerHTML = "";
+
+      current.categories.forEach((sec, sIdx) => {
+        if (sec.items.length === 0) return;
+        const secEl = document.createElement("div");
+        secEl.className = "bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden";
+        
+        let itemsHtml = sec.items.map((item, iIdx) => {
+          const itemKey = `${sIdx}-${iIdx}`;
+          const itemType = item.type || "boolean";
+          const photoData = attachedPhotos[itemKey];
+          const planData = actionPlans[itemKey] || { action: '', date: '' };
+          const omData = maintenanceOrders[itemKey] || { equipment: '', action: '', date: '' };
+          const savedAnswer = customAnswers[itemKey];
+          let controlHtml = "";
+
+          if (itemType === "boolean") {
+            controlHtml = `
+              <div class="flex gap-2 text-xs">
+                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="conforme" class="hidden peer" onchange="handleEvaluationChange('${itemKey}', 'conforme')"><div class="text-center py-2 rounded-md border peer-checked:bg-emerald-600 peer-checked:text-white font-bold">Sim</div></label>
+                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="nao-conforme" class="hidden peer" onchange="handleEvaluationChange('${itemKey}', 'nao-conforme')"><div class="text-center py-2 rounded-md border peer-checked:bg-rose-700 peer-checked:text-white font-bold">Não</div></label>
+                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="na" class="hidden peer" onchange="handleEvaluationChange('${itemKey}', 'na')"><div class="text-center py-2 rounded-md border peer-checked:bg-stone-500 peer-checked:text-white font-bold">N/A</div></label>
+              </div>
+              <div id="plan-box-${itemKey}" class="hidden p-3 bg-rose-50 border rounded-lg space-y-2 text-xs">
+                <span class="block font-bold text-rose-800 uppercase text-[10px]">⚠️ Plano de Ação</span>
+                <input type="text" value="${planData.action}" placeholder="Ação..." oninput="updateActionPlan('${itemKey}', 'action', this.value)" class="w-full border p-2 bg-white rounded">
+                <input type="date" value="${planData.date}" oninput="updateActionPlan('${itemKey}', 'date', this.value)" class="w-full border p-2 bg-white rounded">
+              </div>`;
+          } else if (itemType === "maintenance") {
+            controlHtml = `
+              <div class="flex gap-2 text-xs">
+                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="abrir" class="hidden peer" onchange="handleMaintenanceChange('${itemKey}', 'abrir')"><div class="text-center py-2 rounded-md border peer-checked:bg-amber-600 peer-checked:text-white font-bold">Abrir</div></label>
+                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="regular" class="hidden peer" onchange="handleMaintenanceChange('${itemKey}', 'regular')"><div class="text-center py-2 rounded-md border peer-checked:bg-emerald-600 peer-checked:text-white font-bold">Regular / Ok</div></label>
+                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="na" class="hidden peer" onchange="handleMaintenanceChange('${itemKey}', 'na')"><div class="text-center py-2 rounded-md border peer-checked:bg-stone-500 peer-checked:text-white font-bold">N/A</div></label>
+              </div>
+              <div id="maintenance-box-${itemKey}" class="hidden p-3 bg-amber-50 border rounded-lg space-y-2 text-xs">
+                <span class="block font-bold text-amber-900 uppercase text-[10px]">Abertura de Ordem de Manutenção</span>
+                <input type="text" value="${omData.equipment}" placeholder="Equipamento..." oninput="updateMaintenanceOrder('${itemKey}', 'equipment', this.value)" class="w-full border p-2 bg-white rounded">
+                <input type="text" value="${omData.action}" placeholder="Defeito..." oninput="updateMaintenanceOrder('${itemKey}', 'action', this.value)" class="w-full border p-2 bg-white rounded">
+                <input type="date" value="${omData.date}" oninput="updateMaintenanceOrder('${itemKey}', 'date', this.value)" class="w-full border p-2 bg-white rounded">
+              </div>`;
+          } else if (itemType === "stars") {
+            let starsSpans = "";
+            for (let s = 1; s <= 5; s++) starsSpans += `<button type="button" id="star-${itemKey}-${s}" onclick="setStarRating('${itemKey}', ${s})" class="text-xl ${s <= (savedAnswer||0) ? 'text-amber-400' : 'text-stone-300'}">★</button>`;
+            controlHtml = `<div class="flex items-center justify-between bg-stone-50 p-2.5 rounded border"><div class="flex gap-2">${starsSpans}</div><span id="star-label-${itemKey}" class="text-xs font-bold">${savedAnswer ? savedAnswer + ' de 5' : 'Avalie'}</span></div>`;
+          } else if (itemType === "text") {
+            controlHtml = `<div><textarea rows="2" placeholder="Digite..." oninput="updateTextInput('${itemKey}', this.value)" class="w-full border p-2 text-xs bg-stone-50 rounded">${savedAnswer || ''}</textarea></div>`;
+          }
+
+          return `
+          <div class="p-3.5 border-t flex flex-col gap-2.5">
+            <div class="flex justify-between items-start gap-2"><span class="text-sm font-medium">${item.title}</span>${item.requirePhoto ? '<span class="text-[10px] bg-amber-50 text-amber-800 border px-1.5 rounded font-bold">Foto Obrigatória</span>' : ''}</div>
+            ${controlHtml}
+            <div class="flex items-center gap-2 pt-1">
+              <label class="cursor-pointer inline-flex items-center gap-1.5 text-xs font-semibold bg-cb-cream px-3 py-1.5 rounded border">
+                <span>${photoData ? 'Alterar Foto' : 'Adicionar Foto'}</span>
+                <input type="file" accept="image/*" class="hidden" onchange="handlePhotoUpload(event, '${itemKey}')">
+              </label>
+              ${photoData ? `<span class="text-xs text-emerald-800 bg-emerald-50 px-2 py-1 rounded border font-medium">✓ Foto</span>` : ''}
+            </div>
+          </div>`;
+        }).join("");
+
+        secEl.innerHTML = `<div class="bg-cb-cream px-4 py-2.5 font-bold text-xs uppercase text-cb-bordo border-b"><span>${sec.category}</span></div><div>${itemsHtml}</div>`;
+        container.appendChild(secEl);
+      });
+
+      calculateScore();
     }
 
     function buildReportData() {
