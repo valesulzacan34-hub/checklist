@@ -7,7 +7,6 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
-  <audio id="notif-sound" src="https://actions.google.com/sounds/v1/notifications/beep_short.ogg"></audio>
   <style>
     :root {
       --cb-bordo: #4A0E17;
@@ -115,9 +114,9 @@
     </div>
   </div>
 
-  <!-- Header Global com Sino de Notificações -->
+  <!-- Header Global com Sino de Notificações e Dropdown Estilo Rede Social -->
   <header class="bg-cb-bordo text-white sticky top-0 z-30 shadow-lg border-b-2 border-cb-gold">
-    <div class="max-w-xl mx-auto px-4 py-2.5 flex justify-between items-center">
+    <div class="max-w-xl mx-auto px-4 py-2.5 flex justify-between items-center relative">
       <div class="flex items-center gap-2.5">
         <button onclick="toggleSidebar()" class="p-1.5 bg-cb-bordo-dark border border-cb-gold/40 rounded-lg text-stone-200 hover:text-white transition text-sm font-bold">
           ☰
@@ -130,11 +129,24 @@
           <p class="text-[10px] text-stone-200" id="current-user-badge">Operador</p>
         </div>
       </div>
-      <div class="flex items-center gap-2">
-        <button onclick="openNotificationSummary()" class="relative p-1.5 bg-cb-bordo-dark border border-cb-gold/40 rounded-lg text-stone-200 hover:text-white transition text-sm">
+      
+      <div class="flex items-center gap-2 relative">
+        <button onclick="toggleNotificationDropdown(event)" class="relative p-1.5 bg-cb-bordo-dark border border-cb-gold/40 rounded-lg text-stone-200 hover:text-white transition text-sm">
           🔔
           <span id="global-notification-dot" class="absolute -top-1 -right-1 w-3 h-3 bg-rose-500 rounded-full border-2 border-cb-bordo hidden"></span>
         </button>
+        
+        <!-- Dropdown Estilo Facebook/Instagram para Notificações -->
+        <div id="notification-dropdown" class="hidden absolute right-0 top-11 w-72 bg-white text-stone-800 rounded-xl shadow-2xl border border-stone-200 z-50 overflow-hidden">
+          <div class="bg-cb-bordo text-white px-3 py-2 text-xs font-bold flex justify-between items-center">
+            <span>Notificações Pendentes</span>
+            <span class="text-[10px] bg-cb-gold text-cb-bordo-dark px-1.5 py-0.5 rounded-full font-bold" id="notif-count-badge">0</span>
+          </div>
+          <div id="notification-list" class="max-h-64 overflow-y-auto divide-y divide-stone-100 text-xs">
+            <!-- Itens inseridos dinamicamente -->
+          </div>
+        </div>
+
         <span id="current-module-badge" class="text-[10px] bg-cb-bordo-dark border border-cb-gold/30 px-2 py-1 rounded-full text-cb-gold font-bold uppercase tracking-wider">Checklists</span>
       </div>
     </div>
@@ -681,7 +693,37 @@
 
         if (historyView && !historyView.classList.contains("hidden")) renderHistoryList();
         if (actionsView && !actionsView.classList.contains("hidden")) renderCentralizedActions();
-        if (activeChatActionId) loadChatMessages(activeChatActionId);
+        
+        // Monitorar mensagens globalmente para atualizar o sino e tocar o som instantaneamente
+        setupGlobalChatListeners();
+      });
+    }
+
+    // 🔔 Escuta global instantânea para chats ativos
+    let activeChatListeners = {};
+    function setupGlobalChatListeners() {
+      if (!isFirebaseReady) return;
+      let allowedUnits = getAllowedUnits();
+
+      savedReports.forEach(rep => {
+        if (!allowedUnits.includes(rep.unit)) return;
+        rep.nonConformities?.forEach((nc, i) => {
+          let actId = `${rep.id}_nc_${i}`;
+          if (!activeChatListeners[actId]) {
+            activeChatListeners[actId] = db.collection("chats").doc(actId).collection("messages").orderBy("createdAt", "desc").limit(1).onSnapshot(snap => {
+              snap.docChanges().forEach(change => {
+                if (change.type === "added") {
+                  let m = change.doc.data();
+                  if (m.sender !== currentUser?.name && !m.seen) {
+                    document.getElementById("notif-sound")?.play().catch(e => console.log("Áudio aguardando interação"));
+                    document.getElementById("global-notification-dot")?.classList.remove("hidden");
+                    document.getElementById(`chat-dot-${actId}`)?.classList.remove("hidden");
+                  }
+                }
+              });
+            });
+          }
+        });
       });
     }
 
@@ -1073,28 +1115,64 @@
       renderCentralizedActions();
     }
 
-    // 🔔 Resumo no Sino de Notificações
-    function openNotificationSummary() {
-      let unreadList = [];
-      let allowedUnits = getAllowedUnits();
+    // 🔔 Dropdown Estilo Rede Social para o Sino de Notificações
+    function toggleNotificationDropdown(event) {
+      event.stopPropagation();
+      const dropdown = document.getElementById("notification-dropdown");
+      const listContainer = document.getElementById("notification-list");
+      const countBadge = document.getElementById("notif-count-badge");
+      
+      dropdown.classList.toggle("hidden");
+      if (!dropdown.classList.contains("hidden")) {
+        listContainer.innerHTML = "";
+        let unreadList = [];
+        let allowedUnits = getAllowedUnits();
 
-      savedReports.forEach(rep => {
-        if (!allowedUnits.includes(rep.unit)) return;
-        rep.nonConformities?.forEach((nc, i) => {
-          let actId = `${rep.id}_nc_${i}`;
-          let status = actionCustomStatus[actId] || 'Pendente';
-          if (!status.toLowerCase().includes('concluído')) {
-            unreadList.push(`• [${rep.unit}] ${nc.title} (Prazo: ${nc.date || 'Indefinido'})`);
-          }
+        savedReports.forEach(rep => {
+          if (!allowedUnits.includes(rep.unit)) return;
+          rep.nonConformities?.forEach((nc, i) => {
+            let actId = `${rep.id}_nc_${i}`;
+            let status = actionCustomStatus[actId] || 'Pendente';
+            if (!status.toLowerCase().includes('concluído')) {
+              unreadList.push({ unit: rep.unit, title: nc.title, date: nc.date || 'Indefinido', chatId: actId, reportId: rep.id, type: 'nc', index: i });
+            }
+          });
         });
-      });
 
-      if (unreadList.length > 0) {
-        alert("🔔 Resumo de Notificações Pendentes:\n\n" + unreadList.slice(0, 5).join("\n") + (unreadList.length > 5 ? "\n\n...e mais itens na lista." : ""));
-      } else {
-        alert("🔔 Tudo em ordem! Não há planos de ação pendentes no momento.");
+        countBadge.innerText = unreadList.length;
+
+        if (unreadList.length === 0) {
+          listContainer.innerHTML = `<div class="p-4 text-center text-stone-400 text-xs">Nenhum plano pendente.</div>`;
+          return;
+        }
+
+        unreadList.forEach(item => {
+          const div = document.createElement("div");
+          div.className = "p-2.5 hover:bg-stone-50 cursor-pointer transition space-y-0.5";
+          div.onclick = () => {
+            dropdown.classList.add("hidden");
+            selectModule('actions');
+            openChatModal(item.chatId, item.reportId, item.type, item.index);
+          };
+          div.innerHTML = `
+            <div class="font-bold text-cb-bordo uppercase text-[11px]">${item.unit}</div>
+            <div class="text-stone-700 truncate">${item.title}</div>
+            <div class="text-[10px] text-stone-400">📅 Prazo: ${item.date}</div>
+          `;
+          listContainer.appendChild(div);
+        });
       }
-      document.getElementById("global-notification-dot")?.classList.add("hidden");
+    }
+
+    window.onclick = function(event) {
+      if (!event.target.closest('#notification-dropdown') && !event.target.closest('button[onclick*="toggleNotificationDropdown"]')) {
+        document.getElementById("notification-dropdown")?.classList.add("hidden");
+      }
+    };
+
+    function openNotificationSummary() {
+      // Mantido para compatibilidade caso o usuário chame direto
+      toggleNotificationDropdown({ stopPropagation: () => {} });
     }
 
     function renderCentralizedActions() {
@@ -1162,7 +1240,6 @@
         });
       });
 
-      // Correção: Identifica se o status contém "concluído" (independente de maiúsculas/minúsculas)
       let filteredActions = allActions.filter(act => {
         let isDone = act.status.toLowerCase().includes('concluído');
         if (currentActionsTab === 'completed') return isDone;
@@ -1276,9 +1353,13 @@
           if (change.type === "added") {
             const m = change.doc.data();
             if (m.sender !== currentUser.name && !m.seen) {
-              const beep = new Audio('https://actions.google.com/sounds/v1/notifications/beep_short.ogg');
-              beep.play().catch(e => console.log("Áudio bloqueado pelo navegador"));
+              const beep = document.getElementById("notif-sound");
+              if (beep) {
+                beep.currentTime = 0;
+                beep.play().catch(e => console.log("Áudio bloqueado pelo navegador até interação"));
+              }
               document.getElementById("global-notification-dot")?.classList.remove("hidden");
+              document.getElementById(`chat-dot-${chatId}`)?.classList.remove("hidden");
             }
           }
         });
@@ -1723,30 +1804,32 @@
       calculateScore();
     }
 
-    function initApp() {
-      updateLogos(); renderPresetUnits(); updateHistoryBadge(); setupCloudListeners();
-      
-      if (!currentUser) {
-        document.getElementById("login-screen").classList.remove("hidden");
-        document.getElementById("modules-screen").classList.add("hidden");
-        return;
+    function handlePhotoUpload(event, key) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          attachedPhotos[key] = e.target.result;
+          renderChecklist();
+        };
+        reader.readAsDataURL(file);
       }
-      
-      document.getElementById("login-screen").classList.add("hidden");
-      document.getElementById("sidebar-user-name").innerText = `${currentUser.name} (${currentUser.role})`;
-      document.getElementById("supervisor-name").value = currentUser.name;
-      
-      if (currentUser.role === "admin") {
-        document.getElementById("sidebar-btn-users").classList.remove("hidden");
-        document.getElementById("sidebar-btn-config").classList.remove("hidden");
-        document.getElementById("home-btn-config").classList.remove("hidden");
-      } else {
-        document.getElementById("sidebar-btn-users").classList.add("hidden");
-        document.getElementById("sidebar-btn-config").classList.add("hidden");
-        document.getElementById("home-btn-config").classList.add("hidden");
-      }
-      
-      openModulesScreen();
+    }
+
+    function validatePhotos() {
+      let missing = [];
+      const current = getCurrentChecklist();
+      current.categories.forEach((sec, sIdx) => {
+        sec.items.forEach((item, iIdx) => {
+          const key = `${sIdx}-${iIdx}`;
+          if (item.requirePhoto && !attachedPhotos[key]) {
+            const isNc = document.querySelector(`input[name="item-${key}"][value="nao-conforme"]`)?.checked;
+            const isOm = document.querySelector(`input[name="item-${key}"][value="abrir"]`)?.checked;
+            if (isNc || isOm) missing.push(item.title);
+          }
+        });
+      });
+      return missing;
     }
 
     initApp();
