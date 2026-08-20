@@ -24,7 +24,9 @@
     #sidebar { transition: transform 0.3s ease-in-out; }
     @media (min-width: 768px) {
       .app-main { max-width: 1024px; margin: 0 auto; }
+      .modules-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     }
+    @media (max-width: 767px) { .modules-grid { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body class="bg-cb-cream text-stone-800 antialiased pb-36 font-sans">
@@ -62,16 +64,16 @@
     </div>
   </div>
 
-  <!-- Tela de Seleção de Módulos (Cards Verticais) -->
+  <!-- Tela de Seleção de Módulos (Cards) -->
   <div id="modules-screen" class="fixed inset-0 bg-cb-bordo-dark z-40 hidden flex items-center justify-center p-4 overflow-y-auto">
-    <div class="bg-white w-full max-w-sm rounded-2xl p-6 space-y-4 shadow-2xl border border-cb-gold/30 text-center">
+    <div class="bg-white w-full max-w-sm rounded-2xl p-6 space-y-5 shadow-2xl border border-cb-gold/30 text-center">
       <div>
         <img id="modules-logo-img" alt="Casa Bauducco" class="h-14 w-auto object-contain mx-auto mb-1">
         <h2 class="text-xs font-bold text-cb-bordo uppercase tracking-wider">Painel Principal</h2>
         <p class="text-[11px] text-stone-500">Selecione o módulo que deseja acessar</p>
       </div>
 
-      <div id="modules-grid" class="grid grid-cols-1 gap-2.5 text-left"></div>
+      <div id="modules-grid" class="modules-grid grid gap-3 text-left"></div>
 
       <button onclick="handleLogout()" class="text-xs text-rose-600 font-bold hover:underline pt-1 block mx-auto">
         Encerrar Sessão (Sair)
@@ -797,7 +799,7 @@
       const val = input.value.trim();
       const color = document.getElementById("admin-new-status-color").value;
       if (!val) return alert("Digite o nome do status.");
-      if (actionStatuses.some(s => s.name === val)) return alert("Status já cadastrado.");
+      if (actionStatuses.some(s => s.name.toLowerCase() === val.toLowerCase())) return alert("Status já cadastrado.");
       actionStatuses.push({ name: val, color });
       localStorage.setItem("CB_LOCAL_STATUSES", JSON.stringify(actionStatuses));
       syncConfigToCloud(); input.value = ""; renderAdminStatusList();
@@ -1081,7 +1083,7 @@
         rep.nonConformities?.forEach((nc, i) => {
           let actId = `${rep.id}_nc_${i}`;
           let status = actionCustomStatus[actId] || 'Pendente';
-          if (status !== 'Concluído') {
+          if (!status.toLowerCase().includes('concluído')) {
             unreadList.push(`• [${rep.unit}] ${nc.title} (Prazo: ${nc.date || 'Indefinido'})`);
           }
         });
@@ -1160,9 +1162,11 @@
         });
       });
 
+      // Correção: Identifica se o status contém "concluído" (independente de maiúsculas/minúsculas)
       let filteredActions = allActions.filter(act => {
-        if (currentActionsTab === 'completed') return act.status === 'Concluído';
-        else return act.status !== 'Concluído';
+        let isDone = act.status.toLowerCase().includes('concluído');
+        if (currentActionsTab === 'completed') return isDone;
+        else return !isDone;
       });
 
       // 📅 Organizar planos de ação por ordem crescente de data (o que vence primeiro aparece no topo)
@@ -1179,7 +1183,8 @@
 
       filteredActions.forEach(act => {
         let atrasoHtml = "";
-        if (act.status !== 'Concluído' && act.rawDate && act.rawDate !== 'Indefinida' && act.rawDate !== 'Não definida') {
+        let isDone = act.status.toLowerCase().includes('concluído');
+        if (!isDone && act.rawDate && act.rawDate !== 'Indefinida' && act.rawDate !== 'Não definida') {
           let parts = act.rawDate.split('/');
           let dueIso = `${parts[2]}-${parts[1]}-${parts[0]}`;
           let todayIso = new Date().toISOString().split('T')[0];
@@ -1209,7 +1214,7 @@
               ${statusOptions}
             </select>
             <button id="btn-chat-${act.chatId}" onclick="openChatModal('${act.chatId}', '${act.fullReportId}', '${act.type}', ${act.index})" class="relative px-2.5 py-1.5 bg-white text-cb-bordo font-bold rounded shadow-sm">
-              💬 Chat
+              💬 Chat & Detalhes
               <span id="chat-dot-${act.chatId}" class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-white hidden"></span>
             </button>
           </div>`;
@@ -1718,32 +1723,30 @@
       calculateScore();
     }
 
-    function handlePhotoUpload(event, key) {
-      const file = event.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          attachedPhotos[key] = e.target.result;
-          renderChecklist();
-        };
-        reader.readAsDataURL(file);
+    function initApp() {
+      updateLogos(); renderPresetUnits(); updateHistoryBadge(); setupCloudListeners();
+      
+      if (!currentUser) {
+        document.getElementById("login-screen").classList.remove("hidden");
+        document.getElementById("modules-screen").classList.add("hidden");
+        return;
       }
-    }
-
-    function validatePhotos() {
-      let missing = [];
-      const current = getCurrentChecklist();
-      current.categories.forEach((sec, sIdx) => {
-        sec.items.forEach((item, iIdx) => {
-          const key = `${sIdx}-${iIdx}`;
-          if (item.requirePhoto && !attachedPhotos[key]) {
-            const isNc = document.querySelector(`input[name="item-${key}"][value="nao-conforme"]`)?.checked;
-            const isOm = document.querySelector(`input[name="item-${key}"][value="abrir"]`)?.checked;
-            if (isNc || isOm) missing.push(item.title);
-          }
-        });
-      });
-      return missing;
+      
+      document.getElementById("login-screen").classList.add("hidden");
+      document.getElementById("sidebar-user-name").innerText = `${currentUser.name} (${currentUser.role})`;
+      document.getElementById("supervisor-name").value = currentUser.name;
+      
+      if (currentUser.role === "admin") {
+        document.getElementById("sidebar-btn-users").classList.remove("hidden");
+        document.getElementById("sidebar-btn-config").classList.remove("hidden");
+        document.getElementById("home-btn-config").classList.remove("hidden");
+      } else {
+        document.getElementById("sidebar-btn-users").classList.add("hidden");
+        document.getElementById("sidebar-btn-config").classList.add("hidden");
+        document.getElementById("home-btn-config").classList.add("hidden");
+      }
+      
+      openModulesScreen();
     }
 
     initApp();
