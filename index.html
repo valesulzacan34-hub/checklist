@@ -39,6 +39,12 @@
     <span id="sync-time" class="text-stone-400 font-mono">Conectando...</span>
   </div>
 
+  <!-- Modal de Visualização de Imagem (Lightbox) -->
+  <div id="image-viewer-modal" class="fixed inset-0 z-[100] bg-black/90 hidden flex items-center justify-center p-4" onclick="this.classList.add('hidden')">
+    <img id="viewer-img" class="max-w-full max-h-full object-contain rounded-lg">
+    <span class="absolute top-4 right-4 text-white text-3xl font-bold cursor-pointer">✕</span>
+  </div>
+
   <!-- Tela de Login -->
   <div id="login-screen" class="fixed inset-0 bg-cb-bordo-dark z-50 flex items-center justify-center p-4">
     <div class="bg-white w-full max-w-sm rounded-2xl p-6 space-y-4 shadow-2xl border border-cb-gold/30">
@@ -970,7 +976,6 @@
         document.getElementById("login-error").classList.add("hidden");
         openModulesScreen();
       } else {
-        document.getElementById("login-error").classList.add("hidden"); // Evita exibição incorreta
         document.getElementById("login-error").classList.remove("hidden");
       }
     }
@@ -1462,7 +1467,7 @@
           
           detailsContainer.innerHTML = `
             <div><strong>Descrição / Ação Sugerida:</strong> ${itemData.action || itemData.defect || 'Não especificada'}</div>
-            ${itemData.photoUrl ? `<div class="mt-2"><span class="block font-bold mb-1">Foto do Checklist:</span><img src="${itemData.photoUrl}" class="h-28 w-auto rounded-lg border object-cover"></div>` : ''}
+            ${itemData.photoUrl ? `<div class="mt-2"><span class="block font-bold mb-1">Foto do Checklist:</span><img src="${itemData.photoUrl}" onclick="openImageViewer('${itemData.photoUrl}')" class="h-28 w-auto rounded-lg border object-cover cursor-pointer hover:opacity-90"></div>` : ''}
           `;
         }
       }
@@ -1478,6 +1483,12 @@
       renderCentralizedActions();
     }
 
+    // 📸 Função para abrir imagem em tela cheia (Lightbox)
+    function openImageViewer(url) {
+      document.getElementById("viewer-img").src = url;
+      document.getElementById("image-viewer-modal").classList.remove("hidden");
+    }
+
     // 📎 Enviar Arquivo ou Foto no Chat
     function sendChatAttachment(event) {
       const file = event.target.files[0];
@@ -1487,13 +1498,14 @@
       reader.onload = function(e) {
         const fileData = e.target.result;
         let isImage = file.type.startsWith('image/');
-        let contentHtml = isImage ? `<img src="${fileData}" class="max-h-40 rounded-lg object-cover mb-1">` : `<a href="${fileData}" download="${file.name}" class="underline font-bold text-blue-600 block">📄 Baixar Anexo: ${file.name}</a>`;
 
         db.collection("chats").doc(activeChatActionId).collection("messages").add({
-          text: contentHtml, 
+          text: fileData, 
           sender: currentUser.name, 
           seen: false, 
           isAttachment: true,
+          fileType: isImage ? 'image' : 'file',
+          fileName: file.name,
           time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }), 
           createdAt: firebase.firestore.FieldValue.serverTimestamp()
         }).then(() => {
@@ -1537,7 +1549,16 @@
           const msgDiv = document.createElement("div");
           msgDiv.className = `flex flex-col ${isMe ? 'items-end' : 'items-start'}`;
           
-          let bubbleContent = m.isAttachment ? m.text : `<span>${m.text}</span>`;
+          let bubbleContent = "";
+          if (m.isAttachment) {
+            if (m.fileType === 'image') {
+              bubbleContent = `<img src="${m.text}" onclick="openImageViewer('${m.text}')" class="max-h-40 rounded-lg cursor-pointer border hover:opacity-90 object-cover mb-1"><a href="${m.text}" download="anexo" class="text-[10px] underline block font-bold">Baixar Imagem</a>`;
+            } else {
+              bubbleContent = `<a href="${m.text}" download="${m.fileName || 'arquivo'}" class="underline font-bold text-blue-600 block">📄 Baixar: ${m.fileName || 'Arquivo'}</a>`;
+            }
+          } else {
+            bubbleContent = `<span>${m.text}</span>`;
+          }
 
           msgDiv.innerHTML = `
             <div class="max-w-[80%] p-2.5 rounded-xl ${isMe ? 'bg-cb-bordo text-white' : 'bg-stone-200 text-stone-800'}">
