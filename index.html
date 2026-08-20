@@ -426,7 +426,7 @@
     </main>
   </div>
 
-  <!-- Modal de Criação / Edição de Evento na Agenda -->
+  <!-- Modal de Criação / Edição de Evento na Agenda (Completo estilo Google Agenda) -->
   <div id="event-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white w-full max-w-md rounded-2xl p-5 space-y-4 shadow-2xl border border-cb-gold/30 text-xs">
       <div class="flex justify-between items-center border-b pb-2">
@@ -456,11 +456,33 @@
           <label class="block font-bold text-stone-600 mb-1">Loja Específica:</label>
           <select id="event-store" class="w-full border rounded p-2 bg-stone-50 font-semibold"></select>
         </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block font-bold text-stone-600 mb-1">Horário Início:</label>
+            <input type="time" id="event-time-start" class="w-full border rounded p-2 bg-stone-50 font-semibold">
+          </div>
+          <div>
+            <label class="block font-bold text-stone-600 mb-1">Horário Fim:</label>
+            <input type="time" id="event-time-end" class="w-full border rounded p-2 bg-stone-50 font-semibold">
+          </div>
+        </div>
+        <div>
+          <label class="block font-bold text-stone-600 mb-1">Recorrência:</label>
+          <select id="event-recurrence" class="w-full border rounded p-2 bg-stone-50 font-semibold">
+            <option value="none">Não se repete</option>
+            <option value="daily">Diariamente</option>
+            <option value="weekly">Semanalmente</option>
+            <option value="monthly">Mensalmente</option>
+          </select>
+        </div>
         <div>
           <label class="block font-bold text-stone-600 mb-1">Descrição / Observações:</label>
-          <textarea id="event-desc" rows="3" placeholder="Detalhes do evento..." class="w-full border rounded p-2 bg-stone-50"></textarea>
+          <textarea id="event-desc" rows="2" placeholder="Detalhes do evento..." class="w-full border rounded p-2 bg-stone-50"></textarea>
         </div>
-        <button onclick="saveCalendarEvent()" class="w-full py-2.5 bg-cb-bordo hover:bg-cb-bordo-dark text-white font-bold rounded uppercase">Salvar Evento</button>
+        <div class="flex justify-between items-center pt-2">
+          <button id="btn-delete-event" onclick="deleteCalendarEventFromModal()" class="px-3 py-2 bg-rose-100 text-rose-800 font-bold rounded hidden">Excluir Evento</button>
+          <button onclick="saveCalendarEvent()" class="flex-1 py-2.5 bg-cb-bordo hover:bg-cb-bordo-dark text-white font-bold rounded uppercase ml-auto">Salvar Evento</button>
+        </div>
       </div>
     </div>
   </div>
@@ -770,9 +792,8 @@
     let techniciansList = JSON.parse(localStorage.getItem("CB_LOCAL_TECHNICIANS")) || defaultTechnicians;
     let calendarEvents = JSON.parse(localStorage.getItem("CB_LOCAL_CALENDAR_EVENTS")) || [];
 
-    // Estado do Calendário
     let currentCalendarDate = new Date();
-    let currentCalendarView = 'month'; // 'month', 'week', 'day'
+    let currentCalendarView = 'month';
 
     const defaultTemplates = [
       {
@@ -1058,15 +1079,21 @@
       if (filterAgendaStore) {
         const curAgenda = filterAgendaStore.value;
         filterAgendaStore.innerHTML = `<option value="GERAL">⭐ Eventos em Comum (Todas as Lojas)</option>`;
-        presetUnits.forEach(u => {
+        allowedUnits.forEach(u => {
           const opt = document.createElement("option"); opt.value = u; opt.innerText = u; filterAgendaStore.appendChild(opt);
         });
-        if (curAgenda) filterAgendaStore.value = curAgenda;
+        // Se gerente, restringe o filtro de agenda para sua loja se ele tiver apenas uma
+        if (currentUser.role === 'gerente' && currentUser.units && currentUser.units.length === 1) {
+          filterAgendaStore.value = currentUser.units[0];
+        } else if (curAgenda) {
+          filterAgendaStore.value = curAgenda;
+        }
       }
 
       if (eventStoreSelect) {
         eventStoreSelect.innerHTML = "";
-        presetUnits.forEach(u => {
+        let unitsToDisplay = currentUser.role === 'gerente' && currentUser.units ? currentUser.units : presetUnits;
+        unitsToDisplay.forEach(u => {
           const opt = document.createElement("option"); opt.value = u; opt.innerText = u; eventStoreSelect.appendChild(opt);
         });
       }
@@ -1285,6 +1312,13 @@
         if (currentUser.role === 'operador') return alert("Acesso não autorizado para operadores.");
         agendaMod.classList.remove("hidden");
         badgeMod.innerText = "Agenda";
+        
+        // Se for gerente, restringe o filtro de agenda para sua loja
+        if (currentUser.role === 'gerente' && currentUser.units && currentUser.units.length > 0) {
+          document.getElementById("filter-agenda-store").value = currentUser.units[0];
+          document.getElementById("filter-agenda-store").disabled = true;
+        }
+
         renderAgendaCalendar();
       }
     }
@@ -1770,18 +1804,22 @@
       if (!gridContainer) return;
       gridContainer.innerHTML = "";
 
-      const storeSelection = document.getElementById("filter-agenda-store").value;
+      let storeSelection = document.getElementById("filter-agenda-store").value;
+      if (currentUser.role === 'gerente' && currentUser.units && currentUser.units.length > 0) {
+        storeSelection = currentUser.units[0];
+      }
 
-      // Recolher eventos manuais e planos de ação integrados automaticamente
       let allEvents = [...calendarEvents];
 
       savedReports.forEach(rep => {
+        if (currentUser.role === 'gerente' && rep.unit !== storeSelection) return;
         rep.nonConformities?.forEach((nc, i) => {
           if (nc.date && nc.date !== 'Não definida' && nc.date !== 'Indefinida') {
             allEvents.push({
               id: `rep_nc_${rep.id}_${i}`,
               title: `[Ação] ${nc.title}`,
               date: nc.date.split('/').reverse().join('-'),
+              time: '09:00',
               store: rep.unit,
               scope: 'INDIVIDUAL',
               desc: nc.action || 'Não descrita',
@@ -1795,6 +1833,7 @@
               id: `rep_om_${rep.id}_${i}`,
               title: `[Manutenção] ${om.equipment}`,
               date: om.date.split('/').reverse().join('-'),
+              time: '10:00',
               store: rep.unit,
               scope: 'INDIVIDUAL',
               desc: om.action || om.defect || 'Sem descrição',
@@ -1804,7 +1843,6 @@
         });
       });
 
-      // Filtragem por loja selecionada
       let filteredEvents = allEvents.filter(ev => {
         if (storeSelection === 'GERAL') return ev.scope === 'GERAL';
         return ev.scope === 'GERAL' || ev.store === storeSelection;
@@ -1812,20 +1850,16 @@
 
       let year = currentCalendarDate.getFullYear();
       let month = currentCalendarDate.getMonth();
-      let day = currentCalendarDate.getDate();
-
-      const monthNames = ["Janeiro", "Fevereiro", "Março", "Abri", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+      const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
       if (currentCalendarView === 'month') {
         titleEl.innerText = `${monthNames[month]} de ${year}`;
-        
         let firstDayIndex = new Date(year, month, 1).getDay();
         let totalDays = new Date(year, month + 1, 0).getDate();
 
         let table = document.createElement("div");
         table.className = "grid grid-cols-7 text-xs text-center border-stone-200";
 
-        // Dias da semana
         ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].forEach(d => {
           let cell = document.createElement("div");
           cell.className = "bg-cb-bordo text-cb-gold font-bold p-2 border-b";
@@ -1833,20 +1867,22 @@
           table.appendChild(cell);
         });
 
-        // Espaços vazios do mês anterior
         for (let i = 0; i < firstDayIndex; i++) {
           let emptyCell = document.createElement("div");
           emptyCell.className = "bg-stone-50/50 p-2 border-b border-r min-h-[90px]";
           table.appendChild(emptyCell);
         }
 
-        // Dias do mês
         for (let d = 1; d <= totalDays; d++) {
           let dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
           let dayEvents = filteredEvents.filter(e => e.date === dateStr);
 
           let cell = document.createElement("div");
-          cell.className = "bg-white p-1.5 border-b border-r min-h-[90px] flex flex-col justify-start text-left overflow-hidden";
+          cell.className = "bg-white p-1.5 border-b border-r min-h-[90px] flex flex-col justify-start text-left overflow-hidden cursor-pointer hover:bg-stone-50";
+          cell.onclick = (e) => {
+            if (e.target.tagName !== 'DIV' && e.target.tagName !== 'SPAN') return;
+            openEventModalForDate(dateStr);
+          };
           
           let todayStr = new Date().toISOString().split('T')[0];
           let isToday = dateStr === todayStr;
@@ -1854,18 +1890,16 @@
           let eventsHtml = dayEvents.map(ev => {
             let isAuto = ev.type === 'action' || ev.type === 'maintenance';
             let bgClass = isAuto ? 'bg-amber-100 text-amber-900 border-amber-300' : (ev.scope === 'GERAL' ? 'bg-purple-100 text-purple-900 border-purple-300' : 'bg-sky-100 text-sky-900 border-sky-300');
-            return `<div onclick="openEventDetail('${ev.id}')" class="px-1.5 py-0.5 rounded border text-[10px] font-semibold truncate cursor-pointer mb-0.5 ${bgClass}" title="${ev.title}">• ${ev.title}</div>`;
+            return `<div onclick="event.stopPropagation(); openEventDetail('${ev.id}')" class="px-1.5 py-0.5 rounded border text-[10px] font-semibold truncate cursor-pointer mb-0.5 ${bgClass}" title="${ev.title}">• ${ev.time ? ev.time + ' ' : ''}${ev.title}</div>`;
           }).join("");
 
           cell.innerHTML = `
-            <div class="font-bold text-stone-700 mb-1 flex justify-between items-center">
+            <div class="font-bold text-stone-700 mb-1 flex justify-between items-center pointer-events-none">
               <span class="${isToday ? 'bg-cb-bordo text-cb-gold px-1.5 py-0.5 rounded-full' : ''}">${d}</span>
-              ${currentUser.role === 'admin' || currentUser.role === 'gerente' ? `<button onclick="openEventModalForDate('${dateStr}')" class="text-stone-400 hover:text-cb-bordo text-[10px] font-bold">+</button>` : ''}
             </div>
             <div class="flex-1 overflow-y-auto space-y-0.5 max-h-[70px]">${eventsHtml}</div>`;
           table.appendChild(cell);
         }
-
         gridContainer.appendChild(table);
 
       } else if (currentCalendarView === 'week') {
@@ -1886,39 +1920,39 @@
           let dayEvents = filteredEvents.filter(e => e.date === dateStr);
 
           let row = document.createElement("div");
-          row.className = "p-3 flex flex-col sm:flex-row gap-2 justify-between items-start sm:items-center bg-white hover:bg-stone-50 transition";
+          row.className = "p-3 flex flex-col sm:flex-row gap-2 justify-between items-start sm:items-center bg-white hover:bg-stone-50 transition cursor-pointer";
+          row.onclick = () => openEventModalForDate(dateStr);
           
-          let eventsHtml = dayEvents.map(ev => `<span class="px-2 py-0.5 bg-amber-100 text-amber-900 border rounded font-semibold text-[11px]">${ev.title} (${ev.store})</span>`).join(" ");
+          let eventsHtml = dayEvents.map(ev => `<span onclick="event.stopPropagation(); openEventDetail('${ev.id}')" class="px-2.5 py-1 bg-amber-100 text-amber-900 border rounded font-semibold text-[11px] cursor-pointer hover:bg-amber-200">${ev.time ? ev.time + ' - ' : ''}${ev.title}</span>`).join(" ");
 
           row.innerHTML = `
-            <div class="font-bold text-cb-bordo w-36">${loopDate.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit' })}</div>
-            <div class="flex-1 flex gap-2 flex-wrap items-center">${eventsHtml || '<span class="text-stone-400 italic">Nenhum evento neste dia</span>'}</div>
-            ${currentUser.role === 'admin' || currentUser.role === 'gerente' ? `<button onclick="openEventModalForDate('${dateStr}')" class="px-2.5 py-1 bg-stone-100 border rounded font-bold">+ Adicionar</button>` : ''}`;
+            <div class="font-bold text-cb-bordo w-36 pointer-events-none">${loopDate.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit' })}</div>
+            <div class="flex-1 flex gap-2 flex-wrap items-center">${eventsHtml || '<span class="text-stone-400 italic">Nenhum evento neste dia</span>'}</div>`;
           table.appendChild(row);
         }
         gridContainer.appendChild(table);
 
       } else if (currentCalendarView === 'day') {
         let dateStr = currentCalendarDate.toISOString().split('T')[0];
-        titleEl.innerText = `Dia: ${currentCalendarDate.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}` ;
+        titleEl.innerText = `Dia: ${currentCalendarDate.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}`;
 
         let dayEvents = filteredEvents.filter(e => e.date === dateStr);
         let listDiv = document.createElement("div");
         listDiv.className = "p-4 space-y-3 text-xs";
 
         if (dayEvents.length === 0) {
-          listDiv.innerHTML = `<div class="text-center text-stone-400 py-6">Nenhum compromisso ou evento agendado para hoje.</div>`;
+          listDiv.innerHTML = `<div class="text-center text-stone-400 py-6">Nenhum compromisso ou evento agendado para hoje. <button onclick="openEventModalForDate('${dateStr}')" class="text-cb-bordo font-bold underline block mx-auto mt-1">+ Criar Evento</button></div>`;
         } else {
           dayEvents.forEach(ev => {
             let item = document.createElement("div");
             item.className = "p-3 bg-stone-50 border rounded-xl flex justify-between items-center";
             item.innerHTML = `
               <div class="space-y-1">
-                <span class="font-bold text-sm text-cb-bordo block">${ev.title}</span>
+                <span class="font-bold text-sm text-cb-bordo block">${ev.time ? '⏰ ' + ev.time + ' — ' : ''}${ev.title}</span>
                 <span class="text-stone-600">${ev.desc}</span>
                 <span class="text-[10px] text-stone-400 block">Loja: ${ev.store}</span>
               </div>
-              ${ev.type === 'manual' ? `<button onclick="deleteCalendarEvent('${ev.id}')" class="text-rose-600 font-bold">Excluir</button>` : ''}`;
+              <button onclick="openEventDetail('${ev.id}')" class="px-3 py-1.5 bg-cb-bordo text-white font-bold rounded">Detalhes / Editar</button>`;
             listDiv.appendChild(item);
           });
         }
@@ -1932,17 +1966,61 @@
       document.getElementById("event-edit-id").value = "";
       document.getElementById("event-title").value = "";
       document.getElementById("event-date").value = dateStr;
+      document.getElementById("event-time-start").value = "09:00";
+      document.getElementById("event-time-end").value = "10:00";
+      document.getElementById("event-recurrence").value = "none";
       document.getElementById("event-desc").value = "";
-      document.getElementById("event-scope").value = currentUser.role === 'admin' ? 'GERAL' : 'INDIVIDUAL';
+      
+      let scopeSelect = document.getElementById("event-scope");
+      if (currentUser.role === 'gerente') {
+        scopeSelect.value = 'INDIVIDUAL';
+        scopeSelect.disabled = true;
+      } else {
+        scopeSelect.value = 'GERAL';
+        scopeSelect.disabled = false;
+      }
       toggleEventStoreSelect();
+      document.getElementById("btn-delete-event").classList.add("hidden");
       document.getElementById("event-modal").classList.remove("hidden");
     }
 
     function openEventDetail(id) {
       let ev = calendarEvents.find(e => e.id === id);
-      if (ev) {
-        alert(`Evento: ${ev.title}\nData: ${ev.displayDate || ev.date}\nLoja: ${ev.store}\nDescrição: ${ev.desc}`);
+      if (!ev) return;
+
+      // Restrições de permissão para edição
+      if (ev.scope === 'GERAL' && currentUser.role !== 'admin') {
+        return alert(`Evento em Comum da Rede: ${ev.title}\nData: ${ev.displayDate || ev.date}\n${ev.desc}\n\n(Apenas administradores podem editar este evento).`);
       }
+      if (currentUser.role === 'gerente' && ev.store !== currentUser.units?.[0]) {
+        return alert("Você só pode editar eventos da sua própria unidade.");
+      }
+
+      document.getElementById("event-modal-title").innerText = "Editar Evento";
+      document.getElementById("event-edit-id").value = ev.id;
+      document.getElementById("event-title").value = ev.title;
+      document.getElementById("event-date").value = ev.date;
+      document.getElementById("event-scope").value = ev.scope;
+      document.getElementById("event-store").value = ev.store || '';
+      document.getElementById("event-time-start").value = ev.time || '09:00';
+      document.getElementById("event-time-end").value = ev.timeEnd || '10:00';
+      document.getElementById("event-recurrence").value = ev.recurrence || 'none';
+      document.getElementById("event-desc").value = ev.desc || '';
+      
+      toggleEventStoreSelect();
+      document.getElementById("btn-delete-event").classList.remove("hidden");
+      document.getElementById("event-modal").classList.remove("hidden");
+    }
+
+    function toggleEventModal() {
+      document.getElementById("event-modal").classList.toggle("hidden");
+    }
+
+    function toggleEventStoreSelect() {
+      let scope = document.getElementById("event-scope").value;
+      let box = document.getElementById("event-store-box");
+      if (scope === 'INDIVIDUAL') box.classList.remove("hidden");
+      else box.classList.add("hidden");
     }
 
     function saveCalendarEvent() {
@@ -1950,17 +2028,45 @@
       let title = document.getElementById("event-title").value.trim();
       let date = document.getElementById("event-date").value;
       let scope = document.getElementById("event-scope").value;
-      let store = scope === 'INDIVIDUAL' ? document.getElementById("event-store").value : 'GERAL';
+      let store = scope === 'INDIVIDUAL' ? (currentUser.role === 'gerente' ? currentUser.units[0] : document.getElementById("event-store").value) : 'GERAL';
+      let time = document.getElementById("event-time-start").value;
+      let timeEnd = document.getElementById("event-time-end").value;
+      let recurrence = document.getElementById("event-recurrence").value;
       let desc = document.getElementById("event-desc").value.trim();
 
       if (!title || !date) return alert("Preencha o título e a data do evento.");
-      if (scope === 'GERAL' && currentUser.role !== 'admin') return alert("Apenas administradores podem criar eventos em comum para toda a rede.");
+      if (scope === 'GERAL' && currentUser.role !== 'admin') return alert("Apenas administradores podem criar ou editar eventos em comum para toda a rede.");
 
       let existingIdx = calendarEvents.findIndex(e => e.id === id);
-      let evObj = { id, title, date, displayDate: date.split('-').reverse().join('/'), store, scope, desc, type: 'manual' };
+      let evObj = { id, title, date, displayDate: date.split('-').reverse().join('/'), store, scope, time, timeEnd, recurrence, desc, type: 'manual' };
 
-      if (existingIdx >= 0) calendarEvents[existingIdx] = evObj;
-      else calendarEvents.push(evObj);
+      if (existingIdx >= 0) {
+        if (calendarEvents[existingIdx].scope === 'GERAL' && currentUser.role !== 'admin') {
+          return alert("Apenas administradores podem modificar eventos em comum.");
+        }
+        calendarEvents[existingIdx] = evObj;
+      } else {
+        calendarEvents.push(evObj);
+      }
+
+      // Tratamento básico de recorrência para gerar os próximos dias caso selecionado
+      if (recurrence && recurrence !== 'none' && existingIdx < 0) {
+        let baseDate = new Date(date + 'T00:00:00');
+        for (let r = 1; r <= 4; r++) { // Gera 4 recorrências futuras
+          if (recurrence === 'daily') baseDate.setDate(baseDate.getDate() + 1);
+          if (recurrence === 'weekly') baseDate.setDate(baseDate.getDate() + 7);
+          if (recurrence === 'monthly') baseDate.setMonth(baseDate.getMonth() + 1);
+          
+          let nextIso = baseDate.toISOString().split('T')[0];
+          calendarEvents.push({
+            id: "ev_" + Date.now() + "_" + r,
+            title: title + ` (${r+1}ª)`,
+            date: nextIso,
+            displayDate: nextIso.split('-').reverse().join('/'),
+            store, scope, time, timeEnd, recurrence: 'none', desc, type: 'manual'
+          });
+        }
+      }
 
       localStorage.setItem("CB_LOCAL_CALENDAR_EVENTS", JSON.stringify(calendarEvents));
       syncConfigToCloud();
@@ -1969,605 +2075,21 @@
       alert("Evento salvo com sucesso na agenda!");
     }
 
-    // 💬 Abrir Chat e mostrar Descrição Completa + Foto
-    function openChatModal(chatId, reportId, type, index) {
-      activeChatActionId = chatId;
-      const rep = savedReports.find(r => r.id === reportId);
-      const detailsContainer = document.getElementById("chat-action-details");
-      detailsContainer.innerHTML = "";
-
-      if (rep) {
-        let itemData = type === 'nc' ? rep.nonConformities?.[index] : rep.maintenanceOrders?.[index];
-        if (itemData) {
-          document.getElementById("chat-modal-title").innerText = type === 'nc' ? itemData.title : `Manutenção: ${itemData.equipment}`;
-          document.getElementById("chat-modal-subtitle").innerText = `${rep.unit} • Prazo: ${itemData.date}`;
-          
-          detailsContainer.innerHTML = `
-            <div><strong>Descrição / Ação Sugerida:</strong> ${itemData.action || itemData.defect || 'Não especificada'}</div>
-            ${itemData.photoUrl ? `<div class="mt-2"><span class="block font-bold mb-1">Foto do Checklist:</span><img src="${itemData.photoUrl}" onclick="openImageViewer('${itemData.photoUrl}')" class="h-28 w-auto rounded-lg border object-cover cursor-pointer hover:opacity-90"></div>` : ''}
-          `;
-        }
+    function deleteCalendarEventFromModal() {
+      let id = document.getElementById("event-edit-id").value;
+      if (!id) return;
+      let ev = calendarEvents.find(e => e.id === id);
+      if (ev && ev.scope === 'GERAL' && currentUser.role !== 'admin') {
+        return alert("Apenas administradores podem excluir eventos em comum.");
       }
 
-      document.getElementById("chat-modal").classList.remove("hidden");
-      loadChatMessages(chatId);
-      document.getElementById(`chat-dot-${chatId}`)?.classList.add("hidden");
-    }
-
-    function toggleChatModal() {
-      document.getElementById("chat-modal").classList.add("hidden");
-      activeChatActionId = null;
-      renderCentralizedActions();
-    }
-
-    function openImageViewer(url) {
-      document.getElementById("viewer-img").src = url;
-      document.getElementById("image-viewer-modal").classList.remove("hidden");
-    }
-
-    function sendChatAttachment(event) {
-      const file = event.target.files[0];
-      if (!file || !activeChatActionId || !isFirebaseReady) return;
-
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        const fileData = e.target.result;
-        let isImage = file.type.startsWith('image/');
-
-        db.collection("chats").doc(activeChatActionId).collection("messages").add({
-          text: fileData, 
-          sender: currentUser.name, 
-          seen: false, 
-          isAttachment: true,
-          fileType: isImage ? 'image' : 'file',
-          fileName: file.name,
-          time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }), 
-          createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        }).then(() => {
-          event.target.value = '';
-        });
-      };
-      reader.readAsDataURL(file);
-    }
-
-    function loadChatMessages(chatId) {
-      if (!isFirebaseReady) return;
-      db.collection("chats").doc(chatId).collection("messages").orderBy("createdAt", "asc").onSnapshot(snapshot => {
-        const container = document.getElementById("chat-messages-container");
-        container.innerHTML = "";
-        
-        snapshot.docChanges().forEach(change => {
-          if (change.type === "added") {
-            const m = change.doc.data();
-            if (m.sender !== currentUser.name && !m.seen) {
-              playAudioBeep();
-              updateNotificationBadgeCount();
-              document.getElementById(`chat-dot-${chatId}`)?.classList.remove("hidden");
-            }
-          }
-        });
-
-        if (snapshot.empty) {
-          container.innerHTML = `<div class="text-center text-stone-400 py-6">Nenhuma mensagem ainda. Inicie a conversa.</div>`;
-          return;
-        }
-
-        snapshot.forEach(doc => {
-          const m = doc.data();
-          const isMe = m.sender === currentUser.name;
-          
-          if (!isMe && !m.seen) {
-            db.collection("chats").doc(chatId).collection("messages").doc(doc.id).update({ seen: true });
-          }
-
-          const msgDiv = document.createElement("div");
-          msgDiv.className = `flex flex-col ${isMe ? 'items-end' : 'items-start'}`;
-          
-          let bubbleContent = "";
-          if (m.isAttachment) {
-            if (m.fileType === 'image') {
-              bubbleContent = `<img src="${m.text}" onclick="openImageViewer('${m.text}')" class="max-h-40 rounded-lg cursor-pointer border hover:opacity-90 object-cover mb-1"><a href="${m.text}" download="anexo" class="text-[10px] underline block font-bold">Baixar Imagem</a>`;
-            } else {
-              bubbleContent = `<a href="${m.text}" download="${m.fileName || 'arquivo'}" class="underline font-bold text-blue-600 block">📄 Baixar: ${m.fileName || 'Arquivo'}</a>`;
-            }
-          } else {
-            bubbleContent = `<span>${m.text}</span>`;
-          }
-
-          msgDiv.innerHTML = `
-            <div class="max-w-[80%] p-2.5 rounded-xl ${isMe ? 'bg-cb-bordo text-white' : 'bg-stone-200 text-stone-800'}">
-              <span class="block text-[9px] font-bold opacity-75 mb-0.5">${m.sender}</span>
-              ${bubbleContent}
-            </div>
-            <div class="flex items-center gap-1 mt-0.5">
-              <span class="text-[9px] text-stone-400">${m.time || ''}</span>
-              ${isMe ? `<span class="text-[9px] font-bold ${m.seen ? 'text-emerald-600' : 'text-stone-400'}">${m.seen ? '✓✓ Visto' : '✓ Enviado'}</span>` : ''}
-            </div>`;
-          container.appendChild(msgDiv);
-        });
-        container.scrollTop = container.scrollHeight;
-      });
-    }
-
-    function sendChatMessage() {
-      const input = document.getElementById("chat-input-msg");
-      const text = input.value.trim();
-      if (!text || !activeChatActionId || !isFirebaseReady) return;
-      db.collection("chats").doc(activeChatActionId).collection("messages").add({
-        text: text, sender: currentUser.name, seen: false, time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }), createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      }).then(() => input.value = "");
-    }
-
-    // --- CONFIGURAÇÃO DE CHECKLISTS ---
-    function toggleConfigModal() {
-      const modal = document.getElementById("config-modal");
-      modal.classList.toggle("hidden");
-      if (!modal.classList.contains("hidden")) {
-        switchConfigTab('models');
-      }
-    }
-
-    function switchConfigTab(tab) {
-      document.getElementById("tab-content-models").classList.add("hidden");
-      document.getElementById("tab-content-items").classList.add("hidden");
-
-      document.getElementById("tab-btn-models").className = "flex-1 py-3 border-b-2 border-transparent text-stone-500 transition";
-      document.getElementById("tab-btn-items").className = "flex-1 py-3 border-b-2 border-transparent text-stone-500 transition";
-
-      if (tab === 'models') {
-        document.getElementById("tab-content-models").classList.remove("hidden");
-        document.getElementById("tab-btn-models").className = "flex-1 py-3 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition";
-        renderModelsListInConfig();
-      } else if (tab === 'items') {
-        document.getElementById("tab-content-items").classList.remove("hidden");
-        document.getElementById("tab-btn-items").className = "flex-1 py-3 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition";
-        document.getElementById("config-active-model-name").innerText = getCurrentChecklist().name;
-        renderModalItems();
-      }
-    }
-
-    function renderModelsListInConfig() {
-      const container = document.getElementById("models-list-container");
-      container.innerHTML = "";
-      allChecklists.forEach((c, idx) => {
-        const div = document.createElement("div");
-        div.className = "flex justify-between items-center p-2.5 bg-stone-50 rounded border text-xs";
-        div.innerHTML = `
-          <span class="font-bold">${c.name}</span>
-          <div class="flex gap-2">
-            <button onclick="editChecklistName(${idx})" class="text-blue-600 font-bold underline">Editar Nome</button>
-            <button onclick="activeChecklistId='${c.id}'; switchConfigTab('items');" class="text-cb-bordo font-bold underline">Setores/Perguntas</button>
-            ${allChecklists.length > 1 ? `<button onclick="deleteModel('${c.id}')" class="text-rose-600 font-bold">Excluir</button>` : ''}
-          </div>`;
-        container.appendChild(div);
-      });
-    }
-
-    function editChecklistName(idx) {
-      const currentName = allChecklists[idx].name;
-      const newName = prompt("Editar nome do checklist:", currentName);
-      if (newName && newName.trim()) {
-        allChecklists[idx].name = newName.trim();
-        localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
+      if (confirm("Deseja realmente excluir este evento?")) {
+        calendarEvents = calendarEvents.filter(e => e.id !== id);
+        localStorage.setItem("CB_LOCAL_CALENDAR_EVENTS", JSON.stringify(calendarEvents));
         syncConfigToCloud();
-        renderModelsListInConfig();
-        renderHomeChecklistSelect();
-        alert("Nome atualizado com sucesso!");
+        toggleEventModal();
+        renderAgendaCalendar();
       }
-    }
-
-    function editQuestion(sIdx, iIdx) {
-      const currentItem = getCurrentChecklist().categories[sIdx].items[iIdx];
-      const newTitle = prompt("Editar título da pergunta:", currentItem.title);
-      if (newTitle && newTitle.trim()) {
-        currentItem.title = newTitle.trim();
-        localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
-        syncConfigToCloud();
-        renderModalItems();
-        alert("Pergunta atualizada com sucesso!");
-      }
-    }
-
-    function editCategory(sIdx) {
-      const current = getCurrentChecklist();
-      const newName = prompt("Editar setor:", current.categories[sIdx].category);
-      if (newName?.trim()) {
-        current.categories[sIdx].category = newName.trim();
-        localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
-        syncConfigToCloud(); renderModalItems();
-      }
-    }
-
-    function renderModalItems() {
-      const container = document.getElementById("modal-item-list");
-      const catSelect = document.getElementById("new-item-category");
-      const current = getCurrentChecklist();
-      container.innerHTML = ""; catSelect.innerHTML = "";
-
-      current.categories.forEach((sec, sIdx) => {
-        const opt = document.createElement("option"); opt.value = sIdx; opt.innerText = sec.category; catSelect.appendChild(opt);
-        const secBox = document.createElement("div");
-        secBox.className = "border rounded-xl p-3 bg-white space-y-2 text-xs";
-        secBox.innerHTML = `<div class="flex justify-between items-center border-b pb-1"><span class="font-bold uppercase">${sec.category}</span><button onclick="editCategory(${sIdx})" class="underline font-bold">Editar Setor</button></div>`;
-        sec.items.forEach((item, iIdx) => {
-          secBox.innerHTML += `<div class="bg-stone-50 p-2 rounded border flex justify-between items-center"><span>${item.title}</span><div class="flex gap-2"><button onclick="editQuestion(${sIdx}, ${iIdx})" class="text-blue-600 font-bold">Editar</button><button onclick="removeItem(${sIdx}, ${iIdx})" class="text-rose-600 font-bold">Remover</button></div></div>`;
-        });
-        container.appendChild(secBox);
-      });
-    }
-
-    // GERENCIAMENTO DE USUÁRIOS
-    function toggleUsersModal() {
-      if (currentUser.role !== 'admin') return alert("Acesso restrito a administradores.");
-      const m = document.getElementById("users-modal");
-      m.classList.toggle("hidden");
-      if (!m.classList.contains("hidden")) {
-        renderUsersList();
-        renderPresetUnits();
-        switchAdminTab('units');
-      }
-    }
-
-    function switchAdminTab(tab) {
-      const uContent = document.getElementById("admin-content-units");
-      const uUsers = document.getElementById("admin-content-users");
-      const uStatus = document.getElementById("admin-content-status");
-      const uPriorities = document.getElementById("admin-content-priorities");
-      const btnU = document.getElementById("admin-tab-units");
-      const btnUs = document.getElementById("admin-tab-users");
-      const btnSt = document.getElementById("admin-tab-status");
-      const btnPr = document.getElementById("admin-tab-priorities");
-
-      uContent.classList.add("hidden");
-      uUsers.classList.add("hidden");
-      uStatus.classList.add("hidden");
-      uPriorities.classList.add("hidden");
-      btnU.className = "flex-1 py-2.5 border-b-2 border-transparent text-stone-500 transition whitespace-nowrap";
-      btnUs.className = "flex-1 py-2.5 border-b-2 border-transparent text-stone-500 transition whitespace-nowrap";
-      btnSt.className = "flex-1 py-2.5 border-b-2 border-transparent text-stone-500 transition whitespace-nowrap";
-      btnPr.className = "flex-1 py-2.5 border-b-2 border-transparent text-stone-500 transition whitespace-nowrap";
-
-      if (tab === 'units') {
-        uContent.classList.remove("hidden");
-        btnU.className = "flex-1 py-2.5 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition whitespace-nowrap";
-        renderPresetUnits();
-      } else if (tab === 'users') {
-        uUsers.classList.remove("hidden");
-        btnUs.className = "flex-1 py-2.5 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition whitespace-nowrap";
-        renderUsersList();
-        renderUserUnitsCheckboxes();
-      } else if (tab === 'status') {
-        uStatus.classList.remove("hidden");
-        btnSt.className = "flex-1 py-2.5 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition whitespace-nowrap";
-        renderAdminStatusList();
-      } else if (tab === 'priorities') {
-        uPriorities.classList.remove("hidden");
-        btnPr.className = "flex-1 py-2.5 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition whitespace-nowrap";
-        renderAdminPrioritiesList();
-      }
-    }
-
-    function toggleUnitSelectionBox() {
-      const role = document.getElementById("new-user-role").value;
-      const box = document.getElementById("new-user-units-box");
-      if (role === 'admin') box.classList.add("hidden");
-      else box.classList.remove("hidden");
-    }
-
-    function renderUserUnitsCheckboxes() {
-      const select = document.getElementById("new-user-units");
-      if (!select) return;
-      select.innerHTML = "";
-      presetUnits.forEach(u => {
-        const opt = document.createElement("option");
-        opt.value = u;
-        opt.innerText = u;
-        select.appendChild(opt);
-      });
-    }
-
-    function renderUsersList() {
-      const list = document.getElementById("users-list");
-      list.innerHTML = "";
-      users.forEach((u, idx) => {
-        const item = document.createElement("div");
-        item.className = "bg-stone-50 border p-2.5 rounded-xl text-xs space-y-1";
-        let unitsText = u.units && u.units.length > 0 ? u.units.join(", ") : "Todas as Lojas";
-        item.innerHTML = `
-          <div class="flex justify-between items-center">
-            <span class="font-bold text-cb-bordo text-sm">${u.name} (${u.role})</span>
-            ${u.username !== 'alcides' ? `<button onclick="removeUser(${idx})" class="text-rose-600 font-bold hover:underline">Excluir</button>` : '<span class="text-[10px] text-stone-400 font-bold">Principal</span>'}
-          </div>
-          <div class="text-stone-500">Login: ${u.username} | Senha: ${u.pass}</div>
-          <div class="text-stone-600"><strong>Lojas Vinculadas:</strong> ${unitsText}</div>`;
-        list.appendChild(item);
-      });
-    }
-
-    function addNewUser() {
-      const username = document.getElementById("new-user-name").value.trim().toLowerCase();
-      const pass = document.getElementById("new-user-pass").value.trim();
-      const name = document.getElementById("new-user-fullname").value.trim();
-      const role = document.getElementById("new-user-role").value;
-      
-      let assignedUnits = [];
-      if (role !== 'admin') {
-        const select = document.getElementById("new-user-units");
-        for (let opt of select.selectedOptions) {
-          assignedUnits.push(opt.value);
-        }
-      }
-
-      if (!username || !pass || !name) return alert("Preencha todos os campos obrigatórios.");
-      if (users.some(item => item.username === username)) return alert("Login já existente!");
-
-      users.push({ username, pass, name, role, units: assignedUnits });
-      localStorage.setItem("CB_LOCAL_USERS", JSON.stringify(users));
-      syncConfigToCloud();
-
-      document.getElementById("new-user-name").value = "";
-      document.getElementById("new-user-pass").value = "";
-      document.getElementById("new-user-fullname").value = "";
-      renderUsersList();
-      alert("Usuário criado com sucesso!");
-    }
-
-    function removeUser(idx) {
-      if (confirm("Excluir este acesso?")) {
-        users.splice(idx, 1);
-        localStorage.setItem("CB_LOCAL_USERS", JSON.stringify(users));
-        syncConfigToCloud();
-        renderUsersList();
-      }
-    }
-
-    function deleteModel(id) {
-      if (confirm("Excluir este modelo de checklist?")) {
-        allChecklists = allChecklists.filter(c => c.id !== id);
-        localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
-        syncConfigToCloud();
-        renderModelsListInConfig();
-      }
-    }
-
-    function toggleNewCategoryInput() { document.getElementById("new-cat-box").classList.toggle("hidden"); }
-    function getCurrentChecklist() { return allChecklists.find(c => c.id === activeChecklistId) || allChecklists[0]; }
-
-    function createNewChecklistType() {
-      const name = document.getElementById("new-checklist-name").value.trim();
-      if (!name) return alert("Nome vazio.");
-      const newId = "checklist-" + Date.now();
-      allChecklists.push({ id: newId, name: name, categories: [{ category: "1. Itens Gerais", items: [] }] });
-      activeChecklistId = newId;
-      localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
-      localStorage.setItem("CB_LOCAL_ACTIVE_ID", activeChecklistId);
-      syncConfigToCloud(); document.getElementById("new-checklist-name").value = "";
-      renderModelsListInConfig(); switchConfigTab('items'); alert("Modelo criado com sucesso!");
-    }
-
-    function addNewCategory() {
-      const catText = document.getElementById("new-cat-text").value.trim();
-      if (!catText) return alert("Nome vazio.");
-      getCurrentChecklist().categories.push({ category: catText, items: [] });
-      localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
-      syncConfigToCloud(); document.getElementById("new-cat-text").value = "";
-      document.getElementById("new-cat-box").classList.add("hidden"); renderModalItems();
-    }
-
-    function addNewItem() {
-      const catIdx = document.getElementById("new-item-category").value;
-      const itemText = document.getElementById("new-item-text").value.trim();
-      if (!itemText) return alert("Digite o título da pergunta.");
-      getCurrentChecklist().categories[catIdx].items.push({ title: itemText, type: document.getElementById("new-item-type").value, requirePhoto: document.getElementById("new-item-req-photo").checked });
-      localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
-      syncConfigToCloud(); document.getElementById("new-item-text").value = ""; renderModalItems();
-    }
-
-    function removeItem(sIdx, iIdx) {
-      getCurrentChecklist().categories[sIdx].items.splice(iIdx, 1);
-      localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
-      syncConfigToCloud(); renderModalItems();
-    }
-
-    function restoreDefaultChecklist() {
-      if (confirm("Restaurar padrões?")) {
-        allChecklists = JSON.parse(JSON.stringify(defaultTemplates));
-        localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
-        syncConfigToCloud(); renderModelsListInConfig(); alert("Restaurado!");
-      }
-    }
-
-    function resetChecklist() {
-      if (confirm("Zerar respostas?")) {
-        document.querySelectorAll('input[type="radio"]').forEach(r => r.checked = false);
-        attachedPhotos = {}; actionPlans = {}; customAnswers = {}; maintenanceOrders = {}; renderChecklist();
-      }
-    }
-
-    function initApp() {
-      updateLogos(); renderPresetUnits(); updateHistoryBadge(); setupCloudListeners();
-      
-      if (!currentUser) {
-        document.getElementById("login-screen").classList.remove("hidden");
-        document.getElementById("modules-screen").classList.add("hidden");
-        return;
-      }
-      
-      document.getElementById("login-screen").classList.add("hidden");
-      document.getElementById("sidebar-user-name").innerText = `${currentUser.name} (${currentUser.role})`;
-      document.getElementById("supervisor-name").value = currentUser.name;
-      
-      if (currentUser.role === "admin") {
-        document.getElementById("sidebar-btn-users").classList.remove("hidden");
-        document.getElementById("sidebar-btn-config").classList.remove("hidden");
-        document.getElementById("home-btn-config").classList.remove("hidden");
-      } else {
-        document.getElementById("sidebar-btn-users").classList.add("hidden");
-        document.getElementById("sidebar-btn-config").classList.add("hidden");
-        document.getElementById("home-btn-config").classList.add("hidden");
-      }
-      
-      openModulesScreen();
-    }
-
-    function handleEvaluationChange(itemKey, value) {
-      const planBox = document.getElementById(`plan-box-${itemKey}`);
-      if (value === "nao-conforme") planBox?.classList.remove("hidden");
-      else planBox?.classList.add("hidden");
-      calculateScore();
-    }
-
-    function handleMaintenanceChange(itemKey, value) {
-      const omBox = document.getElementById(`maintenance-box-${itemKey}`);
-      if (value === "abrir") omBox?.classList.remove("hidden");
-      else omBox?.classList.add("hidden");
-      calculateScore();
-    }
-
-    function updateMaintenanceOrder(itemKey, field, val) {
-      if (!maintenanceOrders[itemKey]) maintenanceOrders[itemKey] = { equipment: '', action: '', date: '' };
-      maintenanceOrders[itemKey][field] = val;
-    }
-
-    function setStarRating(itemKey, stars) {
-      customAnswers[itemKey] = stars;
-      for (let i = 1; i <= 5; i++) {
-        const starBtn = document.getElementById(`star-${itemKey}-${s}`);
-        if (starBtn) starBtn.className = `text-xl ${i <= stars ? 'text-amber-400 scale-110' : 'text-stone-300'}`;
-      }
-      document.getElementById(`star-label-${itemKey}`).innerText = `${stars} de 5`;
-      calculateScore();
-    }
-
-    function updateTextInput(itemKey, val) { customAnswers[itemKey] = val; }
-    function updateActionPlan(itemKey, field, val) {
-      if (!actionPlans[itemKey]) actionPlans[itemKey] = { action: '', date: '' };
-      actionPlans[itemKey][field] = val;
-    }
-
-    function calculateScore() {
-      let totalQuestionsEvaluated = 0, pointsEarned = 0;
-      getCurrentChecklist().categories.forEach((sec, sIdx) => {
-        sec.items.forEach((item, iIdx) => {
-          const itemKey = `${sIdx}-${iIdx}`;
-          const itemType = item.type || "boolean";
-          if (itemType === "boolean") {
-            const selected = document.querySelector(`input[name="item-${itemKey}"]:checked`);
-            if (selected) { pointsEarned += (selected.value === "conforme" ? 1.0 : 0.0); totalQuestionsEvaluated += 1.0; }
-          } else if (itemType === "maintenance") {
-            const selected = document.querySelector(`input[name="item-${itemKey}"]:checked`);
-            if (selected) { pointsEarned += (selected.value === "regular" ? 1.0 : 0.0); totalQuestionsEvaluated += 1.0; }
-          } else if (itemType === "stars") {
-            const rating = parseInt(customAnswers[itemKey]) || 0;
-            if (rating > 0) { pointsEarned += (rating / 5); totalQuestionsEvaluated += 1.0; }
-          }
-        });
-      });
-      const score = totalQuestionsEvaluated > 0 ? Math.round((pointsEarned / totalQuestionsEvaluated) * 100) : 100;
-      document.getElementById("score-display").innerText = score + "%";
-      document.getElementById("evaluated-count-display").innerText = `${Math.round(totalQuestionsEvaluated)} item(ns) avaliado(s)`;
-      return { score, total: Math.round(totalQuestionsEvaluated) };
-    }
-
-    function renderChecklist() {
-      const container = document.getElementById("checklist-container");
-      const current = getCurrentChecklist();
-      container.innerHTML = "";
-
-      current.categories.forEach((sec, sIdx) => {
-        if (sec.items.length === 0) return;
-        const secEl = document.createElement("div");
-        secEl.className = "bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden";
-        
-        let itemsHtml = sec.items.map((item, iIdx) => {
-          const itemKey = `${sIdx}-${iIdx}`;
-          const itemType = item.type || "boolean";
-          const photoData = attachedPhotos[itemKey];
-          const planData = actionPlans[itemKey] || { action: '', date: '' };
-          const omData = maintenanceOrders[itemKey] || { equipment: '', action: '', date: '' };
-          const savedAnswer = customAnswers[itemKey];
-          let controlHtml = "";
-
-          if (itemType === "boolean") {
-            controlHtml = `
-              <div class="flex gap-2 text-xs">
-                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="conforme" class="hidden peer" onchange="handleEvaluationChange('${itemKey}', 'conforme')"><div class="text-center py-2 rounded-md border peer-checked:bg-emerald-600 peer-checked:text-white font-bold">Sim</div></label>
-                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="nao-conforme" class="hidden peer" onchange="handleEvaluationChange('${itemKey}', 'nao-conforme')"><div class="text-center py-2 rounded-md border peer-checked:bg-rose-700 peer-checked:text-white font-bold">Não</div></label>
-                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="na" class="hidden peer" onchange="handleEvaluationChange('${itemKey}', 'na')"><div class="text-center py-2 rounded-md border peer-checked:bg-stone-500 peer-checked:text-white font-bold">N/A</div></label>
-              </div>
-              <div id="plan-box-${itemKey}" class="hidden p-3 bg-rose-50 border rounded-lg space-y-2 text-xs">
-                <span class="block font-bold text-rose-800 uppercase text-[10px]">⚠️ Plano de Ação</span>
-                <input type="text" value="${planData.action}" placeholder="Ação..." oninput="updateActionPlan('${itemKey}', 'action', this.value)" class="w-full border p-2 bg-white rounded">
-                <input type="date" value="${planData.date}" oninput="updateActionPlan('${itemKey}', 'date', this.value)" class="w-full border p-2 bg-white rounded">
-              </div>`;
-          } else if (itemType === "maintenance") {
-            controlHtml = `
-              <div class="flex gap-2 text-xs">
-                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="abrir" class="hidden peer" onchange="handleMaintenanceChange('${itemKey}', 'abrir')"><div class="text-center py-2 rounded-md border peer-checked:bg-amber-600 peer-checked:text-white font-bold">Abrir</div></label>
-                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="regular" class="hidden peer" onchange="handleMaintenanceChange('${itemKey}', 'regular')"><div class="text-center py-2 rounded-md border peer-checked:bg-emerald-600 peer-checked:text-white font-bold">Regular / Ok</div></label>
-                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="na" class="hidden peer" onchange="handleMaintenanceChange('${itemKey}', 'na')"><div class="text-center py-2 rounded-md border peer-checked:bg-stone-500 peer-checked:text-white font-bold">N/A</div></label>
-              </div>
-              <div id="maintenance-box-${itemKey}" class="hidden p-3 bg-amber-50 border rounded-lg space-y-2 text-xs">
-                <span class="block font-bold text-amber-900 uppercase text-[10px]">Abertura de Ordem de Manutenção</span>
-                <input type="text" value="${omData.equipment}" placeholder="Equipamento..." oninput="updateMaintenanceOrder('${itemKey}', 'equipment', this.value)" class="w-full border p-2 bg-white rounded">
-                <input type="text" value="${omData.action}" placeholder="Defeito..." oninput="updateMaintenanceOrder('${itemKey}', 'action', this.value)" class="w-full border p-2 bg-white rounded">
-                <input type="date" value="${omData.date}" oninput="updateMaintenanceOrder('${itemKey}', 'date', this.value)" class="w-full border p-2 bg-white rounded">
-              </div>`;
-          } else if (itemType === "stars") {
-            let starsSpans = "";
-            for (let s = 1; s <= 5; s++) starsSpans += `<button type="button" id="star-${itemKey}-${s}" onclick="setStarRating('${itemKey}', ${s})" class="text-xl ${s <= (savedAnswer||0) ? 'text-amber-400' : 'text-stone-300'}">★</button>`;
-            controlHtml = `<div class="flex items-center justify-between bg-stone-50 p-2.5 rounded border"><div class="flex gap-2">${starsSpans}</div><span id="star-label-${itemKey}" class="text-xs font-bold">${savedAnswer ? savedAnswer + ' de 5' : 'Avalie'}</span></div>`;
-          } else if (itemType === "text") {
-            controlHtml = `<div><textarea rows="2" placeholder="Digite..." oninput="updateTextInput('${itemKey}', this.value)" class="w-full border p-2 text-xs bg-stone-50 rounded">${savedAnswer || ''}</textarea></div>`;
-          }
-
-          return `
-          <div class="p-3.5 border-t flex flex-col gap-2.5">
-            <div class="flex justify-between items-start gap-2"><span class="text-sm font-medium">${item.title}</span>${item.requirePhoto ? '<span class="text-[10px] bg-amber-50 text-amber-800 border px-1.5 rounded font-bold">Foto Obrigatória</span>' : ''}</div>
-            ${controlHtml}
-            <div class="flex items-center gap-2 pt-1">
-              <label class="cursor-pointer inline-flex items-center gap-1.5 text-xs font-semibold bg-cb-cream px-3 py-1.5 rounded border">
-                <span>${photoData ? 'Alterar Foto' : 'Adicionar Foto'}</span>
-                <input type="file" accept="image/*" class="hidden" onchange="handlePhotoUpload(event, '${itemKey}')">
-              </label>
-              ${photoData ? `<span class="text-xs text-emerald-800 bg-emerald-50 px-2 py-1 rounded border font-medium">✓ Foto</span>` : ''}
-            </div>
-          </div>`;
-        }).join("");
-
-        secEl.innerHTML = `<div class="bg-cb-cream px-4 py-2.5 font-bold text-xs uppercase text-cb-bordo border-b"><span>${sec.category}</span></div><div>${itemsHtml}</div>`;
-        container.appendChild(secEl);
-      });
-
-      calculateScore();
-    }
-
-    function handlePhotoUpload(event, key) {
-      const file = event.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          attachedPhotos[key] = e.target.result;
-          renderChecklist();
-        };
-        reader.readAsDataURL(file);
-      }
-    }
-
-    function validatePhotos() {
-      let missing = [];
-      const current = getCurrentChecklist();
-      current.categories.forEach((sec, sIdx) => {
-        sec.items.forEach((item, iIdx) => {
-          const key = `${sIdx}-${iIdx}`;
-          if (item.requirePhoto && !attachedPhotos[key]) {
-            const isNc = document.querySelector(`input[name="item-${key}"][value="nao-conforme"]`)?.checked;
-            const isOm = document.querySelector(`input[name="item-${key}"][value="abrir"]`)?.checked;
-            if (isNc || isOm) missing.push(item.title);
-          }
-        });
-      });
-      return missing;
     }
 
     initApp();
