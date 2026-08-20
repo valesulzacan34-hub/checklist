@@ -298,8 +298,8 @@
           <button id="actions-tab-completed" onclick="switchActionsTab('completed')" class="flex-1 py-2 border-b-2 border-transparent text-stone-400 transition">✅ Concluídos</button>
         </div>
 
-        <!-- Filtros Adicionais: Loja, Status, Tarja e Datas -->
-        <div class="grid grid-cols-1 sm:grid-cols-5 gap-2 text-xs pt-1">
+        <!-- Filtros Adicionais: Loja, Status, Tarja, Tipo de Ação e Datas -->
+        <div class="grid grid-cols-1 sm:grid-cols-6 gap-2 text-xs pt-1">
           <div>
             <label class="block font-bold text-stone-600 mb-1">Filtrar Loja:</label>
             <select id="filter-action-store" onchange="renderCentralizedActions()" class="w-full border rounded p-2 bg-stone-50 font-semibold">
@@ -316,6 +316,14 @@
             <label class="block font-bold text-stone-600 mb-1">Filtrar Tarja:</label>
             <select id="filter-priority" onchange="renderCentralizedActions()" class="w-full border rounded p-2 bg-stone-50 font-semibold">
               <option value="">Todas as Tarjas</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-bold text-stone-600 mb-1">Tipo de Ação:</label>
+            <select id="filter-action-type" onchange="renderCentralizedActions()" class="w-full border rounded p-2 bg-stone-50 font-semibold">
+              <option value="">Todos os Tipos</option>
+              <option value="nc">Não Conformidade</option>
+              <option value="om">Manutenção</option>
             </select>
           </div>
           <div>
@@ -1357,6 +1365,7 @@
       const storeFilter = document.getElementById("filter-action-store").value;
       const statusFilter = document.getElementById("filter-status").value;
       const priorityFilter = document.getElementById("filter-priority").value;
+      const actionTypeFilter = document.getElementById("filter-action-type").value;
       const allowedUnits = getAllowedUnits();
 
       // Popular dinamicamente os selects de filtro caso estejam vazios
@@ -1388,7 +1397,6 @@
       savedReports.forEach(rep => {
         if (!allowedUnits.includes(rep.unit)) return;
         
-        // Aplica contagem baseada na loja selecionada no filtro
         let storeMatchForCounters = !storeFilter || rep.unit === storeFilter;
 
         rep.nonConformities?.forEach((nc, i) => {
@@ -1468,7 +1476,7 @@
         });
       });
 
-      // Atualiza os contadores na tela
+      // Atualiza os contadores na tela com base na loja selecionada
       document.getElementById("counter-pending").innerText = counts.pending;
       document.getElementById("counter-progress").innerText = counts.progress;
       document.getElementById("counter-completed").innerText = counts.completed;
@@ -1478,7 +1486,8 @@
         let tabMatch = (currentActionsTab === 'completed') ? isDone : !isDone;
         let statusMatch = !statusFilter || act.status === statusFilter;
         let priorityMatch = !priorityFilter || act.priority === priorityFilter;
-        return tabMatch && statusMatch && priorityMatch;
+        let typeMatch = !actionTypeFilter || act.type === actionTypeFilter;
+        return tabMatch && statusMatch && priorityMatch && typeMatch;
       });
 
       // 📅 Organizar planos de ação por ordem crescente de data (o que vence primeiro aparece no topo)
