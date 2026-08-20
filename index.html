@@ -7,7 +7,6 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
-  <!-- Áudio para o alerta de nova mensagem -->
   <audio id="notif-sound" src="https://actions.google.com/sounds/v1/notifications/beep_short.ogg"></audio>
   <style>
     :root {
@@ -280,16 +279,19 @@
     </main>
   </div>
 
-  <!-- Modal de Chat -->
+  <!-- Modal de Chat com Descrição Completa e Foto -->
   <div id="chat-modal" class="fixed inset-0 bg-black/70 z-50 hidden flex items-center justify-center p-2 sm:p-4">
-    <div class="bg-white w-full max-w-lg h-[85vh] rounded-2xl flex flex-col shadow-2xl overflow-hidden border border-cb-gold/30">
+    <div class="bg-white w-full max-w-lg h-[90vh] rounded-2xl flex flex-col shadow-2xl overflow-hidden border border-cb-gold/30">
       <div class="p-3.5 border-b border-stone-200 flex justify-between items-center bg-cb-bordo text-white">
         <div>
-          <h3 id="chat-modal-title" class="font-bold text-sm text-cb-gold">Chat da Correção</h3>
+          <h3 id="chat-modal-title" class="font-bold text-sm text-cb-gold">Detalhes & Chat</h3>
           <p id="chat-modal-subtitle" class="text-[11px] text-stone-200">Unidade e Prazo</p>
         </div>
         <button onclick="toggleChatModal()" class="text-stone-300 hover:text-white text-xl font-bold px-2 py-0.5">✕</button>
       </div>
+
+      <!-- Resumo Detalhado da Não Conformidade / Foto -->
+      <div id="chat-action-details" class="p-3.5 bg-stone-100 border-b text-xs space-y-2"></div>
 
       <div id="chat-messages-container" class="flex-1 p-4 overflow-y-auto space-y-3 bg-stone-50 text-xs"></div>
 
@@ -1073,11 +1075,6 @@
 
     // 🔔 Resumo no Sino de Notificações
     function openNotificationSummary() {
-      if (!isFirebaseReady) {
-        alert("Modo Local: Sem conexão ativa para verificar notificações.");
-        return;
-      }
-      
       let unreadList = [];
       let allowedUnits = getAllowedUnits();
 
@@ -1098,10 +1095,6 @@
         alert("🔔 Tudo em ordem! Não há planos de ação pendentes no momento.");
       }
       document.getElementById("global-notification-dot")?.classList.add("hidden");
-    }
-
-    function checkGlobalNotifications() {
-      if (!isFirebaseReady) return;
     }
 
     function renderCentralizedActions() {
@@ -1127,7 +1120,18 @@
           let actId = `${rep.id}_nc_${i}`;
           let statusObj = actionCustomStatus[actId] || 'Pendente';
           if (matchDate) {
-            allActions.push({ unit: rep.unit, title: nc.title, action: nc.action || 'Não descrita', date: dueDate || 'Indefinida', rawDate: dueDate, chatId: actId, status: statusObj });
+            allActions.push({ 
+              unit: rep.unit, 
+              title: nc.title, 
+              action: nc.action || 'Não descrita', 
+              date: dueDate || 'Indefinida', 
+              rawDate: dueDate, 
+              chatId: actId, 
+              status: statusObj,
+              fullReportId: rep.id,
+              type: 'nc',
+              index: i
+            });
           }
         });
         rep.maintenanceOrders?.forEach((om, i) => {
@@ -1142,7 +1146,18 @@
           let actId = `${rep.id}_om_${i}`;
           let statusObj = actionCustomStatus[actId] || 'Pendente';
           if (matchDate) {
-            allActions.push({ unit: rep.unit, title: `Manutenção: ${om.equipment}`, action: om.action || 'Não descrito', date: dueDate || 'Indefinida', rawDate: dueDate, chatId: actId, status: statusObj });
+            allActions.push({ 
+              unit: rep.unit, 
+              title: `Manutenção: ${om.equipment}`, 
+              action: om.action || 'Não descrito', 
+              date: dueDate || 'Indefinida', 
+              rawDate: dueDate, 
+              chatId: actId, 
+              status: statusObj,
+              fullReportId: rep.id,
+              type: 'om',
+              index: i
+            });
           }
         });
       });
@@ -1152,7 +1167,7 @@
         else return act.status !== 'Concluído';
       });
 
-      // 📅 Organizar planos de ação por ordem crescente de data (o que vence primeiro aparece primeiro)
+      // 📅 Organizar em ordem crescente de data (o que vence primeiro aparece no topo)
       filteredActions.sort((a, b) => {
         let dateA = a.rawDate && a.rawDate !== 'Indefinida' && a.rawDate !== 'Não definida' ? new Date(a.rawDate.split('/').reverse().join('-')) : new Date('2099-12-31');
         let dateB = b.rawDate && b.rawDate !== 'Indefinida' && b.rawDate !== 'Não definida' ? new Date(b.rawDate.split('/').reverse().join('-')) : new Date('2099-12-31');
@@ -1195,8 +1210,8 @@
             <select onchange="updateActionStatus('${act.chatId}', this.value)" class="border rounded p-1.5 text-xs font-semibold bg-white">
               ${statusOptions}
             </select>
-            <button id="btn-chat-${act.chatId}" onclick="openChatModal('${act.chatId}', '${act.title}', '${act.unit}', '${act.date}')" class="relative px-2.5 py-1.5 bg-white text-cb-bordo font-bold rounded shadow-sm">
-              💬 Chat
+            <button id="btn-chat-${act.chatId}" onclick="openChatModal('${act.chatId}', '${act.fullReportId}', '${act.type}', ${act.index})" class="relative px-2.5 py-1.5 bg-white text-cb-bordo font-bold rounded shadow-sm">
+              💬 Chat & Detalhes
               <span id="chat-dot-${act.chatId}" class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-white hidden"></span>
             </button>
           </div>`;
@@ -1216,10 +1231,26 @@
       });
     }
 
-    function openChatModal(chatId, title, unit, date) {
+    // 💬 Abrir Chat e mostrar Descrição Completa + Foto
+    function openChatModal(chatId, reportId, type, index) {
       activeChatActionId = chatId;
-      document.getElementById("chat-modal-title").innerText = title;
-      document.getElementById("chat-modal-subtitle").innerText = `${unit} • Prazo: ${date}`;
+      const rep = savedReports.find(r => r.id === reportId);
+      const detailsContainer = document.getElementById("chat-action-details");
+      detailsContainer.innerHTML = "";
+
+      if (rep) {
+        let itemData = type === 'nc' ? rep.nonConformities?.[index] : rep.maintenanceOrders?.[index];
+        if (itemData) {
+          document.getElementById("chat-modal-title").innerText = type === 'nc' ? itemData.title : `Manutenção: ${itemData.equipment}`;
+          document.getElementById("chat-modal-subtitle").innerText = `${rep.unit} • Prazo: ${itemData.date}`;
+          
+          detailsContainer.innerHTML = `
+            <div><strong>Descrição / Ação Sugerida:</strong> ${itemData.action || itemData.defect || 'Não especificada'}</div>
+            ${itemData.photoUrl ? `<div class="mt-2"><span class="block font-bold mb-1">Foto do Checklist:</span><img src="${itemData.photoUrl}" class="h-28 w-auto rounded-lg border object-cover"></div>` : ''}
+          `;
+        }
+      }
+
       document.getElementById("chat-modal").classList.remove("hidden");
       loadChatMessages(chatId);
       document.getElementById(`chat-dot-${chatId}`)?.classList.add("hidden");
@@ -1231,7 +1262,7 @@
       renderCentralizedActions();
     }
 
-    // 🔊 Notificação instantânea com emissão de som ao receber mensagem
+    // 🔊 Notificação instantânea com som ao receber mensagem
     function loadChatMessages(chatId) {
       if (!isFirebaseReady) return;
       db.collection("chats").doc(chatId).collection("messages").orderBy("createdAt", "asc").onSnapshot(snapshot => {
@@ -1242,8 +1273,7 @@
           if (change.type === "added") {
             const m = change.doc.data();
             if (m.sender !== currentUser.name && !m.seen) {
-              // Toca som de nova mensagem instantaneamente
-              document.getElementById("notif-sound").play().catch(e => console.log("Áudio bloqueado pelo navegador até interação"));
+              document.getElementById("notif-sound").play().catch(e => console.log("Áudio aguardando interação"));
               document.getElementById("global-notification-dot")?.classList.remove("hidden");
             }
           }
@@ -1708,6 +1738,7 @@
           const key = `${sIdx}-${iIdx}`;
           const itemType = item.type || "boolean";
           let statusBadge = "";
+          let photoUrl = attachedPhotos[key] || '';
 
           if (itemType === "boolean") {
             const selected = document.querySelector(`input[name="item-${key}"]:checked`);
@@ -1717,7 +1748,7 @@
             if (val === "nao-conforme") {
               statusBadge = "NÃO"; ncCount++;
               const plan = actionPlans[key] || { action: '', date: '' };
-              nonConformitiesList.push({ title: item.title, category: sec.category, action: plan.action, date: plan.date || 'Não definida' });
+              nonConformitiesList.push({ title: item.title, category: sec.category, action: plan.action, date: plan.date || 'Não definida', photoUrl: photoUrl });
               nonConformitiesRows += `<tr><td style="padding: 6px; border: 1px solid #fecdd3;">${item.title}</td><td style="padding: 6px; border: 1px solid #fecdd3;">${plan.action}</td><td style="padding: 6px; text-align: center; border: 1px solid #fecdd3;">${plan.date}</td></tr>`;
             }
           } else if (itemType === "maintenance") {
@@ -1728,7 +1759,7 @@
             if (val === "abrir") {
               statusBadge = "ABERTO"; omCount++;
               const om = maintenanceOrders[key] || { equipment: '', action: '', date: '' };
-              maintenanceList.push({ equipment: om.equipment, action: om.action, date: om.date || 'Não definida' });
+              maintenanceList.push({ equipment: om.equipment, action: om.action, date: om.date || 'Não definida', photoUrl: photoUrl });
               maintenanceRows += `<tr><td style="padding: 6px; border: 1px solid #fde68a;">${om.equipment}</td><td style="padding: 6px; border: 1px solid #fde68a;">${om.action}</td><td style="padding: 6px; text-align: center; border: 1px solid #fde68a;">${om.date}</td></tr>`;
             }
           }
@@ -1748,6 +1779,35 @@
       return { unit, supervisor, notes, score, total, date: dateStr, checklistName: current.name, nonConformities: nonConformitiesList, maintenanceOrders: maintenanceList, htmlContent: fullHtml };
     }
 
+    function handlePhotoUpload(event, key) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          attachedPhotos[key] = e.target.result;
+          renderChecklist();
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    function validatePhotos() {
+      let missing = [];
+      const current = getCurrentChecklist();
+      current.categories.forEach((sec, sIdx) => {
+        sec.items.forEach((item, iIdx) => {
+          const key = `${sIdx}-${iIdx}`;
+          if (item.requirePhoto && !attachedPhotos[key]) {
+            // Verifica se gerou não conformidade ou manutenção aberta
+            const isNc = document.querySelector(`input[name="item-${key}"][value="nao-conforme"]`)?.checked;
+            const isOm = document.querySelector(`input[name="item-${key}"][value="abrir"]`)?.checked;
+            if (isNc || isOm) missing.push(item.title);
+          }
+        });
+      });
+      return missing;
+    }
+
     function openPrintWindow(htmlContent) {
       const p = window.open('', '_blank');
       p.document.write(`<!DOCTYPE html><html><head><style>@page { size: A4; margin: 10mm; } body { font-family: Arial; }</style></head><body>${htmlContent}</body></html>`);
@@ -1755,12 +1815,12 @@
     }
 
     function generatePDF() {
-      if (validatePhotos().length > 0) return alert("Fotos obrigatórias pendentes.");
+      if (validatePhotos().length > 0) return alert("Fotos obrigatórias pendentes para itens não conformes.");
       const report = buildReportData(); saveReportToCloud(report); openPrintWindow(report.htmlContent);
     }
 
     function shareWhatsApp() {
-      if (validatePhotos().length > 0) return alert("Fotos obrigatórias pendentes.");
+      if (validatePhotos().length > 0) return alert("Fotos obrigatórias pendentes para itens não conformes.");
       const report = buildReportData(); saveReportToCloud(report);
       let text = `*RELATÓRIO OPERACIONAL*\n📍 *Unidade:* ${report.unit}\n📊 *Conformidade:* ${report.score}%\n\n`;
       report.nonConformities.forEach(nc => text += `❌ *${nc.title}*\n   ↳ Ação: ${nc.action} (Prazo: ${nc.date})\n\n`);
