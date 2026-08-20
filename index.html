@@ -111,8 +111,14 @@
         <span>📂 Relatórios Salvos</span>
         <span id="history-badge-count" class="bg-cb-gold text-cb-bordo-dark px-1.5 py-0.2 rounded-full text-[10px] font-black">0</span>
       </button>
+      <button onclick="selectModule('actions'); toggleSidebar();" class="w-full text-left px-3 py-2.5 rounded-lg hover:bg-cb-bordo transition flex items-center gap-1.5">
+        <span>📋 Planos de Ação</span>
+      </button>
       <button onclick="selectModule('agenda'); toggleSidebar();" class="w-full text-left px-3 py-2.5 rounded-lg hover:bg-cb-bordo transition flex items-center gap-1.5">
         <span>📅 Agenda & Calendário</span>
+      </button>
+      <button onclick="selectModule('sales-dashboard'); toggleSidebar();" class="w-full text-left px-3 py-2.5 rounded-lg hover:bg-cb-bordo transition flex items-center gap-1.5">
+        <span>📊 Dashboard de Vendas</span>
       </button>
       <button onclick="selectModule('technicians'); toggleSidebar();" class="w-full text-left px-3 py-2.5 rounded-lg hover:bg-cb-bordo transition flex items-center gap-1.5">
         <span>🔧 Técnicos & Prestadores</span>
@@ -425,6 +431,53 @@
 
       <div id="calendar-grid-container" class="bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden"></div>
     </main>
+
+    <!-- MÓDULO 5: DASHBOARD DE VENDAS -->
+    <main id="module-sales-dashboard-container" class="responsive-container space-y-4 hidden">
+      <div class="bg-white p-4 rounded-xl shadow-sm border border-stone-200 space-y-3">
+        <div class="flex justify-between items-center flex-wrap gap-2">
+          <div>
+            <h2 class="font-bold text-cb-bordo text-sm uppercase tracking-wider">📊 Dashboard de Vendas</h2>
+            <p class="text-xs text-stone-500">Carregue o arquivo de vendas (.txt) para analisar faturamento e indicadores</p>
+          </div>
+          <label class="cursor-pointer px-3 py-2 bg-cb-bordo text-white font-bold text-xs rounded-lg hover:bg-cb-bordo-dark transition">
+            📁 Carregar Arquivo TXT
+            <input type="file" accept=".txt,.csv" class="hidden" onchange="processSalesFile(event)">
+          </label>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+          <div class="bg-cb-cream border border-cb-gold/30 p-3 rounded-xl shadow-sm text-center">
+            <span class="block text-[10px] font-bold text-cb-bordo uppercase tracking-wider">Faturamento Total</span>
+            <span id="kpi-total-revenue" class="text-xl font-black text-cb-bordo">R$ 0,00</span>
+          </div>
+          <div class="bg-stone-50 border border-stone-200 p-3 rounded-xl shadow-sm text-center">
+            <span class="block text-[10px] font-bold text-stone-600 uppercase tracking-wider">Total de Vendas</span>
+            <span id="kpi-total-count" class="text-xl font-black text-stone-800">0</span>
+          </div>
+          <div class="bg-emerald-50 border border-emerald-200 p-3 rounded-xl shadow-sm text-center">
+            <span class="block text-[10px] font-bold text-emerald-800 uppercase tracking-wider">Ticket Médio</span>
+            <span id="kpi-avg-ticket" class="text-xl font-black text-emerald-700">R$ 0,00</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-stone-200 space-y-2">
+          <h3 class="font-bold text-cb-bordo text-xs uppercase tracking-wider border-b pb-2">👥 Desempenho por Operador</h3>
+          <div id="operators-breakdown" class="space-y-1.5 text-xs max-h-48 overflow-y-auto">
+            <p class="text-stone-400 italic">Nenhum dado carregado.</p>
+          </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-stone-200 space-y-2">
+          <h3 class="font-bold text-cb-bordo text-xs uppercase tracking-wider border-b pb-2">💳 Formas de Pagamento</h3>
+          <div id="payments-breakdown" class="space-y-1.5 text-xs max-h-48 overflow-y-auto">
+            <p class="text-stone-400 italic">Nenhum dado carregado.</p>
+          </div>
+        </div>
+      </div>
+    </main>
   </div>
 
   <!-- Modal de Criação / Edição de Evento na Agenda -->
@@ -531,8 +584,6 @@
       <div class="flex border-b border-stone-200 bg-stone-100 text-xs font-bold overflow-x-auto">
         <button id="admin-tab-units" onclick="switchAdminTab('units')" class="flex-1 py-2.5 border-b-2 border-cb-bordo text-cb-bordo bg-white transition whitespace-nowrap">🏢 Lojas da Rede</button>
         <button id="admin-tab-users" onclick="switchAdminTab('users')" class="flex-1 py-2.5 border-b-2 border-transparent text-stone-500 transition whitespace-nowrap">👥 Usuários & Vínculos</button>
-        <button id="admin-tab-status" onclick="switchAdminTab('status')" class="flex-1 py-2.5 border-b-2 border-transparent text-stone-500 transition whitespace-nowrap">🏷️ Tipos de Status</button>
-        <button id="admin-tab-priorities" onclick="switchAdminTab('priorities')" class="flex-1 py-2.5 border-b-2 border-transparent text-stone-500 transition whitespace-nowrap">⚡ Tarjas / Prioridade</button>
       </div>
 
       <div id="admin-content-units" class="p-4 overflow-y-auto space-y-4 flex-1 bg-stone-50 text-xs">
@@ -572,54 +623,6 @@
           <button onclick="addNewUser()" class="w-full py-2 bg-cb-bordo hover:bg-cb-bordo-dark text-white font-bold rounded uppercase">+ Criar Acesso</button>
         </div>
       </div>
-
-      <div id="admin-content-status" class="hidden p-4 overflow-y-auto space-y-4 flex-1 bg-stone-50 text-xs">
-        <div class="bg-white p-3 rounded-xl border space-y-3 shadow-sm">
-          <span class="block font-bold text-cb-bordo uppercase">Cadastrar Novo Status & Cor</span>
-          <div class="space-y-2">
-            <input type="text" id="admin-new-status-input" placeholder="Ex: Em Análise..." class="w-full border rounded p-2 bg-stone-50 font-semibold">
-            <div class="flex items-center gap-2">
-              <label class="font-bold text-stone-600">Cor do Status:</label>
-              <select id="admin-new-status-color" class="border rounded p-1.5 bg-stone-50 font-semibold">
-                <option value="bg-amber-100 text-amber-900 border-amber-300">Amarelo (Em Andamento)</option>
-                <option value="bg-rose-100 text-rose-800 border-rose-300">Vermelho (Pendente)</option>
-                <option value="bg-emerald-100 text-emerald-800 border-emerald-300">Verde (Concluído)</option>
-                <option value="bg-sky-100 text-sky-800 border-sky-300">Azul</option>
-                <option value="bg-stone-100 text-stone-800 border-stone-300">Cinza</option>
-              </select>
-            </div>
-            <button onclick="adminAddNewStatus()" class="w-full py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded">Adicionar Status</button>
-          </div>
-        </div>
-        <div class="bg-white p-3 rounded-xl border space-y-2 shadow-sm">
-          <span class="block font-bold text-cb-bordo uppercase">Status Cadastrados</span>
-          <div id="admin-status-list" class="space-y-1.5 max-h-48 overflow-y-auto"></div>
-        </div>
-      </div>
-
-      <div id="admin-content-priorities" class="hidden p-4 overflow-y-auto space-y-4 flex-1 bg-stone-50 text-xs">
-        <div class="bg-white p-3 rounded-xl border space-y-3 shadow-sm">
-          <span class="block font-bold text-cb-bordo uppercase">Cadastrar Nova Tarja de Prioridade</span>
-          <div class="space-y-2">
-            <input type="text" id="admin-new-priority-input" placeholder="Ex: Urgente..." class="w-full border rounded p-2 bg-stone-50 font-semibold">
-            <div class="flex items-center gap-2">
-              <label class="font-bold text-stone-600">Estilo da Tarja:</label>
-              <select id="admin-new-priority-style" class="border rounded p-1.5 bg-stone-50 font-semibold">
-                <option value="bg-rose-600 text-white font-black animate-pulse">Vermelho Destaque (Urgente)</option>
-                <option value="bg-amber-500 text-white font-bold">Laranja/Amarelo (Importante)</option>
-                <option value="bg-stone-200 text-stone-800 font-semibold">Cinza (Não Urgente)</option>
-                <option value="bg-purple-600 text-white font-bold">Roxo</option>
-                <option value="bg-blue-600 text-white font-bold">Azul</option>
-              </select>
-            </div>
-            <button onclick="adminAddNewPriority()" class="w-full py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded">Adicionar Tarja</button>
-          </div>
-        </div>
-        <div class="bg-white p-3 rounded-xl border space-y-2 shadow-sm">
-          <span class="block font-bold text-cb-bordo uppercase">Tarjas Cadastradas</span>
-          <div id="admin-priorities-list" class="space-y-1.5 max-h-48 overflow-y-auto"></div>
-        </div>
-      </div>
     </div>
   </div>
 
@@ -628,12 +631,12 @@
     <div class="bg-white w-full max-w-2xl h-[92vh] rounded-2xl flex flex-col shadow-2xl overflow-hidden border border-cb-gold/30">
       
       <div class="p-3.5 border-b border-stone-200 flex justify-between items-center bg-cb-bordo text-white">
-        <div><h3 class="font-bold text-sm text-cb-gold">Configurações Gerais</h3></div>
+        <div><h3 class="font-bold text-sm text-cb-gold">Configurações Gerais de Checklists</h3></div>
         <button onclick="toggleConfigModal()" class="text-stone-300 hover:text-white text-xl font-bold px-2 py-0.5">✕</button>
       </div>
 
       <div class="flex border-b border-stone-200 bg-stone-100 text-xs font-bold overflow-x-auto">
-        <button id="tab-btn-models" onclick="switchConfigTab('models')" class="flex-1 py-3 border-b-2 border-cb-bordo text-cb-bordo bg-white transition">Checklists</button>
+        <button id="tab-btn-models" onclick="switchConfigTab('models')" class="flex-1 py-3 border-b-2 border-cb-bordo text-cb-bordo bg-white transition">Modelos</button>
         <button id="tab-btn-items" onclick="switchConfigTab('items')" class="flex-1 py-3 border-b-2 border-transparent text-stone-500 hover:text-cb-bordo transition">Setores & Perguntas</button>
       </div>
 
@@ -764,147 +767,6 @@
     }
 
     const DEFAULT_EMBEDDED_LOGO = "./logo.png";
-
-    const defaultUsers = [
-      { username: "alcides", pass: "12345678", name: "Alcides Ramos", role: "admin", units: [] }
-    ];
-
-    const defaultUnits = [
-      "CB Vale Sul Shopping",
-      "CB Shopping CenterVale",
-      "CB Shopping Oriente",
-      "CB Shopping Aricanduva"
-    ];
-
-    const defaultStatuses = [
-      { name: "Pendente", color: "bg-rose-100 border-rose-300" },
-      { name: "Em Andamento", color: "bg-amber-100 border-amber-300" },
-      { name: "Concluído", color: "bg-emerald-100 border-emerald-300" }
-    ];
-
-    const defaultPriorities = [
-      { name: "Urgente", style: "bg-rose-600 text-white font-black" },
-      { name: "Importante", style: "bg-amber-500 text-white font-bold" },
-      { name: "Não Urgente", style: "bg-stone-200 text-stone-800 font-semibold" }
-    ];
-
-    const defaultTechnicians = [
-      { name: "Wezley", service: "Ar condicionado", region: "São José dos Campos", phone: "12 974010864" },
-      { name: "Messias", service: "Ar condicionado", region: "São José dos Campos", phone: "12 98851-4713" },
-      { name: "Emerson", service: "Eletricista", region: "São José dos Campos", phone: "12 98813-9737" },
-      { name: "Thiago", service: "Eletricista", region: "São José dos Campos", phone: "12 98842-2803" },
-      { name: "Sullivan", service: "Encanador", region: "São José dos Campos", phone: "12 98853-0008" },
-      { name: "Lucas", service: "Encanador", region: "São José dos Campos", phone: "12 98863-4594" },
-      { name: "Pardal", service: "Serralheiro", region: "São José dos Campos", phone: "12 98815-4179" },
-      { name: "Adilson", service: "Serralheiro", region: "São José dos Campos", phone: "12 99103-2777" },
-      { name: "Evelton", service: "TI", region: "São José dos Campos", phone: "12 997020169" },
-      { name: "João", service: "Refrigeração", region: "São José dos Campos", phone: "12 98830-8424" },
-      { name: "Átila - Casa das Balanças", service: "Grill", region: "São José dos Campos", phone: "12 99177-2866" },
-      { name: "Anderson", service: "Ar condicionado", region: "Mogi", phone: "11 98691-5882" },
-      { name: "Manoel Torres", service: "Eletricista", region: "Mogi", phone: "11 95787-5810" },
-      { name: "JD", service: "Eletricista", region: "Mogi", phone: "11 96588-6557" },
-      { name: "Laerte", service: "Eletricista", region: "Mogi", phone: "11 94710-1959" },
-      { name: "Fernando", service: "Encanador", region: "Mogi", phone: "11 99760-1057" },
-      { name: "Cleiton", service: "Encanador", region: "Mogi", phone: "11 99573-5180" },
-      { name: "Alex - Hidromack", service: "Encanador", region: "Mogi", phone: "11 91560-2004" },
-      { name: "Neno", service: "Serralheiro", region: "Mogi", phone: "11 99955-9689" },
-      { name: "Maciel", service: "Serralheiro", region: "Mogi", phone: "11 97411-0336" },
-      { name: "Matbig- Portas automáticas", service: "Serralheiro", region: "Mogi", phone: "11 99705-3786" },
-      { name: "Fernando", service: "TI", region: "Mogi", phone: "11 98128-1011" },
-      { name: "Pedro", service: "Refrigeração", region: "Mogi", phone: "11 94230-1695" },
-      { name: "Thiago", service: "Forno Turbochef/Pratica", region: "São José dos Campos / Mogi", phone: "11 95285-8927" },
-      { name: "Sérgio", service: "Forno Turbochef/Pratica", region: "São José dos Campos / Mogi", phone: "11 99777-8031" },
-      { name: "Plantão", service: "La Spaziale", region: "São José dos Campos / Mogi", phone: "11 5181-5043" },
-      { name: "Cleber", service: "Máquina de louça", region: "São José dos Campos / Mogi", phone: "11 91724-1975" },
-      { name: "Jonatan", service: "La Spaziale (Tecnico por fora)", region: "São José dos Campos / Mogi", phone: "12 988929441" },
-      { name: "Fabio - Omni Blend", service: "Blender", region: "Geral", phone: "11 98315-2020" },
-      { name: "Armando", service: "Máquina de crema", region: "Geral", phone: "11 97420-7794" },
-      { name: "Waldir", service: "FAZ TUDO - MARIDO DE ALUGUEL", region: "Mogi", phone: "11 91609-6563" },
-      { name: "Ricardo", service: "Serralheiro", region: "São Paulo", phone: "11 96417-5813" },
-      { name: "Tino Ti Ark", service: "TI", region: "São Paulo", phone: "11 98462-1133" },
-      { name: "Wellington", service: "TI", region: "São Paulo", phone: "11 97193-6740" },
-      { name: "Pedro", service: "Refrigeração", region: "São Paulo", phone: "11 94230-1695" }
-    ];
-
-    let techniciansList = JSON.parse(localStorage.getItem("CB_LOCAL_TECHNICIANS")) || defaultTechnicians;
-    let calendarEvents = JSON.parse(localStorage.getItem("CB_LOCAL_CALENDAR_EVENTS")) || [];
-
-    let currentCalendarDate = new Date();
-    let currentCalendarView = 'month';
-
-    const defaultTemplates = [
-      {
-        id: "cb-supervisao",
-        name: "Casa Bauducco - Rota de Supervisão",
-        categories: [
-          {
-            category: "1. Estrutura, Salão & Visual",
-            items: [
-              { title: "Fachada da loja, luzes, letreiros, Leds", type: "boolean", requirePhoto: true },
-              { title: "Ambiente interno", type: "boolean", requirePhoto: true },
-              { title: "A comunicação visual está dentro do padrão?", type: "boolean", requirePhoto: true },
-              { title: "Mesas de atendimento", type: "boolean", requirePhoto: false },
-              { title: "Avaliar som ambiente", type: "boolean", requirePhoto: false },
-              { title: "Temperatura da Loja", type: "boolean", requirePhoto: false },
-              { title: "Todas áreas da loja estão sendo utilizadas para sua devida finalidade?", type: "boolean", requirePhoto: false },
-              { title: "Condição de móveis, utensílios e equipamentos", type: "boolean", requirePhoto: true }
-            ]
-          },
-          {
-            category: "2. Atendimento, Caixa & Equipe",
-            items: [
-              { title: "Avaliar apresentação dos colaboradores", type: "boolean", requirePhoto: true },
-              { title: "Escala de horários e Plano de posicionamento do dia está preenchido?", type: "boolean", requirePhoto: true },
-              { title: "Checar cumprimento da jornada do cliente durante o atendimento", type: "boolean", requirePhoto: false },
-              { title: "Verificar realização de venda sugestiva", type: "boolean", requirePhoto: false },
-              { title: "Conhecimentos gerais sobre marca e produtos?", type: "boolean", requirePhoto: false },
-              { title: "Formou fila maior que 3 clientes?", type: "boolean", requirePhoto: false },
-              { title: "Verificar organização da área do caixa", type: "boolean", requirePhoto: true },
-              { title: "PDV 1 e PDV 2 abertos?", type: "boolean", requirePhoto: true },
-              { title: "Tabela nutricional e Código de defesa do consumidor", type: "boolean", requirePhoto: false },
-              { title: "Cardápios disponíveis e em bom estado de conservação?", type: "boolean", requirePhoto: false }
-            ]
-          },
-          {
-            category: "3. Produtos, Exposição & Café",
-            items: [
-              { title: "Vitrine refrigerada com exposição adequada?", type: "boolean", requirePhoto: true },
-              { title: "Máquina de café e moinho regulados?", type: "boolean", requirePhoto: true },
-              { title: "Fatias dentro do padrão de peso e visual?", type: "boolean", requirePhoto: true },
-              { title: "Exposição do empório", type: "boolean", requirePhoto: true },
-              { title: "Insumos repostos de acordo com o movimento?", type: "boolean", requirePhoto: true }
-            ]
-          },
-          {
-            category: "4. Equipamentos, Limpeza & Segurança Alimentar",
-            items: [
-              { title: "Equipamentos operacionais em boas condições de uso e limpos?", type: "boolean", requirePhoto: true },
-              { title: "Inspecionar segurança de alimentos e boas práticas", type: "boolean", requirePhoto: true },
-              { title: "Tabela de validades impressa e disponível", type: "boolean", requirePhoto: true },
-              { title: "PAPs impressos e disponíveis", type: "boolean", requirePhoto: true },
-              { title: "Organização dos estoques", type: "boolean", requirePhoto: true }
-            ]
-          },
-          {
-            category: "5. Gestão, Controles & Administrativo",
-            items: [
-              { title: "Cadernos de controles estão sendo preenchidos?", type: "boolean", requirePhoto: false },
-              { title: "Loja está batendo a meta da semana?", type: "boolean", requirePhoto: false },
-              { title: "CAFs de reembolso foram abertos?", type: "boolean", requirePhoto: false },
-              { title: "Notas fiscais estão lançadas no GCOM?", type: "boolean", requirePhoto: false }
-            ]
-          },
-          {
-            category: "6. Ordens de Manutenção & Equipamentos",
-            items: [
-              { title: "Necessidade de Manutenção em Equipamentos do Salão ou Balcão?", type: "maintenance", requirePhoto: true },
-              { title: "Necessidade de Manutenção Predial / Hidráulica / Elétrica?", type: "maintenance", requirePhoto: false }
-            ]
-          }
-        ]
-      }
-    ];
-
     let users = JSON.parse(localStorage.getItem("CB_LOCAL_USERS")) || defaultUsers;
     let presetUnits = JSON.parse(localStorage.getItem("CB_LOCAL_UNITS")) || defaultUnits;
     let actionStatuses = JSON.parse(localStorage.getItem("CB_LOCAL_STATUSES")) || defaultStatuses;
@@ -915,12 +777,16 @@
     let allChecklists = JSON.parse(localStorage.getItem("CB_LOCAL_CHECKLISTS")) || defaultTemplates;
     let activeChecklistId = localStorage.getItem("CB_LOCAL_ACTIVE_ID") || allChecklists[0].id;
     let savedReports = JSON.parse(localStorage.getItem("CB_LOCAL_REPORTS")) || [];
+    let techniciansList = JSON.parse(localStorage.getItem("CB_LOCAL_TECHNICIANS")) || defaultTechnicians;
+    let calendarEvents = JSON.parse(localStorage.getItem("CB_LOCAL_CALENDAR_EVENTS")) || [];
+
+    let currentCalendarDate = new Date();
+    let currentCalendarView = 'month';
     
     let attachedPhotos = {};
     let actionPlans = {};
     let customAnswers = {};
     let maintenanceOrders = {};
-
     let currentActionsTab = 'pending';
 
     function updateSyncUI(status, text) {
@@ -935,22 +801,14 @@
         updateSyncUI("🟡 Modo Local", "Sem conexão");
         return;
       }
-
-      updateSyncUI("🟢 Conectando...", "Sincronizando");
-
       db.collection("app_config").doc("main").onSnapshot(doc => {
         if (doc.exists) {
           const data = doc.data();
           if (data.checklists) { allChecklists = data.checklists; localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists)); }
           if (data.units) { presetUnits = data.units; localStorage.setItem("CB_LOCAL_UNITS", JSON.stringify(presetUnits)); }
           if (data.users) { users = data.users; localStorage.setItem("CB_LOCAL_USERS", JSON.stringify(users)); }
-          if (data.statuses) { actionStatuses = data.statuses; localStorage.setItem("CB_LOCAL_STATUSES", JSON.stringify(actionStatuses)); }
-          if (data.priorities) { actionPriorities = data.priorities; localStorage.setItem("CB_LOCAL_PRIORITIES", JSON.stringify(actionPriorities)); }
           if (data.technicians) { techniciansList = data.technicians; localStorage.setItem("CB_LOCAL_TECHNICIANS", JSON.stringify(techniciansList)); }
           if (data.calendarEvents) { calendarEvents = data.calendarEvents; localStorage.setItem("CB_LOCAL_CALENDAR_EVENTS", JSON.stringify(calendarEvents)); }
-          if (data.customStatus) { actionCustomStatus = data.customStatus; localStorage.setItem("CB_LOCAL_CUSTOM_STATUS", JSON.stringify(actionCustomStatus)); }
-          if (data.customPriority) { actionCustomPriority = data.customPriority; localStorage.setItem("CB_LOCAL_CUSTOM_PRIORITY", JSON.stringify(actionCustomPriority)); }
-
           renderPresetUnits();
           renderHomeChecklistSelect();
           updateSyncUI("🟢 Sincronizado na Nuvem", new Date().toLocaleTimeString('pt-BR'));
@@ -961,9 +819,7 @@
 
       db.collection("reports").orderBy("createdAt", "desc").onSnapshot(snapshot => {
         savedReports = [];
-        snapshot.forEach(doc => {
-          savedReports.push({ id: doc.id, ...doc.data() });
-        });
+        snapshot.forEach(doc => { savedReports.push({ id: doc.id, ...doc.data() }); });
         localStorage.setItem("CB_LOCAL_REPORTS", JSON.stringify(savedReports));
         updateHistoryBadge();
       });
@@ -975,21 +831,15 @@
         checklists: allChecklists,
         units: presetUnits,
         users: users,
-        statuses: actionStatuses,
-        priorities: actionPriorities,
         technicians: techniciansList,
         calendarEvents: calendarEvents,
-        customStatus: actionCustomStatus,
-        customPriority: actionCustomPriority,
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       }).catch(err => console.error(err));
     }
 
     function toggleSidebar() {
-      const sidebar = document.getElementById("sidebar");
-      const backdrop = document.getElementById("sidebar-backdrop");
-      sidebar.classList.toggle("-translate-x-full");
-      backdrop.classList.toggle("hidden");
+      document.getElementById("sidebar").classList.toggle("-translate-x-full");
+      document.getElementById("sidebar-backdrop").classList.toggle("hidden");
     }
 
     function updateLogos() {
@@ -1016,64 +866,27 @@
       const allowedUnits = getAllowedUnits();
 
       if (select) {
-        const currentVal = select.value;
+        const val = select.value;
         select.innerHTML = "";
-        allowedUnits.forEach(u => {
-          const opt = document.createElement("option"); opt.value = u; opt.innerText = u; select.appendChild(opt);
-        });
-        if (currentVal && allowedUnits.includes(currentVal)) select.value = currentVal;
+        allowedUnits.forEach(u => { select.innerHTML += `<option value="${u}">${u}</option>`; });
+        if (val && allowedUnits.includes(val)) select.value = val;
       }
-
       if (filterStore) {
-        const currentFilter = filterStore.value;
+        let f = filterStore.value;
         filterStore.innerHTML = `<option value="">Todas as Lojas Permitidas</option>`;
-        allowedUnits.forEach(u => {
-          const opt = document.createElement("option"); opt.value = u; opt.innerText = u; filterStore.appendChild(opt);
-        });
-        filterStore.value = currentFilter;
+        allowedUnits.forEach(u => { filterStore.innerHTML += `<option value="${u}">${u}</option>`; });
+        filterStore.value = f;
       }
-
       if (filterActionStore) {
-        const currentFilterAct = filterActionStore.value;
+        let fa = filterActionStore.value;
         filterActionStore.innerHTML = `<option value="">Todas as Lojas</option>`;
-        allowedUnits.forEach(u => {
-          const opt = document.createElement("option"); opt.value = u; opt.innerText = u; filterActionStore.appendChild(opt);
-        });
-        filterActionStore.value = currentFilterAct;
+        allowedUnits.forEach(u => { filterActionStore.innerHTML += `<option value="${u}">${u}</option>`; });
+        filterActionStore.value = fa;
       }
-
-      if (filterAgendaStore) {
-        const curAgenda = filterAgendaStore.value;
-        if (currentUser && currentUser.role === 'gerente') {
-          filterAgendaStore.innerHTML = "";
-          let managerUnit = currentUser.units && currentUser.units.length > 0 ? currentUser.units[0] : presetUnits[0];
-          let opt = document.createElement("option"); opt.value = managerUnit; opt.innerText = managerUnit; filterAgendaStore.appendChild(opt);
-          filterAgendaStore.value = managerUnit;
-          filterAgendaStore.disabled = true;
-        } else {
-          filterAgendaStore.innerHTML = `<option value="GERAL">⭐ Eventos em Comum (Todas as Lojas)</option>`;
-          allowedUnits.forEach(u => {
-            const opt = document.createElement("option"); opt.value = u; opt.innerText = u; filterAgendaStore.appendChild(opt);
-          });
-          if (curAgenda) filterAgendaStore.value = curAgenda;
-        }
-      }
-
-      if (eventStoreSelect) {
-        eventStoreSelect.innerHTML = "";
-        let unitsToDisplay = currentUser && currentUser.role === 'gerente' && currentUser.units ? currentUser.units : presetUnits;
-        unitsToDisplay.forEach(u => {
-          const opt = document.createElement("option"); opt.value = u; opt.innerText = u; eventStoreSelect.appendChild(opt);
-        });
-      }
-
       if (listContainer) {
         listContainer.innerHTML = "";
         presetUnits.forEach((u, idx) => {
-          const item = document.createElement("div");
-          item.className = "flex justify-between items-center p-2 bg-stone-50 rounded border text-xs";
-          item.innerHTML = `<span class="font-bold">${u}</span><div class="flex gap-2"><button onclick="adminEditUnit(${idx})" class="text-stone-600 font-bold">Editar</button><button onclick="adminDeleteUnit(${idx})" class="text-rose-600 font-bold">Excluir</button></div>`;
-          listContainer.appendChild(item);
+          listContainer.innerHTML += `<div class="flex justify-between items-center p-2 bg-stone-50 rounded border text-xs"><span class="font-bold">${u}</span><div class="flex gap-2"><button onclick="adminEditUnit(${idx})" class="text-stone-600 font-bold">Editar</button><button onclick="adminDeleteUnit(${idx})" class="text-rose-600 font-bold">Excluir</button></div></div>`;
         });
       }
     }
@@ -1128,115 +941,57 @@
       document.getElementById("modules-screen").classList.remove("hidden");
       document.getElementById("current-user-badge").innerText = currentUser ? currentUser.name : '';
       updateLogos();
-      
       const grid = document.getElementById("modules-grid");
       grid.innerHTML = "";
 
       if (currentUser.role === 'admin' || currentUser.role === 'gerente') {
         grid.innerHTML += `
-          <button onclick="selectModule('checklists')" class="p-3.5 bg-stone-50 hover:bg-stone-100 border border-stone-200 rounded-xl transition shadow-sm text-center block w-full">
-            <h3 class="font-bold text-cb-bordo text-xs uppercase tracking-wider">Checklists</h3>
-            <p class="text-[11px] text-stone-500 mt-0.5">Realizar auditorias e relatórios</p>
-          </button>
-          <button onclick="selectModule('actions')" class="p-3.5 bg-stone-50 hover:bg-stone-100 border border-stone-200 rounded-xl transition shadow-sm text-center block w-full">
-            <h3 class="font-bold text-amber-900 text-xs uppercase tracking-wider">Planos de Ação</h3>
-            <p class="text-[11px] text-stone-500 mt-0.5">Acompanhamento e chat de correções</p>
-          </button>
-          <button onclick="selectModule('agenda')" class="p-3.5 bg-stone-50 hover:bg-stone-100 border border-stone-200 rounded-xl transition shadow-sm text-center block w-full">
-            <h3 class="font-bold text-cb-bordo text-xs uppercase tracking-wider">Agenda & Calendário</h3>
-            <p class="text-[11px] text-stone-500 mt-0.5">Eventos e prazos da rede</p>
-          </button>`;
-      } else if (currentUser.role === 'operador') {
-        grid.innerHTML += `
-          <button onclick="selectModule('checklists')" class="p-3.5 bg-stone-50 hover:bg-stone-100 border border-stone-200 rounded-xl transition shadow-sm text-center block w-full">
-            <h3 class="font-bold text-cb-bordo text-xs uppercase tracking-wider">Checklists</h3>
-            <p class="text-[11px] text-stone-500 mt-0.5">Realizar auditorias e relatórios</p>
-          </button>`;
+          <button onclick="selectModule('checklists')" class="p-3.5 bg-stone-50 hover:bg-stone-100 border rounded-xl transition text-center block w-full"><h3 class="font-bold text-cb-bordo text-xs uppercase">Checklists</h3></button>
+          <button onclick="selectModule('actions')" class="p-3.5 bg-stone-50 hover:bg-stone-100 border rounded-xl transition text-center block w-full"><h3 class="font-bold text-amber-900 text-xs uppercase">Planos de Ação</h3></button>
+          <button onclick="selectModule('agenda')" class="p-3.5 bg-stone-50 hover:bg-stone-100 border rounded-xl transition text-center block w-full"><h3 class="font-bold text-cb-bordo text-xs uppercase">Agenda & Calendário</h3></button>
+          <button onclick="selectModule('sales-dashboard')" class="p-3.5 bg-stone-50 hover:bg-stone-100 border rounded-xl transition text-center block w-full"><h3 class="font-bold text-emerald-900 text-xs uppercase">Dashboard de Vendas</h3></button>`;
+      } else {
+        grid.innerHTML += `<button onclick="selectModule('checklists')" class="p-3.5 bg-stone-50 hover:bg-stone-100 border rounded-xl transition text-center block w-full"><h3 class="font-bold text-cb-bordo text-xs uppercase">Checklists</h3></button>`;
       }
-
       if (currentUser.role === 'admin') {
-        grid.innerHTML += `
-          <button onclick="toggleUsersModal()" class="p-3.5 bg-stone-50 hover:bg-stone-100 border border-stone-200 rounded-xl transition shadow-sm text-center block w-full">
-            <h3 class="font-bold text-stone-900 text-xs uppercase tracking-wider">Gerenciar Unidades & Usuários</h3>
-            <p class="text-[11px] text-stone-500 mt-0.5">Lojas da rede e permissões</p>
-          </button>`;
+        grid.innerHTML += `<button onclick="toggleUsersModal()" class="p-3.5 bg-stone-50 hover:bg-stone-100 border rounded-xl transition text-center block w-full"><h3 class="font-bold text-stone-900 text-xs uppercase">Gerenciar Unidades & Usuários</h3></button>`;
       }
     }
 
     function selectModule(mod) {
       if (mod === 'users') { toggleUsersModal(); return; }
-
       document.getElementById("modules-screen").classList.add("hidden");
-      const checklistsMod = document.getElementById("module-checklists-container");
-      const actionsMod = document.getElementById("module-actions-container");
-      const techMod = document.getElementById("module-technicians-container");
-      const agendaMod = document.getElementById("module-agenda-container");
-      const auditFooter = document.getElementById("audit-footer");
-      const badgeMod = document.getElementById("current-module-badge");
-
-      const sideBtnUsers = document.getElementById("sidebar-btn-users");
-      const sideBtnConfig = document.getElementById("sidebar-btn-config");
-      const homeBtnConfig = document.getElementById("home-btn-config");
-
-      if (currentUser.role === 'admin') {
-        if (sideBtnUsers) sideBtnUsers.classList.remove("hidden");
-        if (sideBtnConfig) sideBtnConfig.classList.remove("hidden");
-        if (homeBtnConfig) homeBtnConfig.classList.remove("hidden");
-        document.getElementById("btn-add-tech")?.classList.remove("hidden");
-      } else {
-        if (sideBtnUsers) sideBtnUsers.classList.add("hidden");
-        if (sideBtnConfig) sideBtnConfig.classList.add("hidden");
-        if (homeBtnConfig) homeBtnConfig.classList.add("hidden");
-        document.getElementById("btn-add-tech")?.classList.add("hidden");
-      }
-
-      checklistsMod.classList.add("hidden");
-      actionsMod.classList.add("hidden");
-      techMod.classList.add("hidden");
-      agendaMod.classList.add("hidden");
-      auditFooter.classList.add("hidden");
+      
+      const mods = ['checklists', 'actions', 'technicians', 'agenda', 'sales-dashboard'];
+      mods.forEach(m => document.getElementById(`module-${m}-container`)?.classList.add("hidden"));
+      document.getElementById("audit-footer")?.classList.add("hidden");
 
       if (mod === 'checklists') {
-        checklistsMod.classList.remove("hidden");
-        auditFooter.classList.remove("hidden");
-        badgeMod.innerText = "Checklists";
+        document.getElementById("module-checklists-container").classList.remove("hidden");
+        document.getElementById("audit-footer").classList.remove("hidden");
         switchChecklistTab('home');
-      } else if (mod === 'actions') {
-        if (currentUser.role === 'operador') return alert("Acesso não autorizado para operadores.");
-        actionsMod.classList.remove("hidden");
-        badgeMod.innerText = "Planos de Ação";
-        renderCentralizedActions();
-      } else if (mod === 'technicians') {
-        techMod.classList.remove("hidden");
-        badgeMod.innerText = "Técnicos";
-        renderTechniciansList();
-      } else if (mod === 'agenda') {
-        if (currentUser.role === 'operador') return alert("Acesso não autorizado para operadores.");
-        agendaMod.classList.remove("hidden");
-        badgeMod.innerText = "Agenda";
-        renderAgendaCalendar();
+      } else {
+        document.getElementById(`module-${mod}-container`)?.classList.remove("hidden");
+        if (mod === 'actions') renderCentralizedActions();
+        if (mod === 'technicians') renderTechniciansList();
+        if (mod === 'agenda') renderAgendaCalendar();
       }
     }
 
     function switchChecklistTab(tab) {
-      const homeView = document.getElementById("checklist-home-view");
-      const auditView = document.getElementById("audit-view");
-      const historyView = document.getElementById("history-view");
-      const footer = document.getElementById("audit-footer");
-
-      homeView.classList.add("hidden");
-      auditView.classList.add("hidden");
-      historyView.classList.add("hidden");
-      footer.classList.add("hidden");
+      document.getElementById("checklist-home-view").classList.add("hidden");
+      document.getElementById("audit-view").classList.add("hidden");
+      document.getElementById("history-view").classList.add("hidden");
+      document.getElementById("audit-footer").classList.add("hidden");
 
       if (tab === 'home') {
-        homeView.classList.remove("hidden");
+        document.getElementById("checklist-home-view").classList.remove("hidden");
         renderHomeChecklistSelect();
       } else if (tab === 'audit') {
-        auditView.classList.remove("hidden");
-        footer.classList.remove("hidden");
+        document.getElementById("audit-view").classList.remove("hidden");
+        document.getElementById("audit-footer").classList.remove("hidden");
       } else if (tab === 'history') {
-        historyView.classList.remove("hidden");
+        document.getElementById("history-view").classList.remove("hidden");
         renderHistoryList();
       }
     }
@@ -1245,29 +1000,18 @@
       const select = document.getElementById("home-checklist-select");
       if (!select) return;
       select.innerHTML = "";
-      allChecklists.forEach(c => {
-        const opt = document.createElement("option");
-        opt.value = c.id;
-        opt.innerText = c.name;
-        select.appendChild(opt);
-      });
+      allChecklists.forEach(c => { select.innerHTML += `<option value="${c.id}">${c.name}</option>`; });
     }
 
     function startSelectedChecklist() {
       const select = document.getElementById("home-checklist-select");
       if (!select || !select.value) return alert("Selecione um checklist.");
       activeChecklistId = select.value;
-      attachedPhotos = {};
-      actionPlans = {};
-      customAnswers = {};
-      maintenanceOrders = {};
+      attachedPhotos = {}; actionPlans = {}; customAnswers = {}; maintenanceOrders = {};
       localStorage.setItem("CB_LOCAL_ACTIVE_ID", activeChecklistId);
       document.getElementById("active-model-title-badge").innerText = getCurrentChecklist().name;
       renderChecklist();
-      
-      document.getElementById("checklist-home-view").classList.add("hidden");
-      document.getElementById("audit-view").classList.remove("hidden");
-      document.getElementById("audit-footer").classList.remove("hidden");
+      switchChecklistTab('audit');
     }
 
     function updateHistoryBadge() {
@@ -1279,64 +1023,34 @@
       const container = document.getElementById("history-list-container");
       container.innerHTML = ""; updateHistoryBadge();
       const storeFilter = document.getElementById("filter-store").value;
-      const startFilter = document.getElementById("filter-date-start").value;
-      const endFilter = document.getElementById("filter-date-end").value;
       const allowedUnits = getAllowedUnits();
 
-      let filtered = savedReports.filter(rep => {
-        if (!allowedUnits.includes(rep.unit)) return false;
-        let matchStore = !storeFilter || rep.unit === storeFilter;
-        let matchDate = true;
-        if (rep.date) {
-          let parts = rep.date.split(',')[0].split('/');
-          let repIso = `${parts[2]}-${parts[1]}-${parts[0]}`;
-          if (startFilter && repIso < startFilter) matchDate = false;
-          if (endFilter && repIso > endFilter) matchDate = false;
-        }
-        return matchStore && matchDate;
-      });
-
+      let filtered = savedReports.filter(rep => allowedUnits.includes(rep.unit) && (!storeFilter || rep.unit === storeFilter));
       if (filtered.length === 0) {
-        container.innerHTML = `<div class="p-8 text-center bg-white rounded-xl border text-stone-400 text-xs">Nenhum relatório encontrado para o período.</div>`;
+        container.innerHTML = `<div class="p-8 text-center bg-white rounded-xl border text-stone-400 text-xs">Nenhum relatório encontrado.</div>`;
         return;
       }
 
       filtered.forEach((rep, idx) => {
-        const itemCard = document.createElement("div");
-        itemCard.className = "bg-white rounded-xl border border-stone-200 shadow-sm overflow-hidden text-xs";
-        
-        let ncListHtml = rep.nonConformities?.map(nc => `<div class="p-2 bg-rose-50 border border-rose-200 rounded text-xs mb-1"><strong>❌ ${nc.title}</strong><br>Ação: ${nc.action} (Prazo: ${nc.date})</div>`).join("") || "";
-        let omListHtml = rep.maintenanceOrders?.map(om => `<div class="p-2 bg-amber-50 border border-amber-300 rounded text-xs mb-1"><strong>🔧 ${om.equipment}</strong><br>Defeito: ${om.action} (Prazo: ${om.date})</div>`).join("") || "";
-
-        itemCard.innerHTML = `
-          <div onclick="toggleHistoryDetails(${idx})" class="p-3.5 bg-stone-50 hover:bg-stone-100 flex justify-between items-center cursor-pointer transition">
-            <div class="flex items-center gap-3">
-              <span class="font-black text-cb-bordo text-sm">${rep.unit}</span>
-              <span class="text-stone-500">${rep.date}</span>
+        container.innerHTML += `
+          <div class="bg-white rounded-xl border shadow-sm overflow-hidden text-xs">
+            <div onclick="toggleHistoryDetails(${idx})" class="p-3.5 bg-stone-50 hover:bg-stone-100 flex justify-between items-center cursor-pointer">
+              <span class="font-black text-cb-bordo text-sm">${rep.unit} — ${rep.date}</span>
+              <span class="px-2 py-0.5 rounded font-bold text-white ${rep.score >= 90 ? 'bg-emerald-600' : 'bg-rose-600'}">${rep.score}%</span>
             </div>
-            <div class="flex items-center gap-3">
-              <span class="px-2 py-0.5 rounded font-bold text-white ${rep.score >= 90 ? 'bg-emerald-600' : rep.score >= 75 ? 'bg-amber-600' : 'bg-rose-600'}">${rep.score}%</span>
-              <span id="chevron-${idx}" class="text-stone-400 font-bold">▼</span>
-            </div>
-          </div>
-          <div id="history-details-${idx}" class="hidden p-4 border-t space-y-3 bg-white">
-            <div><strong>Supervisor:</strong> ${rep.supervisor}</div>
-            <div><strong>Não Conformidades:</strong><br>${ncListHtml || 'Nenhuma'}</div>
-            ${omListHtml ? `<div><strong>Ordens de Manutenção:</strong><br>${omListHtml}</div>` : ''}
-            <div class="pt-2 border-t flex justify-end gap-2">
-              <button onclick="reopenPDFFromHistoryByIndex('${rep.id}')" class="px-3 py-1.5 bg-cb-bordo text-white font-bold rounded-lg">Visualizar / Imprimir PDF</button>
-              <button onclick="deleteReportFromHistory('${rep.id}')" class="px-2.5 py-1.5 text-rose-600 font-bold">Excluir</button>
+            <div id="history-details-${idx}" class="hidden p-4 border-t space-y-3 bg-white">
+              <div><strong>Supervisor:</strong> ${rep.supervisor}</div>
+              <div class="pt-2 border-t flex justify-end gap-2">
+                <button onclick="reopenPDFFromHistoryByIndex('${rep.id}')" class="px-3 py-1.5 bg-cb-bordo text-white font-bold rounded-lg">Imprimir PDF</button>
+                <button onclick="deleteReportFromHistory('${rep.id}')" class="text-rose-600 font-bold">Excluir</button>
+              </div>
             </div>
           </div>`;
-        container.appendChild(itemCard);
       });
     }
 
     function toggleHistoryDetails(idx) {
-      const details = document.getElementById(`history-details-${idx}`);
-      const chevron = document.getElementById(`chevron-${idx}`);
-      details.classList.toggle("hidden");
-      chevron.innerText = details.classList.contains("hidden") ? "▼" : "▲";
+      document.getElementById(`history-details-${idx}`).classList.toggle("hidden");
     }
 
     function deleteReportFromHistory(docId) {
@@ -1353,42 +1067,19 @@
       if (rep) openPrintWindow(rep.htmlContent);
     }
 
-    function switchActionsTab(tab) {
-      currentActionsTab = tab;
-      const btnPending = document.getElementById("actions-tab-pending");
-      const btnCompleted = document.getElementById("actions-tab-completed");
-      if (tab === 'pending') {
-        btnPending.className = "flex-1 py-2 border-b-2 border-cb-bordo text-cb-bordo transition";
-        btnCompleted.className = "flex-1 py-2 border-b-2 border-transparent text-stone-400 transition";
-      } else {
-        btnPending.className = "flex-1 py-2 border-b-2 border-transparent text-stone-400 transition";
-        btnCompleted.className = "flex-1 py-2 border-b-2 border-cb-bordo text-cb-bordo transition";
-      }
-      renderCentralizedActions();
-    }
-
     function toggleConfigModal() {
-      const modal = document.getElementById("config-modal");
-      modal.classList.toggle("hidden");
-      if (!modal.classList.contains("hidden")) {
-        switchConfigTab('models');
-      }
+      document.getElementById("config-modal").classList.toggle("hidden");
+      if (!document.getElementById("config-modal").classList.contains("hidden")) switchConfigTab('models');
     }
 
     function switchConfigTab(tab) {
       document.getElementById("tab-content-models").classList.add("hidden");
       document.getElementById("tab-content-items").classList.add("hidden");
-
-      document.getElementById("tab-btn-models").className = "flex-1 py-3 border-b-2 border-transparent text-stone-500 transition";
-      document.getElementById("tab-btn-items").className = "flex-1 py-3 border-b-2 border-transparent text-stone-500 transition";
-
       if (tab === 'models') {
         document.getElementById("tab-content-models").classList.remove("hidden");
-        document.getElementById("tab-btn-models").className = "flex-1 py-3 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition";
         renderModelsListInConfig();
-      } else if (tab === 'items') {
+      } else {
         document.getElementById("tab-content-items").classList.remove("hidden");
-        document.getElementById("tab-btn-items").className = "flex-1 py-3 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition";
         document.getElementById("config-active-model-name").innerText = getCurrentChecklist().name;
         renderModalItems();
       }
@@ -1398,33 +1089,10 @@
       const container = document.getElementById("models-list-container");
       container.innerHTML = "";
       allChecklists.forEach((c, idx) => {
-        const div = document.createElement("div");
-        div.className = "flex justify-between items-center p-2.5 bg-stone-50 rounded border text-xs";
-        div.innerHTML = `
-          <span class="font-bold">${c.name}</span>
-          <div class="flex gap-2">
-            <button onclick="editChecklistName(${idx})" class="text-blue-600 font-bold underline">Editar Nome</button>
-            <button onclick="activeChecklistId='${c.id}'; switchConfigTab('items');" class="text-cb-bordo font-bold underline">Setores/Perguntas</button>
-            ${allChecklists.length > 1 ? `<button onclick="deleteModel('${c.id}')" class="text-rose-600 font-bold">Excluir</button>` : ''}
-          </div>`;
-        container.appendChild(div);
+        container.innerHTML += `<div class="flex justify-between items-center p-2.5 bg-stone-50 rounded border text-xs"><span class="font-bold">${c.name}</span><button onclick="activeChecklistId='${c.id}'; switchConfigTab('items');" class="text-cb-bordo font-bold underline">Configurar Setores/Perguntas</button></div>`;
       });
     }
 
-    function editChecklistName(idx) {
-      const currentName = allChecklists[idx].name;
-      const newName = prompt("Editar nome do checklist:", currentName);
-      if (newName && newName.trim()) {
-        allChecklists[idx].name = newName.trim();
-        localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
-        syncConfigToCloud();
-        renderModelsListInConfig();
-        renderHomeChecklistSelect();
-        alert("Nome atualizado com sucesso!");
-      }
-    }
-
-    // ⚙️ Gerenciamento e Edição Completa de Perguntas e Fotos Obrigatórias
     function renderModalItems() {
       const container = document.getElementById("modal-item-list");
       const catSelect = document.getElementById("new-item-category");
@@ -1432,26 +1100,13 @@
       container.innerHTML = ""; catSelect.innerHTML = "";
 
       current.categories.forEach((sec, sIdx) => {
-        const opt = document.createElement("option"); opt.value = sIdx; opt.innerText = sec.category; catSelect.appendChild(opt);
-        const secBox = document.createElement("div");
-        secBox.className = "border rounded-xl p-3 bg-white space-y-2 text-xs";
-        secBox.innerHTML = `<div class="flex justify-between items-center border-b pb-1"><span class="font-bold uppercase">${sec.category}</span><button onclick="editCategory(${sIdx})" class="underline font-bold">Editar Setor</button></div>`;
-        
+        catSelect.innerHTML += `<option value="${sIdx}">${sec.category}</option>`;
+        let secBox = `<div class="border rounded-xl p-3 bg-white space-y-2 text-xs"><div class="font-bold uppercase border-b pb-1">${sec.category}</div>`;
         sec.items.forEach((item, iIdx) => {
-          let typeLabel = item.type === 'maintenance' ? 'Manutenção' : item.type === 'stars' ? 'Estrelas' : item.type === 'text' ? 'Texto' : 'Sim/Não';
-          secBox.innerHTML += `
-            <div class="bg-stone-50 p-2.5 rounded border flex justify-between items-center gap-2">
-              <div class="space-y-0.5">
-                <span class="font-bold text-stone-900 block">${item.title}</span>
-                <span class="text-[10px] text-stone-500 font-medium">[Tipo: ${typeLabel}] • [Foto: ${item.requirePhoto ? 'Obrigatória' : 'Opcional'}]</span>
-              </div>
-              <div class="flex gap-2 shrink-0">
-                <button onclick="openEditQuestionModal(${sIdx}, ${iIdx})" class="text-blue-600 font-bold hover:underline">Configurar</button>
-                <button onclick="removeItem(${sIdx}, ${iIdx})" class="text-rose-600 font-bold hover:underline">Remover</button>
-              </div>
-            </div>`;
+          secBox += `<div class="bg-stone-50 p-2 rounded border flex justify-between items-center"><span>${item.title}</span><div class="flex gap-2"><button onclick="openEditQuestionModal(${sIdx}, ${iIdx})" class="text-blue-600 font-bold">Configurar</button><button onclick="removeItem(${sIdx}, ${iIdx})" class="text-rose-600 font-bold">Remover</button></div></div>`;
         });
-        container.appendChild(secBox);
+        secBox += `</div>`;
+        container.innerHTML += secBox;
       });
     }
 
@@ -1465,201 +1120,38 @@
       document.getElementById("edit-question-modal").classList.remove("hidden");
     }
 
-    function closeEditQuestionModal() {
-      document.getElementById("edit-question-modal").classList.add("hidden");
-    }
+    function closeEditQuestionModal() { document.getElementById("edit-question-modal").classList.add("hidden"); }
 
     function saveEditedQuestion() {
       const sIdx = parseInt(document.getElementById("edit-q-sec-idx").value);
       const iIdx = parseInt(document.getElementById("edit-q-item-idx").value);
-      const title = document.getElementById("edit-q-title").value.trim();
-      const type = document.getElementById("edit-q-type").value;
-      const requirePhoto = document.getElementById("edit-q-photo").checked;
-
-      if (!title) return alert("O título não pode ser vazio.");
-
       let item = getCurrentChecklist().categories[sIdx].items[iIdx];
-      item.title = title;
-      item.type = type;
-      item.requirePhoto = requirePhoto;
-
+      item.title = document.getElementById("edit-q-title").value.trim();
+      item.type = document.getElementById("edit-q-type").value;
+      item.requirePhoto = document.getElementById("edit-q-photo").checked;
       localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
       syncConfigToCloud();
       closeEditQuestionModal();
       renderModalItems();
-      alert("Configuração da pergunta atualizada com sucesso!");
+      alert("Pergunta atualizada!");
     }
 
-    function editCategory(sIdx) {
-      const current = getCurrentChecklist();
-      const newName = prompt("Editar setor:", current.categories[sIdx].category);
-      if (newName?.trim()) {
-        current.categories[sIdx].category = newName.trim();
-        localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
-        syncConfigToCloud(); renderModalItems();
-      }
-    }
-
-    function toggleUsersModal() {
-      if (currentUser.role !== 'admin') return alert("Acesso restrito a administradores.");
-      const m = document.getElementById("users-modal");
-      m.classList.toggle("hidden");
-      if (!m.classList.contains("hidden")) {
-        renderUsersList();
-        renderPresetUnits();
-        switchAdminTab('units');
-      }
-    }
-
-    function switchAdminTab(tab) {
-      const uContent = document.getElementById("admin-content-units");
-      const uUsers = document.getElementById("admin-content-users");
-      const uStatus = document.getElementById("admin-content-status");
-      const uPriorities = document.getElementById("admin-content-priorities");
-      const btnU = document.getElementById("admin-tab-units");
-      const btnUs = document.getElementById("admin-tab-users");
-      const btnSt = document.getElementById("admin-tab-status");
-      const btnPr = document.getElementById("admin-tab-priorities");
-
-      uContent.classList.add("hidden");
-      uUsers.classList.add("hidden");
-      uStatus.classList.add("hidden");
-      uPriorities.classList.add("hidden");
-      btnU.className = "flex-1 py-2.5 border-b-2 border-transparent text-stone-500 transition whitespace-nowrap";
-      btnUs.className = "flex-1 py-2.5 border-b-2 border-transparent text-stone-500 transition whitespace-nowrap";
-      btnSt.className = "flex-1 py-2.5 border-b-2 border-transparent text-stone-500 transition whitespace-nowrap";
-      btnPr.className = "flex-1 py-2.5 border-b-2 border-transparent text-stone-500 transition whitespace-nowrap";
-
-      if (tab === 'units') {
-        uContent.classList.remove("hidden");
-        btnU.className = "flex-1 py-2.5 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition whitespace-nowrap";
-        renderPresetUnits();
-      } else if (tab === 'users') {
-        uUsers.classList.remove("hidden");
-        btnUs.className = "flex-1 py-2.5 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition whitespace-nowrap";
-        renderUsersList();
-        renderUserUnitsCheckboxes();
-      } else if (tab === 'status') {
-        uStatus.classList.remove("hidden");
-        btnSt.className = "flex-1 py-2.5 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition whitespace-nowrap";
-      } else if (tab === 'priorities') {
-        uPriorities.classList.remove("hidden");
-        btnPr.className = "flex-1 py-2.5 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition whitespace-nowrap";
-      }
-    }
-
-    function toggleUnitSelectionBox() {
-      const role = document.getElementById("new-user-role").value;
-      const box = document.getElementById("new-user-units-box");
-      if (role === 'admin') box.classList.add("hidden");
-      else box.classList.remove("hidden");
-    }
-
-    function renderUserUnitsCheckboxes() {
-      const select = document.getElementById("new-user-units");
-      if (!select) return;
-      select.innerHTML = "";
-      presetUnits.forEach(u => {
-        const opt = document.createElement("option");
-        opt.value = u;
-        opt.innerText = u;
-        select.appendChild(opt);
-      });
-    }
-
-    function renderUsersList() {
-      const list = document.getElementById("users-list");
-      list.innerHTML = "";
-      users.forEach((u, idx) => {
-        const item = document.createElement("div");
-        item.className = "bg-stone-50 border p-2.5 rounded-xl text-xs space-y-1";
-        let unitsText = u.units && u.units.length > 0 ? u.units.join(", ") : "Todas as Lojas";
-        item.innerHTML = `
-          <div class="flex justify-between items-center">
-            <span class="font-bold text-cb-bordo text-sm">${u.name} (${u.role})</span>
-            ${u.username !== 'alcides' ? `<button onclick="removeUser(${idx})" class="text-rose-600 font-bold hover:underline">Excluir</button>` : '<span class="text-[10px] text-stone-400 font-bold">Principal</span>'}
-          </div>
-          <div class="text-stone-500">Login: ${u.username} | Senha: ${u.pass}</div>
-          <div class="text-stone-600"><strong>Lojas Vinculadas:</strong> ${unitsText}</div>`;
-        list.appendChild(item);
-      });
-    }
-
-    function addNewUser() {
-      const username = document.getElementById("new-user-name").value.trim().toLowerCase();
-      const pass = document.getElementById("new-user-pass").value.trim();
-      const name = document.getElementById("new-user-fullname").value.trim();
-      const role = document.getElementById("new-user-role").value;
-      
-      let assignedUnits = [];
-      if (role !== 'admin') {
-        const select = document.getElementById("new-user-units");
-        for (let opt of select.selectedOptions) {
-          assignedUnits.push(opt.value);
-        }
-      }
-
-      if (!username || !pass || !name) return alert("Preencha todos os campos obrigatórios.");
-      if (users.some(item => item.username === username)) return alert("Login já existente!");
-
-      users.push({ username, pass, name, role, units: assignedUnits });
-      localStorage.setItem("CB_LOCAL_USERS", JSON.stringify(users));
-      syncConfigToCloud();
-
-      document.getElementById("new-user-name").value = "";
-      document.getElementById("new-user-pass").value = "";
-      document.getElementById("new-user-fullname").value = "";
-      renderUsersList();
-      alert("Usuário criado com sucesso!");
-    }
-
-    function removeUser(idx) {
-      if (confirm("Excluir este acesso?")) {
-        users.splice(idx, 1);
-        localStorage.setItem("CB_LOCAL_USERS", JSON.stringify(users));
-        syncConfigToCloud();
-        renderUsersList();
-      }
-    }
-
-    function deleteModel(id) {
-      if (confirm("Excluir este modelo de checklist?")) {
-        allChecklists = allChecklists.filter(c => c.id !== id);
-        localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
-        syncConfigToCloud();
-        renderModelsListInConfig();
-      }
-    }
-
-    function toggleNewCategoryInput() { document.getElementById("new-cat-box").classList.toggle("hidden"); }
     function getCurrentChecklist() { return allChecklists.find(c => c.id === activeChecklistId) || allChecklists[0]; }
-
-    function createNewChecklistType() {
-      const name = document.getElementById("new-checklist-name").value.trim();
-      if (!name) return alert("Nome vazio.");
-      const newId = "checklist-" + Date.now();
-      allChecklists.push({ id: newId, name: name, categories: [{ category: "1. Itens Gerais", items: [] }] });
-      activeChecklistId = newId;
-      localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
-      localStorage.setItem("CB_LOCAL_ACTIVE_ID", activeChecklistId);
-      syncConfigToCloud(); document.getElementById("new-checklist-name").value = "";
-      renderModelsListInConfig(); switchConfigTab('items'); alert("Modelo criado com sucesso!");
-    }
+    function toggleNewCategoryInput() { document.getElementById("new-cat-box").classList.toggle("hidden"); }
 
     function addNewCategory() {
-      const catText = document.getElementById("new-cat-text").value.trim();
-      if (!catText) return alert("Nome vazio.");
-      getCurrentChecklist().categories.push({ category: catText, items: [] });
+      let t = document.getElementById("new-cat-text").value.trim();
+      if (!t) return;
+      getCurrentChecklist().categories.push({ category: t, items: [] });
       localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
-      syncConfigToCloud(); document.getElementById("new-cat-text").value = "";
-      document.getElementById("new-cat-box").classList.add("hidden"); renderModalItems();
+      syncConfigToCloud(); document.getElementById("new-cat-text").value = ""; renderModalItems();
     }
 
     function addNewItem() {
-      const catIdx = document.getElementById("new-item-category").value;
-      const itemText = document.getElementById("new-item-text").value.trim();
-      if (!itemText) return alert("Digite o título da pergunta.");
-      getCurrentChecklist().categories[catIdx].items.push({ title: itemText, type: document.getElementById("new-item-type").value, requirePhoto: document.getElementById("new-item-req-photo").checked });
+      let catIdx = document.getElementById("new-item-category").value;
+      let title = document.getElementById("new-item-text").value.trim();
+      if (!title) return;
+      getCurrentChecklist().categories[catIdx].items.push({ title, type: document.getElementById("new-item-type").value, requirePhoto: document.getElementById("new-item-req-photo").checked });
       localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
       syncConfigToCloud(); document.getElementById("new-item-text").value = ""; renderModalItems();
     }
@@ -1674,55 +1166,23 @@
       if (confirm("Restaurar padrões?")) {
         allChecklists = JSON.parse(JSON.stringify(defaultTemplates));
         localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
-        syncConfigToCloud(); renderModelsListInConfig(); alert("Restaurado!");
+        syncConfigToCloud(); renderModalItems(); alert("Restaurado!");
       }
     }
 
     function resetChecklist() {
-      if (confirm("Zerar respostas?")) {
-        attachedPhotos = {}; actionPlans = {}; customAnswers = {}; maintenanceOrders = {}; renderChecklist();
-      }
-    }
-
-    function initApp() {
-      updateLogos(); renderPresetUnits(); updateHistoryBadge(); setupCloudListeners();
-      
-      if (!currentUser) {
-        document.getElementById("login-screen").classList.remove("hidden");
-        document.getElementById("modules-screen").classList.add("hidden");
-        return;
-      }
-      
-      document.getElementById("login-screen").classList.add("hidden");
-      document.getElementById("sidebar-user-name").innerText = `${currentUser.name} (${currentUser.role})`;
-      document.getElementById("supervisor-name").value = currentUser.name;
-      
-      if (currentUser.role === "admin") {
-        document.getElementById("sidebar-btn-users").classList.remove("hidden");
-        document.getElementById("sidebar-btn-config").classList.remove("hidden");
-        document.getElementById("home-btn-config").classList.remove("hidden");
-      } else {
-        document.getElementById("sidebar-btn-users").classList.add("hidden");
-        document.getElementById("sidebar-btn-config").classList.add("hidden");
-        document.getElementById("home-btn-config").classList.add("hidden");
-      }
-      
-      openModulesScreen();
+      if (confirm("Zerar respostas?")) { attachedPhotos = {}; actionPlans = {}; customAnswers = {}; maintenanceOrders = {}; renderChecklist(); }
     }
 
     function handleEvaluationChange(itemKey, value) {
       customAnswers[itemKey] = value;
-      const planBox = document.getElementById(`plan-box-${itemKey}`);
-      if (value === "nao-conforme") planBox?.classList.remove("hidden");
-      else planBox?.classList.add("hidden");
+      document.getElementById(`plan-box-${itemKey}`)?.classList.toggle("hidden", value !== "nao-conforme");
       calculateScore();
     }
 
     function handleMaintenanceChange(itemKey, value) {
       customAnswers[itemKey] = value;
-      const omBox = document.getElementById(`maintenance-box-${itemKey}`);
-      if (value === "abrir") omBox?.classList.remove("hidden");
-      else omBox?.classList.add("hidden");
+      document.getElementById(`maintenance-box-${itemKey}`)?.classList.toggle("hidden", value !== "abrir");
       calculateScore();
     }
 
@@ -1733,12 +1193,6 @@
 
     function setStarRating(itemKey, stars) {
       customAnswers[itemKey] = stars;
-      for (let i = 1; i <= 5; i++) {
-        const starBtn = document.getElementById(`star-${itemKey}-${s}`);
-        if (starBtn) starBtn.className = `text-xl ${i <= stars ? 'text-amber-400 scale-110' : 'text-stone-300'}`;
-      }
-      const label = document.getElementById(`star-label-${itemKey}`);
-      if (label) label.innerText = `${stars} de 5`;
       calculateScore();
     }
 
@@ -1749,29 +1203,23 @@
     }
 
     function calculateScore() {
-      let totalQuestionsEvaluated = 0, pointsEarned = 0;
+      let total = 0, earned = 0;
       getCurrentChecklist().categories.forEach((sec, sIdx) => {
         sec.items.forEach((item, iIdx) => {
-          const itemKey = `${sIdx}-${iIdx}`;
-          const itemType = item.type || "boolean";
-          let ans = customAnswers[itemKey];
-          if (itemType === "boolean" && ans) {
-            pointsEarned += (ans === "conforme" ? 1.0 : 0.0); totalQuestionsEvaluated += 1.0;
-          } else if (itemType === "maintenance" && ans) {
-            pointsEarned += (ans === "regular" ? 1.0 : 0.0); totalQuestionsEvaluated += 1.0;
-          } else if (itemType === "stars" && ans) {
-            let rating = parseInt(ans) || 0;
-            if (rating > 0) { pointsEarned += (rating / 5); totalQuestionsEvaluated += 1.0; }
-          }
+          let key = `${sIdx}-${iIdx}`;
+          let ans = customAnswers[key];
+          if (item.type === 'boolean' && ans) { earned += (ans === 'conforme' ? 1 : 0); total++; }
+          else if (item.type === 'maintenance' && ans) { earned += (ans === 'regular' ? 1 : 0); total++; }
+          else if (item.type === 'stars' && ans) { earned += (parseInt(ans) / 5); total++; }
         });
       });
-      const score = totalQuestionsEvaluated > 0 ? Math.round((pointsEarned / totalQuestionsEvaluated) * 100) : 100;
+      let score = total > 0 ? Math.round((earned / total) * 100) : 100;
       document.getElementById("score-display").innerText = score + "%";
-      document.getElementById("evaluated-count-display").innerText = `${Math.round(totalQuestionsEvaluated)} item(ns) avaliado(s)`;
-      return { score, total: Math.round(totalQuestionsEvaluated) };
+      document.getElementById("evaluated-count-display").innerText = `${total} avaliado(s)`;
+      return { score, total };
     }
 
-    // 🛠️ Renderização do Checklist Mantendo o Estado sem apagar respostas
+    // Renderização do Checklist preservando estado (evita perda de dados ao responder)
     function renderChecklist() {
       const container = document.getElementById("checklist-container");
       const current = getCurrentChecklist();
@@ -1779,93 +1227,102 @@
 
       current.categories.forEach((sec, sIdx) => {
         if (sec.items.length === 0) return;
-        const secEl = document.createElement("div");
-        secEl.className = "bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden";
+        let secEl = document.createElement("div");
+        secEl.className = "bg-white rounded-xl shadow-sm border overflow-hidden";
         
         let itemsHtml = sec.items.map((item, iIdx) => {
-          const itemKey = `${sIdx}-${iIdx}`;
-          const itemType = item.type || "boolean";
-          const photoData = attachedPhotos[itemKey];
-          const planData = actionPlans[itemKey] || { action: '', date: '' };
-          const omData = maintenanceOrders[itemKey] || { equipment: '', action: '', date: '' };
-          const savedAnswer = customAnswers[itemKey];
-          let controlHtml = "";
+          let key = `${sIdx}-${iIdx}`;
+          let ans = customAnswers[key];
+          let photo = attachedPhotos[key];
+          let plan = actionPlans[key] || { action: '', date: '' };
+          let om = maintenanceOrders[key] || { equipment: '', action: '', date: '' };
+          let ctrl = "";
 
-          if (itemType === "boolean") {
-            let isConf = savedAnswer === 'conforme' ? 'checked' : '';
-            let isNaoConf = savedAnswer === 'nao-conforme' ? 'checked' : '';
-            let isNa = savedAnswer === 'na' ? 'checked' : '';
-            let planHidden = savedAnswer === 'nao-conforme' ? '' : 'hidden';
-
-            controlHtml = `
+          if (item.type === 'boolean' || !item.type) {
+            ctrl = `
               <div class="flex gap-2 text-xs">
-                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="conforme" ${isConf} class="hidden peer" onchange="handleEvaluationChange('${itemKey}', 'conforme')"><div class="text-center py-2 rounded-md border peer-checked:bg-emerald-600 peer-checked:text-white font-bold">Sim</div></label>
-                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="nao-conforme" ${isNaoConf} class="hidden peer" onchange="handleEvaluationChange('${itemKey}', 'nao-conforme')"><div class="text-center py-2 rounded-md border peer-checked:bg-rose-700 peer-checked:text-white font-bold">Não</div></label>
-                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="na" ${isNa} class="hidden peer" onchange="handleEvaluationChange('${itemKey}', 'na')"><div class="text-center py-2 rounded-md border peer-checked:bg-stone-500 peer-checked:text-white font-bold">N/A</div></label>
+                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${key}" value="conforme" ${ans === 'conforme' ? 'checked' : ''} class="hidden peer" onchange="handleEvaluationChange('${key}', 'conforme')"><div class="text-center py-2 rounded border peer-checked:bg-emerald-600 peer-checked:text-white font-bold">Sim</div></label>
+                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${key}" value="nao-conforme" ${ans === 'nao-conforme' ? 'checked' : ''} class="hidden peer" onchange="handleEvaluationChange('${key}', 'nao-conforme')"><div class="text-center py-2 rounded border peer-checked:bg-rose-700 peer-checked:text-white font-bold">Não</div></label>
+                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${key}" value="na" ${ans === 'na' ? 'checked' : ''} class="hidden peer" onchange="handleEvaluationChange('${key}', 'na')"><div class="text-center py-2 rounded border peer-checked:bg-stone-500 peer-checked:text-white font-bold">N/A</div></label>
               </div>
-              <div id="plan-box-${itemKey}" class="${planHidden} p-3 bg-rose-50 border rounded-lg space-y-2 text-xs">
-                <span class="block font-bold text-rose-800 uppercase text-[10px]">⚠️ Plano de Ação</span>
-                <input type="text" value="${planData.action}" placeholder="Ação..." oninput="updateActionPlan('${itemKey}', 'action', this.value)" class="w-full border p-2 bg-white rounded">
-                <input type="date" value="${planData.date}" oninput="updateActionPlan('${itemKey}', 'date', this.value)" class="w-full border p-2 bg-white rounded">
+              <div id="plan-box-${key}" class="${ans === 'nao-conforme' ? '' : 'hidden'} p-3 bg-rose-50 border rounded space-y-2 text-xs">
+                <span class="block font-bold text-rose-800 uppercase">Plano de Ação</span>
+                <input type="text" value="${plan.action}" placeholder="Ação..." oninput="updateActionPlan('${key}', 'action', this.value)" class="w-full border p-2 bg-white rounded">
+                <input type="date" value="${plan.date}" oninput="updateActionPlan('${key}', 'date', this.value)" class="w-full border p-2 bg-white rounded">
               </div>`;
-          } else if (itemType === "maintenance") {
-            let isAbrir = savedAnswer === 'abrir' ? 'checked' : '';
-            let isReg = savedAnswer === 'regular' ? 'checked' : '';
-            let isNa = savedAnswer === 'na' ? 'checked' : '';
-            let omHidden = savedAnswer === 'abrir' ? '' : 'hidden';
-
-            controlHtml = `
+          } else if (item.type === 'maintenance') {
+            ctrl = `
               <div class="flex gap-2 text-xs">
-                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="abrir" ${isAbrir} class="hidden peer" onchange="handleMaintenanceChange('${itemKey}', 'abrir')"><div class="text-center py-2 rounded-md border peer-checked:bg-amber-600 peer-checked:text-white font-bold">Abrir</div></label>
-                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="regular" ${isReg} class="hidden peer" onchange="handleMaintenanceChange('${itemKey}', 'regular')"><div class="text-center py-2 rounded-md border peer-checked:bg-emerald-600 peer-checked:text-white font-bold">Regular / Ok</div></label>
-                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="na" ${isNa} class="hidden peer" onchange="handleMaintenanceChange('${itemKey}', 'na')"><div class="text-center py-2 rounded-md border peer-checked:bg-stone-500 peer-checked:text-white font-bold">N/A</div></label>
+                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${key}" value="abrir" ${ans === 'abrir' ? 'checked' : ''} class="hidden peer" onchange="handleMaintenanceChange('${key}', 'abrir')"><div class="text-center py-2 rounded border peer-checked:bg-amber-600 peer-checked:text-white font-bold">Abrir</div></label>
+                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${key}" value="regular" ${ans === 'regular' ? 'checked' : ''} class="hidden peer" onchange="handleMaintenanceChange('${key}', 'regular')"><div class="text-center py-2 rounded border peer-checked:bg-emerald-600 peer-checked:text-white font-bold">Regular</div></label>
               </div>
-              <div id="maintenance-box-${itemKey}" class="${omHidden} p-3 bg-amber-50 border rounded-lg space-y-2 text-xs">
-                <span class="block font-bold text-amber-900 uppercase text-[10px]">Abertura de Ordem de Manutenção</span>
-                <input type="text" value="${omData.equipment}" placeholder="Equipamento..." oninput="updateMaintenanceOrder('${itemKey}', 'equipment', this.value)" class="w-full border p-2 bg-white rounded">
-                <input type="text" value="${omData.action}" placeholder="Defeito..." oninput="updateMaintenanceOrder('${itemKey}', 'action', this.value)" class="w-full border p-2 bg-white rounded">
-                <input type="date" value="${omData.date}" oninput="updateMaintenanceOrder('${itemKey}', 'date', this.value)" class="w-full border p-2 bg-white rounded">
+              <div id="maintenance-box-${key}" class="${ans === 'abrir' ? '' : 'hidden'} p-3 bg-amber-50 border rounded space-y-2 text-xs">
+                <input type="text" value="${om.equipment}" placeholder="Equipamento..." oninput="updateMaintenanceOrder('${key}', 'equipment', this.value)" class="w-full border p-2 bg-white rounded">
+                <input type="text" value="${om.action}" placeholder="Defeito..." oninput="updateMaintenanceOrder('${key}', 'action', this.value)" class="w-full border p-2 bg-white rounded">
+                <input type="date" value="${om.date}" oninput="updateMaintenanceOrder('${key}', 'date', this.value)" class="w-full border p-2 bg-white rounded">
               </div>`;
-          } else if (itemType === "stars") {
-            let currentStars = parseInt(savedAnswer) || 0;
-            let starsSpans = "";
-            for (let s = 1; s <= 5; s++) starsSpans += `<button type="button" id="star-${itemKey}-${s}" onclick="setStarRating('${itemKey}', ${s})" class="text-xl ${s <= currentStars ? 'text-amber-400' : 'text-stone-300'}">★</button>`;
-            controlHtml = `<div class="flex items-center justify-between bg-stone-50 p-2.5 rounded border"><div class="flex gap-2">${starsSpans}</div><span id="star-label-${itemKey}" class="text-xs font-bold">${currentStars ? currentStars + ' de 5' : 'Avalie'}</span></div>`;
-          } else if (itemType === "text") {
-            controlHtml = `<div><textarea rows="2" placeholder="Digite..." oninput="updateTextInput('${itemKey}', this.value)" class="w-full border p-2 text-xs bg-stone-50 rounded">${savedAnswer || ''}</textarea></div>`;
+          } else if (item.type === 'text') {
+            ctrl = `<textarea rows="2" placeholder="Digite..." oninput="updateTextInput('${key}', this.value)" class="w-full border p-2 text-xs bg-stone-50 rounded">${ans || ''}</textarea>`;
           }
 
-          return `
-          <div class="p-3.5 border-t flex flex-col gap-2.5">
-            <div class="flex justify-between items-start gap-2"><span class="text-sm font-medium">${item.title}</span>${item.requirePhoto ? '<span class="text-[10px] bg-amber-50 text-amber-800 border px-1.5 rounded font-bold">Foto Obrigatória</span>' : ''}</div>
-            ${controlHtml}
-            <div class="flex items-center gap-2 pt-1">
-              <label class="cursor-pointer inline-flex items-center gap-1.5 text-xs font-semibold bg-cb-cream px-3 py-1.5 rounded border">
-                <span>${photoData ? 'Alterar Foto' : 'Adicionar Foto'}</span>
-                <input type="file" accept="image/*" class="hidden" onchange="handlePhotoUpload(event, '${itemKey}')">
-              </label>
-              ${photoData ? `<span class="text-xs text-emerald-800 bg-emerald-50 px-2 py-1 rounded border font-medium">✓ Foto</span>` : ''}
-            </div>
+          return `<div class="p-3.5 border-t flex flex-col gap-2">
+            <div class="flex justify-between font-medium"><span>${item.title}</span>${item.requirePhoto ? '<span class="text-[10px] bg-amber-50 text-amber-800 border px-1.5 rounded font-bold">Foto Obrigatória</span>' : ''}</div>
+            ${ctrl}
+            <label class="cursor-pointer inline-flex items-center gap-1.5 text-xs bg-stone-100 px-3 py-1.5 rounded border w-fit">
+              <span>${photo ? 'Alterar Foto' : 'Adicionar Foto'}</span>
+              <input type="file" accept="image/*" class="hidden" onchange="handlePhotoUpload(event, '${key}')">
+            </label>
+            ${photo ? '<span class="text-xs text-emerald-700 font-bold">✓ Foto Anexada</span>' : ''}
           </div>`;
         }).join("");
 
-        secEl.innerHTML = `<div class="bg-cb-cream px-4 py-2.5 font-bold text-xs uppercase text-cb-bordo border-b"><span>${sec.category}</span></div><div>${itemsHtml}</div>`;
+        secEl.innerHTML = `<div class="bg-cb-cream px-4 py-2.5 font-bold text-xs uppercase text-cb-bordo border-b">${sec.category}</div><div>${itemsHtml}</div>`;
         container.appendChild(secEl);
       });
-
       calculateScore();
     }
 
     function handlePhotoUpload(event, key) {
-      const file = event.target.files[0];
+      let file = event.target.files[0];
       if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          attachedPhotos[key] = e.target.result;
-          renderChecklist();
-        };
-        reader.readAsDataURL(file);
+        let r = new FileReader();
+        r.onload = e => { attachedPhotos[key] = e.target.result; renderChecklist(); };
+        r.readAsDataURL(file);
       }
+    }
+
+    function processSalesFile(event) {
+      let file = event.target.files[0];
+      if (!file) return;
+      let reader = new FileReader();
+      reader.onload = function(e) {
+        let lines = e.target.result.split('\n');
+        let rev = 0, count = 0, ops = {}, pays = {};
+        lines.forEach(l => {
+          let cols = l.split(';');
+          if (cols.length >= 15) {
+            let val = parseFloat(cols[5].replace(',', '.')) || 0;
+            rev += val; count++;
+            let op = cols[14]?.trim() || 'Geral';
+            let pay = cols[10]?.trim() || 'Outros';
+            if (!ops[op]) ops[op] = { count: 0, total: 0 };
+            ops[op].count++; ops[op].total += val;
+            if (!pays[pay]) pays[pay] = { count: 0, total: 0 };
+            pays[pay].count++; pays[pay].total += val;
+          }
+        });
+        document.getElementById("kpi-total-revenue").innerText = `R$ ${rev.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+        document.getElementById("kpi-total-count").innerText = count;
+        document.getElementById("kpi-avg-ticket").innerText = `R$ ${(count > 0 ? rev/count : 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+        
+        let opDiv = document.getElementById("operators-breakdown"); opDiv.innerHTML = "";
+        for (let o in ops) opDiv.innerHTML += `<div class="flex justify-between p-2 bg-stone-50 rounded border"><span>${o}</span><span>R$ ${ops[o].total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span></div>`;
+        
+        let payDiv = document.getElementById("payments-breakdown"); payDiv.innerHTML = "";
+        for (let p in pays) payDiv.innerHTML += `<div class="flex justify-between p-2 bg-stone-50 rounded border"><span>${p}</span><span>R$ ${pays[p].total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span></div>`;
+        alert("Dashboard de vendas atualizado!");
+      };
+      reader.readAsText(file, 'ISO-8859-1');
     }
 
     initApp();
