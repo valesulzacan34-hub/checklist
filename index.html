@@ -21,7 +21,6 @@
     .text-cb-gold { color: var(--cb-gold); }
     .border-cb-gold { border-color: var(--cb-gold); }
     .bg-cb-cream { background-color: var(--cb-cream); }
-    /* Transição suave do Menu Lateral */
     #sidebar { transition: transform 0.3s ease-in-out; }
   </style>
 </head>
@@ -60,7 +59,7 @@
     </div>
   </div>
 
-  <!-- Tela de Seleção de Módulos (Clean) -->
+  <!-- Tela de Seleção de Módulos -->
   <div id="modules-screen" class="fixed inset-0 bg-cb-bordo-dark z-40 hidden flex items-center justify-center p-4">
     <div class="bg-white w-full max-w-sm rounded-2xl p-6 space-y-5 shadow-2xl border border-cb-gold/30 text-center">
       <div>
@@ -72,12 +71,12 @@
       <div class="grid grid-cols-1 gap-2.5">
         <button onclick="selectModule('checklists')" class="p-3.5 bg-stone-50 hover:bg-stone-100 border border-stone-200 rounded-xl transition shadow-sm text-center">
           <h3 class="font-bold text-cb-bordo text-xs uppercase tracking-wider">Checklists</h3>
-          <p class="text-[11px] text-stone-500 mt-0.5">Realizar auditorias e gerenciar relatórios</p>
+          <p class="text-[11px] text-stone-500 mt-0.5">Iniciar auditorias e gerenciar modelos e lojas</p>
         </button>
 
         <button onclick="selectModule('actions')" class="p-3.5 bg-stone-50 hover:bg-stone-100 border border-stone-200 rounded-xl transition shadow-sm text-center">
           <h3 class="font-bold text-amber-900 text-xs uppercase tracking-wider">Planos de Ação & Manutenção</h3>
-          <p class="text-[11px] text-stone-500 mt-0.5">Acompanhamento de correções da rede (Agenda & Chat)</p>
+          <p class="text-[11px] text-stone-500 mt-0.5">Acompanhamento de correções da rede</p>
         </button>
       </div>
 
@@ -117,7 +116,7 @@
     </div>
   </div>
 
-  <!-- Header Global com Botão de Menu Lateral -->
+  <!-- Header Global -->
   <header class="bg-cb-bordo text-white sticky top-0 z-30 shadow-lg border-b-2 border-cb-gold">
     <div class="max-w-xl mx-auto px-4 py-2 flex justify-between items-center">
       <div class="flex items-center gap-2.5">
@@ -137,25 +136,46 @@
       </div>
     </div>
 
-    <!-- Abas do Módulo Checklists -->
+    <!-- Sub-menu do Módulo Checklists -->
     <div id="checklist-subnav" class="bg-cb-bordo-dark border-t border-cb-gold/20 flex text-xs font-bold text-center">
-      <button id="main-tab-audit" onclick="switchMainTab('audit')" class="flex-1 py-2.5 border-b-2 border-cb-gold text-cb-gold transition flex items-center justify-center gap-1.5">
-        <span>Nova Auditoria</span>
+      <button id="main-tab-home" onclick="switchChecklistTab('home')" class="flex-1 py-2.5 border-b-2 border-cb-gold text-cb-gold transition flex items-center justify-center gap-1.5">
+        <span>Início / Iniciar</span>
       </button>
-      <button id="main-tab-history" onclick="switchMainTab('history')" class="flex-1 py-2.5 border-b-2 border-transparent text-stone-300 hover:text-white transition flex items-center justify-center gap-1.5">
+      <button id="main-tab-history" onclick="switchChecklistTab('history')" class="flex-1 py-2.5 border-b-2 border-transparent text-stone-300 hover:text-white transition flex items-center justify-center gap-1.5">
         <span>Relatórios Salvos</span>
         <span id="history-badge-count" class="bg-cb-gold text-cb-bordo-dark px-1.5 py-0.2 rounded-full text-[10px] font-black">0</span>
       </button>
     </div>
   </header>
 
-  <!-- MÓDULO 1: CHECKLISTS & HISTÓRICO -->
+  <!-- MÓDULO 1: CHECKLISTS -->
   <div id="module-checklists-container">
     
-    <main id="audit-view" class="max-w-xl mx-auto p-4 space-y-4">
-      <div class="bg-white p-3 rounded-xl shadow-sm border border-stone-200 flex items-center justify-between gap-2">
-        <label class="text-xs font-bold text-cb-bordo uppercase tracking-wide shrink-0">Modelo:</label>
-        <select id="checklist-selector" onchange="changeChecklistModel(this.value)" class="w-full text-xs font-semibold bg-stone-50 border rounded-lg p-2 focus:outline-none focus:ring-1 focus:ring-cb-bordo text-stone-800"></select>
+    <!-- Tela Inicial de Escolha de Checklists -->
+    <main id="checklist-home-view" class="max-w-xl mx-auto p-4 space-y-4">
+      <div class="bg-white p-4 rounded-xl shadow-sm border border-stone-200 space-y-3">
+        <h2 class="font-bold text-cb-bordo text-sm uppercase tracking-wider">Iniciar Nova Auditoria</h2>
+        <p class="text-xs text-stone-500">Selecione abaixo qual modelo de checklist você deseja aplicar na loja:</p>
+        
+        <div id="home-checklist-cards" class="grid grid-cols-1 gap-2.5 pt-1"></div>
+      </div>
+
+      <div class="bg-white p-4 rounded-xl shadow-sm border border-stone-200 space-y-3">
+        <h2 class="font-bold text-cb-bordo text-sm uppercase tracking-wider">Gerenciamento Rápido</h2>
+        <p class="text-xs text-stone-500">Acesse o painel para criar novas unidades, setores ou perguntas.</p>
+        <button onclick="toggleConfigModal()" class="w-full py-2.5 bg-cb-bordo hover:bg-cb-bordo-dark text-white text-xs font-bold rounded-lg transition uppercase tracking-wider">
+          ⚙️ Abrir Configurações Gerais
+        </button>
+      </div>
+    </main>
+
+    <!-- Tela de Execução do Checklist -->
+    <main id="audit-view" class="max-w-xl mx-auto p-4 space-y-4 hidden">
+      <div class="flex items-center justify-between bg-white p-3 rounded-xl shadow-sm border">
+        <button onclick="switchChecklistTab('home')" class="text-xs font-bold text-cb-bordo hover:underline">
+          ← Voltar à Seleção de Modelos
+        </button>
+        <span id="active-model-title-badge" class="text-xs font-bold text-stone-700">Modelo Atual</span>
       </div>
 
       <div class="bg-cb-bordo text-white p-3.5 rounded-xl flex justify-between items-center shadow-sm border border-cb-gold/30">
@@ -194,6 +214,7 @@
       </div>
     </main>
 
+    <!-- Tela de Relatórios Salvos -->
     <main id="history-view" class="max-w-xl mx-auto p-4 space-y-4 hidden">
       <div class="bg-white p-4 rounded-xl shadow-sm border border-stone-200 space-y-3">
         <div class="flex justify-between items-center border-b pb-2">
@@ -229,7 +250,7 @@
     </main>
   </div>
 
-  <!-- MÓDULO 2: PLANOS DE AÇÃO & MANUTENÇÃO (ESTILO AGENDA + CHAT INTERATIVO) -->
+  <!-- MÓDULO 2: PLANOS DE AÇÃO & MANUTENÇÃO -->
   <main id="module-actions-container" class="max-w-xl mx-auto p-4 space-y-4 hidden">
     <div class="bg-white p-4 rounded-xl shadow-sm border border-stone-200">
       <h2 class="font-bold text-cb-bordo text-sm uppercase tracking-wider">Agenda de Planos de Ação & Manutenção</h2>
@@ -249,10 +270,8 @@
         <button onclick="toggleChatModal()" class="text-stone-300 hover:text-white text-xl font-bold px-2 py-0.5">✕</button>
       </div>
 
-      <!-- Mensagens -->
       <div id="chat-messages-container" class="flex-1 p-4 overflow-y-auto space-y-3 bg-stone-50 text-xs"></div>
 
-      <!-- Enviar Mensagem -->
       <div class="p-3 border-t bg-white flex gap-2">
         <input type="text" id="chat-input-msg" placeholder="Escreva uma mensagem ou atualização..." class="flex-1 text-xs border rounded-lg p-2.5 focus:outline-none focus:ring-1 focus:ring-cb-bordo">
         <button onclick="sendChatMessage()" class="px-4 py-2.5 bg-cb-bordo hover:bg-cb-bordo-dark text-white text-xs font-bold rounded-lg transition">
@@ -277,30 +296,31 @@
     </div>
   </footer>
 
-  <!-- Modal de Configuração -->
+  <!-- Modal de Configuração (Com abas para Lojas, Modelos, Setores e Perguntas) -->
   <div id="config-modal" class="fixed inset-0 bg-black/70 z-50 hidden flex items-center justify-center p-2 sm:p-4">
     <div class="bg-white w-full max-w-2xl h-[92vh] rounded-2xl flex flex-col shadow-2xl overflow-hidden border border-cb-gold/30">
       
       <div class="p-3.5 border-b border-stone-200 flex justify-between items-center bg-cb-bordo text-white">
         <div>
-          <h3 class="font-bold text-sm text-cb-gold">Painel de Configuração</h3>
-          <p class="text-[11px] text-stone-200">Sincronizado automaticamente em todos os aparelhos</p>
+          <h3 class="font-bold text-sm text-cb-gold">Painel de Configuração & Modelos</h3>
+          <p class="text-[11px] text-stone-200">Gerencie lojas, novos checklists, setores e perguntas</p>
         </div>
         <button onclick="toggleConfigModal()" class="text-stone-300 hover:text-white text-xl font-bold px-2 py-0.5">✕</button>
       </div>
 
       <div class="flex border-b border-stone-200 bg-stone-100 text-xs font-bold overflow-x-auto">
-        <button id="tab-btn-units" onclick="switchConfigTab('units')" class="flex-1 min-w-[120px] py-3 border-b-2 border-cb-bordo text-cb-bordo bg-white transition">
+        <button id="tab-btn-units" onclick="switchConfigTab('units')" class="flex-1 min-w-[100px] py-3 border-b-2 border-cb-bordo text-cb-bordo bg-white transition">
           Lojas
         </button>
-        <button id="tab-btn-items" onclick="switchConfigTab('items')" class="flex-1 min-w-[130px] py-3 border-b-2 border-transparent text-stone-500 hover:text-cb-bordo transition">
-          Perguntas & Setores
+        <button id="tab-btn-models" onclick="switchConfigTab('models')" class="flex-1 min-w-[100px] py-3 border-b-2 border-transparent text-stone-500 hover:text-cb-bordo transition">
+          Criar Checklists
         </button>
-        <button id="tab-btn-models" onclick="switchConfigTab('models')" class="flex-1 min-w-[120px] py-3 border-b-2 border-transparent text-stone-500 hover:text-cb-bordo transition">
-          Modelos
+        <button id="tab-btn-items" onclick="switchConfigTab('items')" class="flex-1 min-w-[120px] py-3 border-b-2 border-transparent text-stone-500 hover:text-cb-bordo transition">
+          Setores & Perguntas
         </button>
       </div>
 
+      <!-- Aba Lojas -->
       <div id="tab-content-units" class="p-4 space-y-4 overflow-y-auto flex-1 bg-stone-50 text-sm">
         <div class="bg-white p-4 rounded-xl border border-stone-200 space-y-3 shadow-sm">
           <span class="block text-xs font-bold text-cb-bordo uppercase tracking-wider">Adicionar Nova Loja / Unidade</span>
@@ -311,7 +331,6 @@
             </button>
           </div>
         </div>
-
         <div class="bg-white p-4 rounded-xl border border-stone-200 space-y-3 shadow-sm">
           <div class="flex justify-between items-center border-b pb-2">
             <span class="text-xs font-bold text-cb-bordo uppercase tracking-wider">Unidades Cadastradas</span>
@@ -321,12 +340,35 @@
         </div>
       </div>
 
+      <!-- Aba Criar / Gerenciar Checklists -->
+      <div id="tab-content-models" class="hidden p-5 space-y-5 overflow-y-auto flex-1 bg-stone-50 text-sm">
+        <div class="bg-white p-4 rounded-xl border border-stone-200 space-y-3 shadow-sm">
+          <span class="block text-xs font-bold text-cb-bordo uppercase tracking-wider">Criar Novo Tipo de Checklist</span>
+          <p class="text-xs text-stone-500">Crie novos modelos independentes (ex: Fechamento, Higiene, Abertura).</p>
+          <div class="flex gap-2">
+            <input type="text" id="new-checklist-name" placeholder="Ex: Checklist de Fechamento" class="flex-1 text-xs border rounded-lg p-2.5 bg-stone-50">
+            <button onclick="createNewChecklistType()" class="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-lg transition">
+              + Criar Modelo
+            </button>
+          </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-xl border border-stone-200 space-y-3 shadow-sm">
+          <span class="block text-xs font-bold text-cb-bordo uppercase tracking-wider">Modelos Existentes na Rede</span>
+          <div id="models-list-container" class="space-y-2"></div>
+        </div>
+      </div>
+
+      <!-- Aba Setores & Perguntas -->
       <div id="tab-content-items" class="hidden flex-1 flex flex-col overflow-hidden">
+        <div class="p-3 bg-stone-100 border-b flex items-center justify-between">
+          <span class="text-xs font-bold text-cb-bordo">Editando o Modelo: <span id="config-active-model-name" class="underline"></span></span>
+        </div>
         <div id="modal-item-list" class="p-4 overflow-y-auto space-y-4 flex-1 text-sm bg-stone-50"></div>
 
         <div class="p-3 border-t border-stone-200 bg-white space-y-2.5">
           <div class="flex items-center justify-between">
-            <span class="text-xs font-bold text-cb-bordo uppercase">Adicionar Nova Pergunta</span>
+            <span class="text-xs font-bold text-cb-bordo uppercase">Adicionar Nova Pergunta ou Setor</span>
             <button onclick="toggleNewCategoryInput()" class="text-[11px] text-cb-bordo font-bold hover:underline">
               + Criar Novo Setor/Categoria
             </button>
@@ -345,7 +387,7 @@
               <option value="stars">Avaliação (1 a 5 Estrelas)</option>
               <option value="text">Resposta Aberta</option>
             </select>
-            <input type="text" id="new-item-text" placeholder="Título / Pergunta..." class="text-xs border rounded-lg p-2 bg-white">
+            <input type="text" id="new-item-text" placeholder="Título da pergunta..." class="text-xs border rounded-lg p-2 bg-white">
           </div>
 
           <div class="flex items-center justify-between pt-1">
@@ -360,34 +402,9 @@
         </div>
       </div>
 
-      <div id="tab-content-models" class="hidden p-5 space-y-5 overflow-y-auto flex-1 bg-stone-50 text-sm">
-        <div class="bg-white p-4 rounded-xl border border-stone-200 space-y-3 shadow-sm">
-          <span class="block text-xs font-bold text-cb-bordo uppercase tracking-wider">Renomear Modelo Atual</span>
-          <div class="flex gap-2">
-            <input type="text" id="edit-checklist-title" placeholder="Nome do Modelo" class="flex-1 text-xs border rounded-lg p-2.5 bg-stone-50 font-medium">
-            <button onclick="saveChecklistTitle()" class="px-4 py-2 bg-cb-bordo hover:bg-cb-bordo-dark text-white text-xs font-bold rounded-lg transition">
-              Salvar
-            </button>
-          </div>
-          <button onclick="deleteCurrentChecklist()" class="text-xs text-rose-600 font-bold hover:underline block pt-1">
-            Excluir este modelo de checklist
-          </button>
-        </div>
-
-        <div class="bg-white p-4 rounded-xl border border-stone-200 space-y-3 shadow-sm">
-          <span class="block text-xs font-bold text-cb-bordo uppercase tracking-wider">Criar Novo Tipo de Checklist</span>
-          <div class="flex gap-2">
-            <input type="text" id="new-checklist-name" placeholder="Ex: Checklist de Manutenção" class="flex-1 text-xs border rounded-lg p-2.5 bg-stone-50">
-            <button onclick="createNewChecklistType()" class="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-lg transition">
-              + Criar
-            </button>
-          </div>
-        </div>
-      </div>
-
       <div class="p-3 border-t flex justify-between bg-white text-xs items-center">
         <button onclick="restoreDefaultChecklist()" class="text-rose-600 font-semibold hover:underline">
-          Restaurar Padrões
+          Restaurar Padrões Casa Bauducco
         </button>
         <button onclick="toggleConfigModal()" class="bg-stone-900 hover:bg-black text-white font-bold px-6 py-2 rounded-lg transition">
           Concluir
@@ -513,7 +530,7 @@
     let activeChecklistId = localStorage.getItem("CB_LOCAL_ACTIVE_ID") || allChecklists[0].id;
     let savedReports = JSON.parse(localStorage.getItem("CB_LOCAL_REPORTS")) || [];
     let lastDeletedReport = null;
-    let activeChatActionId = null; // ID do plano de ação aberto no chat
+    let activeChatActionId = null;
     
     let attachedPhotos = {};
     let actionPlans = {};
@@ -546,8 +563,7 @@
 
           if (isInitialConfigLoad) {
             renderPresetUnits();
-            updateSelectorUI();
-            renderChecklist();
+            renderHomeChecklistCards();
             isInitialConfigLoad = false;
           }
           updateSyncUI("🟢 Sincronizado na Nuvem", new Date().toLocaleTimeString('pt-BR'));
@@ -595,7 +611,6 @@
       db.collection("reports").add(reportData).catch(err => console.error(err));
     }
 
-    // CONTROLE DO MENU LATERAL (SIDEBAR)
     function toggleSidebar() {
       const sidebar = document.getElementById("sidebar");
       const backdrop = document.getElementById("sidebar-backdrop");
@@ -710,7 +725,7 @@
         checklistsMod.classList.remove("hidden"); actionsMod.classList.add("hidden");
         auditFooter.classList.remove("hidden"); subNav.classList.remove("hidden");
         badgeMod.innerText = "Checklists";
-        switchMainTab('audit');
+        switchChecklistTab('home');
       } else if (mod === 'actions') {
         checklistsMod.classList.add("hidden"); actionsMod.classList.remove("hidden");
         auditFooter.classList.add("hidden"); subNav.classList.add("hidden");
@@ -719,22 +734,65 @@
       }
     }
 
-    function switchMainTab(tab) {
+    function switchChecklistTab(tab) {
+      const homeView = document.getElementById("checklist-home-view");
       const auditView = document.getElementById("audit-view");
       const historyView = document.getElementById("history-view");
-      const tabAudit = document.getElementById("main-tab-audit");
+      const tabHome = document.getElementById("main-tab-home");
       const tabHistory = document.getElementById("main-tab-history");
 
-      if (tab === 'audit') {
-        auditView.classList.remove("hidden"); historyView.classList.add("hidden");
-        tabAudit.className = "flex-1 py-2.5 border-b-2 border-cb-gold text-cb-gold font-bold transition flex items-center justify-center";
+      homeView.classList.add("hidden");
+      auditView.classList.add("hidden");
+      historyView.classList.add("hidden");
+
+      if (tab === 'home') {
+        homeView.classList.remove("hidden");
+        tabHome.className = "flex-1 py-2.5 border-b-2 border-cb-gold text-cb-gold font-bold transition flex items-center justify-center";
+        tabHistory.className = "flex-1 py-2.5 border-b-2 border-transparent text-stone-300 font-bold transition flex items-center justify-center";
+        renderHomeChecklistCards();
+      } else if (tab === 'audit') {
+        auditView.classList.remove("hidden");
+        tabHome.className = "flex-1 py-2.5 border-b-2 border-cb-gold text-cb-gold font-bold transition flex items-center justify-center";
         tabHistory.className = "flex-1 py-2.5 border-b-2 border-transparent text-stone-300 font-bold transition flex items-center justify-center";
       } else if (tab === 'history') {
-        auditView.classList.add("hidden"); historyView.classList.remove("hidden");
-        tabAudit.className = "flex-1 py-2.5 border-b-2 border-transparent text-stone-300 font-bold transition flex items-center justify-center";
+        historyView.classList.remove("hidden");
+        tabHome.className = "flex-1 py-2.5 border-b-2 border-transparent text-stone-300 font-bold transition flex items-center justify-center";
         tabHistory.className = "flex-1 py-2.5 border-b-2 border-cb-gold text-cb-gold font-bold transition flex items-center justify-center";
         renderHistoryList();
       }
+    }
+
+    function renderHomeChecklistCards() {
+      const container = document.getElementById("home-checklist-cards");
+      container.innerHTML = "";
+      allChecklists.forEach(c => {
+        const btn = document.createElement("button");
+        btn.onclick = () => startChecklistModel(c.id);
+        btn.className = "p-3.5 bg-stone-50 hover:bg-stone-100 border border-stone-200 rounded-xl transition shadow-sm text-left flex justify-between items-center group";
+        btn.innerHTML = `
+          <div>
+            <h3 class="font-bold text-cb-bordo text-xs uppercase tracking-wider">${c.name}</h3>
+            <p class="text-[11px] text-stone-500 mt-0.5">${c.categories.length} setores configurados</p>
+          </div>
+          <span class="text-cb-bordo font-bold text-sm group-hover:translate-x-1 transition">Iniciar →</span>
+        `;
+        container.appendChild(btn);
+      });
+    }
+
+    function startChecklistModel(id) {
+      activeChecklistId = id;
+      attachedPhotos = {};
+      actionPlans = {};
+      customAnswers = {};
+      maintenanceOrders = {};
+      localStorage.setItem("CB_LOCAL_ACTIVE_ID", activeChecklistId);
+      document.getElementById("active-model-title-badge").innerText = getCurrentChecklist().name;
+      document.getElementById("header-app-title").innerText = getCurrentChecklist().name;
+      renderChecklist();
+      
+      document.getElementById("checklist-home-view").classList.add("hidden");
+      document.getElementById("audit-view").classList.remove("hidden");
     }
 
     function updateHistoryBadge() {
@@ -815,39 +873,20 @@
       if (rep) openPrintWindow(rep.htmlContent);
     }
 
-    // MÓDULO 2: PLANOS DE AÇÃO EM FORMATO DE AGENDA + CHAT INTERATIVO
     function renderCentralizedActions() {
       const container = document.getElementById("centralized-actions-list");
       container.innerHTML = "";
-
       let allActions = [];
 
       savedReports.forEach(rep => {
         rep.nonConformities?.forEach((nc, i) => {
-          allActions.push({
-            id: `${rep.id}-nc-${i}`,
-            unit: rep.unit,
-            title: `❌ ${nc.title}`,
-            action: nc.action || 'Não descrita',
-            date: nc.date || '31/12/2099',
-            rawDate: nc.date,
-            chatId: `${rep.id}_nc_${i}`
-          });
+          allActions.push({ unit: rep.unit, title: `❌ ${nc.title}`, action: nc.action || 'Não descrita', date: nc.date || '31/12/2099', rawDate: nc.date, chatId: `${rep.id}_nc_${i}` });
         });
         rep.maintenanceOrders?.forEach((om, i) => {
-          allActions.push({
-            id: `${rep.id}-om-${i}`,
-            unit: rep.unit,
-            title: `🔧 Manutenção: ${om.equipment}`,
-            action: om.action || 'Não descrito',
-            date: om.date || '31/12/2099',
-            rawDate: om.date,
-            chatId: `${rep.id}_om_${i}`
-          });
+          allActions.push({ unit: rep.unit, title: `🔧 Manutenção: ${om.equipment}`, action: om.action || 'Não descrito', date: om.date || '31/12/2099', rawDate: om.date, chatId: `${rep.id}_om_${i}` });
         });
       });
 
-      // Ordenar por data
       allActions.sort((a, b) => new Date(a.rawDate || '2099-12-31') - new Date(b.rawDate || '2099-12-31'));
 
       if (allActions.length === 0) {
@@ -860,15 +899,8 @@
         card.className = "bg-white p-4 rounded-xl border border-stone-200 shadow-sm space-y-2 text-xs hover:border-cb-gold transition cursor-pointer";
         card.onclick = () => openChatModal(act.chatId, act.title, act.unit, act.date);
         card.innerHTML = `
-          <div class="flex justify-between items-center border-b pb-1.5">
-            <span class="font-bold text-cb-bordo uppercase">${act.unit}</span>
-            <span class="bg-amber-100 text-amber-900 px-2 py-0.5 rounded font-bold">📅 Prazo: ${act.date}</span>
-          </div>
-          <div>
-            <strong class="text-stone-900 block text-sm">${act.title}</strong>
-            <span class="text-stone-700 block mt-1"><strong>Ação:</strong> ${act.action}</span>
-            <div class="mt-2 text-right text-[11px] text-cb-bordo font-bold underline">💬 Abrir Chat com o Gestor</div>
-          </div>`;
+          <div class="flex justify-between items-center border-b pb-1.5"><span class="font-bold text-cb-bordo uppercase">${act.unit}</span><span class="bg-amber-100 text-amber-900 px-2 py-0.5 rounded font-bold">📅 Prazo: ${act.date}</span></div>
+          <div><strong class="text-stone-900 block text-sm">${act.title}</strong><span class="text-stone-700 block mt-1"><strong>Ação:</strong> ${act.action}</span><div class="mt-2 text-right text-[11px] text-cb-bordo font-bold underline">💬 Abrir Chat com o Gestor</div></div>`;
         container.appendChild(card);
       });
     }
@@ -892,7 +924,7 @@
         const container = document.getElementById("chat-messages-container");
         container.innerHTML = "";
         if (snapshot.empty) {
-          container.innerHTML = `<div class="text-center text-stone-400 py-6">Nenhuma mensagem ainda. Inicie a conversa com o gerente.</div>`;
+          container.innerHTML = `<div class="text-center text-stone-400 py-6">Nenhuma mensagem ainda. Inicie a conversa.</div>`;
           return;
         }
         snapshot.forEach(doc => {
@@ -900,12 +932,7 @@
           const isMe = m.sender === currentUser.name;
           const msgDiv = document.createElement("div");
           msgDiv.className = `flex flex-col ${isMe ? 'items-end' : 'items-start'}`;
-          msgDiv.innerHTML = `
-            <div class="max-w-[80%] p-2.5 rounded-xl ${isMe ? 'bg-cb-bordo text-white' : 'bg-stone-200 text-stone-800'}">
-              <span class="block text-[9px] font-bold opacity-75 mb-0.5">${m.sender}</span>
-              <span>${m.text}</span>
-            </div>
-            <span class="text-[9px] text-stone-400 mt-0.5">${m.time || ''}</span>`;
+          msgDiv.innerHTML = `<div class="max-w-[80%] p-2.5 rounded-xl ${isMe ? 'bg-cb-bordo text-white' : 'bg-stone-200 text-stone-800'}"><span class="block text-[9px] font-bold opacity-75 mb-0.5">${m.sender}</span><span>${m.text}</span></div><span class="text-[9px] text-stone-400 mt-0.5">${m.time || ''}</span>`;
           container.appendChild(msgDiv);
         });
         container.scrollTop = container.scrollHeight;
@@ -916,89 +943,72 @@
       const input = document.getElementById("chat-input-msg");
       const text = input.value.trim();
       if (!text || !activeChatActionId || !isFirebaseReady) return;
-
       db.collection("chats").doc(activeChatActionId).collection("messages").add({
-        text: text,
-        sender: currentUser.name,
-        time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      }).then(() => {
-        input.value = "";
-      }).catch(err => console.error(err));
+        text: text, sender: currentUser.name, time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }), createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      }).then(() => input.value = "");
     }
 
     function switchConfigTab(tab) {
       document.getElementById("tab-content-units").classList.add("hidden");
-      document.getElementById("tab-content-items").classList.add("hidden");
       document.getElementById("tab-content-models").classList.add("hidden");
+      document.getElementById("tab-content-items").classList.add("hidden");
 
-      document.getElementById("tab-btn-units").className = "flex-1 min-w-[120px] py-3 border-b-2 border-transparent text-stone-500 hover:text-cb-bordo transition";
-      document.getElementById("tab-btn-items").className = "flex-1 min-w-[130px] py-3 border-b-2 border-transparent text-stone-500 hover:text-cb-bordo transition";
-      document.getElementById("tab-btn-models").className = "flex-1 min-w-[120px] py-3 border-b-2 border-transparent text-stone-500 hover:text-cb-bordo transition";
+      document.getElementById("tab-btn-units").className = "flex-1 min-w-[100px] py-3 border-b-2 border-transparent text-stone-500 transition";
+      document.getElementById("tab-btn-models").className = "flex-1 min-w-[100px] py-3 border-b-2 border-transparent text-stone-500 transition";
+      document.getElementById("tab-btn-items").className = "flex-1 min-w-[120px] py-3 border-b-2 border-transparent text-stone-500 transition";
 
       if (tab === 'units') {
         document.getElementById("tab-content-units").classList.remove("hidden");
-        document.getElementById("tab-btn-units").className = "flex-1 min-w-[120px] py-3 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition";
+        document.getElementById("tab-btn-units").className = "flex-1 min-w-[100px] py-3 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition";
         renderPresetUnits();
-      } else if (tab === 'items') {
-        document.getElementById("tab-content-items").classList.remove("hidden");
-        document.getElementById("tab-btn-items").className = "flex-1 min-w-[130px] py-3 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition";
-        renderModalItems();
       } else if (tab === 'models') {
         document.getElementById("tab-content-models").classList.remove("hidden");
-        document.getElementById("tab-btn-models").className = "flex-1 min-w-[120px] py-3 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition";
+        document.getElementById("tab-btn-models").className = "flex-1 min-w-[100px] py-3 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition";
+        renderModelsListInConfig();
+      } else if (tab === 'items') {
+        document.getElementById("tab-content-items").classList.remove("hidden");
+        document.getElementById("tab-btn-items").className = "flex-1 min-w-[120px] py-3 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition";
+        document.getElementById("config-active-model-name").innerText = getCurrentChecklist().name;
+        renderModalItems();
+      }
+    }
+
+    function renderModelsListInConfig() {
+      const container = document.getElementById("models-list-container");
+      container.innerHTML = "";
+      allChecklists.forEach(c => {
+        const div = document.createElement("div");
+        div.className = "flex justify-between items-center p-2.5 bg-stone-50 rounded border text-xs";
+        div.innerHTML = `
+          <span class="font-bold">${c.name}</span>
+          <div class="flex gap-2">
+            <button onclick="activeChecklistId='${c.id}'; switchConfigTab('items');" class="text-cb-bordo font-bold underline">Gerenciar Setores/Perguntas</button>
+            ${allChecklists.length > 1 ? `<button onclick="deleteModel('${c.id}')" class="text-rose-600 font-bold">Excluir</button>` : ''}
+          </div>`;
+        container.appendChild(div);
+      });
+    }
+
+    function deleteModel(id) {
+      if (confirm("Excluir este modelo de checklist?")) {
+        allChecklists = allChecklists.filter(c => c.id !== id);
+        localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
+        syncConfigToCloud();
+        renderModelsListInConfig();
       }
     }
 
     function toggleNewCategoryInput() { document.getElementById("new-cat-box").classList.toggle("hidden"); }
     function getCurrentChecklist() { return allChecklists.find(c => c.id === activeChecklistId) || allChecklists[0]; }
 
-    function updateSelectorUI() {
-      const select = document.getElementById("checklist-selector");
-      select.innerHTML = "";
-      allChecklists.forEach(c => {
-        const opt = document.createElement("option"); opt.value = c.id; opt.innerText = c.name;
-        if (c.id === activeChecklistId) opt.selected = true;
-        select.appendChild(opt);
-      });
-      document.getElementById("edit-checklist-title").value = getCurrentChecklist().name;
-      document.getElementById("header-app-title").innerText = getCurrentChecklist().name;
-    }
-
-    function changeChecklistModel(newId) {
-      activeChecklistId = newId; attachedPhotos = {}; actionPlans = {}; customAnswers = {}; maintenanceOrders = {};
-      localStorage.setItem("CB_LOCAL_ACTIVE_ID", activeChecklistId); updateSelectorUI(); renderChecklist();
-    }
-
-    function saveChecklistTitle() {
-      const newTitle = document.getElementById("edit-checklist-title").value.trim();
-      if (!newTitle) return alert("Título vazio.");
-      getCurrentChecklist().name = newTitle;
-      localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
-      syncConfigToCloud(); updateSelectorUI(); renderChecklist(); alert("Atualizado!");
-    }
-
     function createNewChecklistType() {
       const name = document.getElementById("new-checklist-name").value.trim();
       if (!name) return alert("Nome vazio.");
       const newId = "checklist-" + Date.now();
       allChecklists.push({ id: newId, name: name, categories: [{ category: "1. Itens Gerais", items: [] }] });
-      activeChecklistId = newId;
       localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
-      localStorage.setItem("CB_LOCAL_ACTIVE_ID", activeChecklistId);
       syncConfigToCloud(); document.getElementById("new-checklist-name").value = "";
-      updateSelectorUI(); switchConfigTab('items'); renderChecklist(); alert("Criado!");
-    }
-
-    function deleteCurrentChecklist() {
-      if (allChecklists.length <= 1) return alert("Mantenha ao menos um.");
-      if (confirm("Excluir modelo?")) {
-        allChecklists = allChecklists.filter(c => c.id !== activeChecklistId);
-        activeChecklistId = allChecklists[0].id;
-        localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
-        localStorage.setItem("CB_LOCAL_ACTIVE_ID", activeChecklistId);
-        syncConfigToCloud(); updateSelectorUI(); renderModalItems(); renderChecklist();
-      }
+      renderModelsListInConfig(); alert("Modelo criado com sucesso!");
     }
 
     function addNewCategory() {
@@ -1007,7 +1017,7 @@
       getCurrentChecklist().categories.push({ category: catText, items: [] });
       localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
       syncConfigToCloud(); document.getElementById("new-cat-text").value = "";
-      document.getElementById("new-cat-box").classList.add("hidden"); renderModalItems(); renderChecklist();
+      document.getElementById("new-cat-box").classList.add("hidden"); renderModalItems();
     }
 
     function editCategory(sIdx) {
@@ -1016,21 +1026,56 @@
       if (newName?.trim()) {
         current.categories[sIdx].category = newName.trim();
         localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
-        syncConfigToCloud(); renderModalItems(); renderChecklist();
+        syncConfigToCloud(); renderModalItems();
       }
     }
 
-    function toggleEditItemBox(sIdx, iIdx) { document.getElementById(`edit-item-box-${sIdx}-${iIdx}`).classList.toggle("hidden"); }
-
-    function saveItemEdit(sIdx, iIdx) {
-      const current = getCurrentChecklist();
-      const newTitle = document.getElementById(`edit-item-title-input-${sIdx}-${iIdx}`).value.trim();
-      const newType = document.getElementById(`edit-item-type-input-${sIdx}-${iIdx}`).value;
-      if (!newTitle) return alert("Título vazio.");
-      current.categories[sIdx].items[iIdx].title = newTitle;
-      current.categories[sIdx].items[iIdx].type = newType;
+    function addNewItem() {
+      const catIdx = document.getElementById("new-item-category").value;
+      const itemText = document.getElementById("new-item-text").value.trim();
+      if (!itemText) return alert("Digite o título da pergunta.");
+      getCurrentChecklist().categories[catIdx].items.push({ title: itemText, type: document.getElementById("new-item-type").value, requirePhoto: document.getElementById("new-item-req-photo").checked });
       localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
-      syncConfigToCloud(); renderModalItems(); renderChecklist();
+      syncConfigToCloud(); document.getElementById("new-item-text").value = ""; renderModalItems();
+    }
+
+    function removeItem(sIdx, iIdx) {
+      getCurrentChecklist().categories[sIdx].items.splice(iIdx, 1);
+      localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
+      syncConfigToCloud(); renderModalItems();
+    }
+
+    function renderModalItems() {
+      const container = document.getElementById("modal-item-list");
+      const catSelect = document.getElementById("new-item-category");
+      const current = getCurrentChecklist();
+      container.innerHTML = ""; catSelect.innerHTML = "";
+
+      current.categories.forEach((sec, sIdx) => {
+        const opt = document.createElement("option"); opt.value = sIdx; opt.innerText = sec.category; catSelect.appendChild(opt);
+        const secBox = document.createElement("div");
+        secBox.className = "border rounded-xl p-3 bg-white space-y-2 text-xs";
+        secBox.innerHTML = `<div class="flex justify-between items-center border-b pb-1"><span class="font-bold uppercase">${sec.category}</span><button onclick="editCategory(${sIdx})" class="underline font-bold">Editar Setor</button></div>`;
+        sec.items.forEach((item, iIdx) => {
+          secBox.innerHTML += `<div class="bg-stone-50 p-2 rounded border flex justify-between items-center"><span>${item.title}</span><button onclick="removeItem(${sIdx}, ${iIdx})" class="text-rose-600 font-bold">Remover</button></div>`;
+        });
+        container.appendChild(secBox);
+      });
+    }
+
+    function restoreDefaultChecklist() {
+      if (confirm("Restaurar padrões?")) {
+        allChecklists = JSON.parse(JSON.stringify(defaultTemplates));
+        localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
+        syncConfigToCloud(); renderModelsListInConfig(); alert("Restaurado!");
+      }
+    }
+
+    function resetChecklist() {
+      if (confirm("Zerar respostas?")) {
+        document.querySelectorAll('input[type="radio"]').forEach(r => r.checked = false);
+        attachedPhotos = {}; actionPlans = {}; customAnswers = {}; maintenanceOrders = {}; renderChecklist();
+      }
     }
 
     function initApp() {
@@ -1040,7 +1085,7 @@
       document.getElementById("sidebar-user-name").innerText = currentUser.name;
       document.getElementById("supervisor-name").value = currentUser.name;
       if (currentUser.role === "admin") document.getElementById("sidebar-btn-users").classList.remove("hidden");
-      updateSelectorUI(); renderChecklist();
+      renderHomeChecklistCards();
     }
 
     function handleEvaluationChange(itemKey, value) {
@@ -1099,79 +1144,7 @@
       const score = totalQuestionsEvaluated > 0 ? Math.round((pointsEarned / totalQuestionsEvaluated) * 100) : 100;
       document.getElementById("score-display").innerText = score + "%";
       document.getElementById("evaluated-count-display").innerText = `${Math.round(totalQuestionsEvaluated)} item(ns) avaliado(s)`;
-      return { score, conformes: Math.round(pointsEarned), total: Math.round(totalQuestionsEvaluated) };
-    }
-
-    function renderChecklist() {
-      const container = document.getElementById("checklist-container");
-      const current = getCurrentChecklist();
-      container.innerHTML = "";
-
-      current.categories.forEach((sec, sIdx) => {
-        if (sec.items.length === 0) return;
-        const secEl = document.createElement("div");
-        secEl.className = "bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden";
-        
-        let itemsHtml = sec.items.map((item, iIdx) => {
-          const itemKey = `${sIdx}-${iIdx}`;
-          const itemType = item.type || "boolean";
-          const photoData = attachedPhotos[itemKey];
-          const planData = actionPlans[itemKey] || { action: '', date: '' };
-          const omData = maintenanceOrders[itemKey] || { equipment: '', action: '', date: '' };
-          const savedAnswer = customAnswers[itemKey];
-          let controlHtml = "";
-
-          if (itemType === "boolean") {
-            controlHtml = `
-              <div class="flex gap-2 text-xs">
-                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="conforme" class="hidden peer" onchange="handleEvaluationChange('${itemKey}', 'conforme')"><div class="text-center py-2 rounded-md border peer-checked:bg-emerald-600 peer-checked:text-white font-bold">Sim</div></label>
-                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="nao-conforme" class="hidden peer" onchange="handleEvaluationChange('${itemKey}', 'nao-conforme')"><div class="text-center py-2 rounded-md border peer-checked:bg-rose-700 peer-checked:text-white font-bold">Não</div></label>
-                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="na" class="hidden peer" onchange="handleEvaluationChange('${itemKey}', 'na')"><div class="text-center py-2 rounded-md border peer-checked:bg-stone-500 peer-checked:text-white font-bold">N/A</div></label>
-              </div>
-              <div id="plan-box-${itemKey}" class="hidden p-3 bg-rose-50 border rounded-lg space-y-2 text-xs">
-                <span class="block font-bold text-rose-800 uppercase text-[10px]">⚠️ Plano de Ação</span>
-                <input type="text" value="${planData.action}" placeholder="Ação..." oninput="updateActionPlan('${itemKey}', 'action', this.value)" class="w-full border p-2 bg-white rounded">
-                <input type="date" value="${planData.date}" oninput="updateActionPlan('${itemKey}', 'date', this.value)" class="w-full border p-2 bg-white rounded">
-              </div>`;
-          } else if (itemType === "maintenance") {
-            controlHtml = `
-              <div class="flex gap-2 text-xs">
-                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="abrir" class="hidden peer" onchange="handleMaintenanceChange('${itemKey}', 'abrir')"><div class="text-center py-2 rounded-md border peer-checked:bg-amber-600 peer-checked:text-white font-bold">Abrir</div></label>
-                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="regular" class="hidden peer" onchange="handleMaintenanceChange('${itemKey}', 'regular')"><div class="text-center py-2 rounded-md border peer-checked:bg-emerald-600 peer-checked:text-white font-bold">Regular</div></label>
-                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="na" class="hidden peer" onchange="handleMaintenanceChange('${itemKey}', 'na')"><div class="text-center py-2 rounded-md border peer-checked:bg-stone-500 peer-checked:text-white font-bold">N/A</div></label>
-              </div>
-              <div id="maintenance-box-${itemKey}" class="hidden p-3 bg-amber-50 border rounded-lg space-y-2 text-xs">
-                <span class="block font-bold text-amber-900 uppercase text-[10px]">Manutenção</span>
-                <input type="text" value="${omData.equipment}" placeholder="Equipamento..." oninput="updateMaintenanceOrder('${itemKey}', 'equipment', this.value)" class="w-full border p-2 bg-white rounded">
-                <input type="text" value="${omData.action}" placeholder="Defeito..." oninput="updateMaintenanceOrder('${itemKey}', 'action', this.value)" class="w-full border p-2 bg-white rounded">
-                <input type="date" value="${omData.date}" oninput="updateMaintenanceOrder('${itemKey}', 'date', this.value)" class="w-full border p-2 bg-white rounded">
-              </div>`;
-          } else if (itemType === "stars") {
-            let starsSpans = "";
-            for (let s = 1; s <= 5; s++) starsSpans += `<button type="button" id="star-${itemKey}-${s}" onclick="setStarRating('${itemKey}', ${s})" class="text-xl ${s <= (savedAnswer||0) ? 'text-amber-400' : 'text-stone-300'}">★</button>`;
-            controlHtml = `<div class="flex items-center justify-between bg-stone-50 p-2.5 rounded border"><div class="flex gap-2">${starsSpans}</div><span id="star-label-${itemKey}" class="text-xs font-bold">${savedAnswer ? savedAnswer + ' de 5' : 'Avalie'}</span></div>`;
-          } else if (itemType === "text") {
-            controlHtml = `<div><textarea rows="2" placeholder="Digite..." oninput="updateTextInput('${itemKey}', this.value)" class="w-full border p-2 text-xs bg-stone-50 rounded">${savedAnswer || ''}</textarea></div>`;
-          }
-
-          return `
-          <div class="p-3.5 border-t flex flex-col gap-2.5">
-            <div class="flex justify-between items-start gap-2"><span class="text-sm font-medium">${item.title}</span>${item.requirePhoto ? '<span class="text-[10px] bg-amber-50 text-amber-800 border px-1.5 rounded font-bold">Foto Obrigatória</span>' : ''}</div>
-            ${controlHtml}
-            <div class="flex items-center gap-2 pt-1">
-              <label class="cursor-pointer inline-flex items-center gap-1.5 text-xs font-semibold bg-cb-cream px-3 py-1.5 rounded border">
-                <span>${photoData ? 'Alterar Foto' : 'Adicionar Foto'}</span>
-                <input type="file" accept="image/*" class="hidden" onchange="handlePhotoUpload(event, '${itemKey}')">
-              </label>
-              ${photoData ? `<span class="text-xs text-emerald-800 bg-emerald-50 px-2 py-1 rounded border font-medium">✓ Foto</span>` : ''}
-            </div>
-          </div>`;
-        }).join("");
-
-        secEl.innerHTML = `<div class="bg-cb-cream px-4 py-2.5 font-bold text-xs uppercase text-cb-bordo border-b"><span>${sec.category}</span></div><div>${itemsHtml}</div>`;
-        container.appendChild(secEl);
-      });
-      calculateScore();
+      return { score, total: Math.round(totalQuestionsEvaluated) };
     }
 
     function buildReportData() {
@@ -1182,7 +1155,7 @@
       const { score, total } = calculateScore();
       const dateStr = new Date().toLocaleString("pt-BR");
 
-      let itemsRows = "", nonConformitiesRows = "", maintenanceRows = "", photoCards = "";
+      let itemsRows = "", nonConformitiesRows = "", maintenanceRows = "";
       let ncCount = 0, omCount = 0, nonConformitiesList = [], maintenanceList = [];
 
       current.categories.forEach((sec, sIdx) => {
@@ -1218,7 +1191,6 @@
             }
           }
           itemsRows += `<tr><td style="padding: 5px; font-size: 10px; border: 1px solid #e7e5e4;">${item.title}</td><td style="padding: 5px; font-size: 10px; text-align: center; border: 1px solid #e7e5e4;">${statusBadge}</td></tr>`;
-          if (attachedPhotos[key]) photoCards += `<div style="border: 1px solid #e7e5e4; padding: 4px; width: 48%; margin-bottom: 6px;"><p style="font-size: 9px; font-weight: bold;">${item.title}</p><img src="${attachedPhotos[key]}" style="width: 100%; height: 120px; object-fit: cover;" /></div>`;
         });
       });
 
@@ -1254,36 +1226,11 @@
       window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, "_blank");
     }
 
-    function toggleConfigModal() { document.getElementById("config-modal").classList.toggle("hidden"); }
-    function renderModalItems() {
-      const container = document.getElementById("modal-item-list");
-      const catSelect = document.getElementById("new-item-category");
-      const current = getCurrentChecklist();
-      container.innerHTML = ""; catSelect.innerHTML = "";
-
-      current.categories.forEach((sec, sIdx) => {
-        const opt = document.createElement("option"); opt.value = sIdx; opt.innerText = sec.category; catSelect.appendChild(opt);
-        const secBox = document.createElement("div");
-        secBox.className = "border rounded-xl p-3 bg-white space-y-2 text-xs";
-        secBox.innerHTML = `<div class="flex justify-between items-center border-b pb-1"><span class="font-bold uppercase">${sec.category}</span><button onclick="editCategory(${sIdx})" class="underline">Editar</button></div>`;
-        sec.items.forEach((item, iIdx) => {
-          secBox.innerHTML += `<div class="bg-stone-50 p-2 rounded border flex justify-between items-center"><span>${item.title}</span><button onclick="removeItem(${sIdx}, ${iIdx})" class="text-rose-600 font-bold">✕</button></div>`;
-        });
-        container.appendChild(secBox);
-      });
+    function toggleConfigModal() {
+      const modal = document.getElementById("config-modal");
+      modal.classList.toggle("hidden");
+      if (!modal.classList.contains("hidden")) switchConfigTab('units');
     }
-
-    function removeCategory(sIdx) { getCurrentChecklist().categories.splice(sIdx, 1); syncConfigToCloud(); renderModalItems(); renderChecklist(); }
-    function addNewItem() {
-      const catIdx = document.getElementById("new-item-category").value;
-      const itemText = document.getElementById("new-item-text").value.trim();
-      if (!itemText) return alert("Digite o texto.");
-      getCurrentChecklist().categories[catIdx].items.push({ title: itemText, type: document.getElementById("new-item-type").value, requirePhoto: document.getElementById("new-item-req-photo").checked });
-      syncConfigToCloud(); document.getElementById("new-item-text").value = ""; renderModalItems(); renderChecklist();
-    }
-    function removeItem(sIdx, iIdx) { getCurrentChecklist().categories[sIdx].items.splice(iIdx, 1); syncConfigToCloud(); renderModalItems(); renderChecklist(); }
-    function restoreDefaultChecklist() { if (confirm("Restaurar?")) { allChecklists = JSON.parse(JSON.stringify(defaultTemplates)); syncConfigToCloud(); updateSelectorUI(); renderModalItems(); renderChecklist(); } }
-    function resetChecklist() { if (confirm("Zerar?")) { document.querySelectorAll('input[type="radio"]').forEach(r => r.checked = false); attachedPhotos = {}; actionPlans = {}; customAnswers = {}; maintenanceOrders = {}; renderChecklist(); } }
 
     initApp();
   </script>
