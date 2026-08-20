@@ -59,18 +59,21 @@
     </div>
   </div>
 
-  <!-- Tela de Seleção de Módulos -->
-  <div id="modules-screen" class="fixed inset-0 bg-cb-bordo-dark z-40 hidden flex items-center justify-center p-4">
-    <div class="bg-white w-full max-w-sm rounded-2xl p-6 space-y-4 shadow-2xl border border-cb-gold/30 text-center">
+  <!-- Tela Inicial com os Módulos em Quadrados (Cards) -->
+  <div id="modules-screen" class="fixed inset-0 bg-cb-bordo-dark z-40 hidden flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white w-full max-w-md rounded-2xl p-6 space-y-5 shadow-2xl border border-cb-gold/30 text-center">
       <div>
         <img id="modules-logo-img" alt="Casa Bauducco" class="h-14 w-auto object-contain mx-auto mb-1">
-        <h2 class="text-xs font-bold text-cb-bordo uppercase tracking-wider">Módulos do Sistema</h2>
+        <h2 class="text-xs font-bold text-cb-bordo uppercase tracking-wider">Painel Principal</h2>
+        <p class="text-[11px] text-stone-500">Selecione o módulo que deseja acessar</p>
       </div>
 
-      <div id="modules-grid" class="grid grid-cols-1 gap-2"></div>
+      <div id="modules-grid" class="grid grid-cols-1 gap-3 text-left">
+        <!-- Renderizado dinamicamente por perfil (Admin, Gerente, Operador) -->
+      </div>
 
-      <button onclick="handleLogout()" class="text-xs text-rose-600 font-bold hover:underline pt-2 block mx-auto">
-        Sair
+      <button onclick="handleLogout()" class="text-xs text-rose-600 font-bold hover:underline pt-1 block mx-auto">
+        Encerrar Sessão (Sair)
       </button>
     </div>
   </div>
@@ -88,7 +91,7 @@
 
     <div class="p-3 space-y-1.5 flex-1 text-xs font-semibold">
       <button onclick="openModulesScreen(); toggleSidebar();" class="w-full text-left px-3 py-2.5 rounded-lg hover:bg-cb-bordo transition">
-        🔀 Módulos
+        🏠 Tela Inicial (Módulos)
       </button>
       <button onclick="switchChecklistTab('history'); toggleSidebar();" class="w-full text-left px-3 py-2.5 rounded-lg hover:bg-cb-bordo transition flex justify-between items-center">
         <span>📂 Relatórios Salvos</span>
@@ -98,7 +101,7 @@
         👥 Gerenciar Unidades & Usuários
       </button>
       <button id="sidebar-btn-config" onclick="toggleConfigModal(); toggleSidebar();" class="hidden w-full text-left px-3 py-2.5 rounded-lg hover:bg-cb-bordo transition">
-        ⚙️ Configurações Gerais
+        ⚙️ Configurações de Checklists
       </button>
     </div>
 
@@ -369,14 +372,14 @@
       
       <div class="p-3.5 border-b border-stone-200 flex justify-between items-center bg-cb-bordo text-white">
         <div>
-          <h3 class="font-bold text-sm text-cb-gold">Configurações Gerais dos Checklists</h3>
+          <h3 class="font-bold text-sm text-cb-gold">Configurações Gerais</h3>
         </div>
         <button onclick="toggleConfigModal()" class="text-stone-300 hover:text-white text-xl font-bold px-2 py-0.5">✕</button>
       </div>
 
       <div class="flex border-b border-stone-200 bg-stone-100 text-xs font-bold overflow-x-auto">
         <button id="tab-btn-models" onclick="switchConfigTab('models')" class="flex-1 py-3 border-b-2 border-cb-bordo text-cb-bordo bg-white transition">
-          Modelos de Checklists
+          Checklists
         </button>
         <button id="tab-btn-items" onclick="switchConfigTab('items')" class="flex-1 py-3 border-b-2 border-transparent text-stone-500 hover:text-cb-bordo transition">
           Setores & Perguntas
@@ -759,16 +762,27 @@
 
       if (currentUser.role === 'admin' || currentUser.role === 'gerente') {
         grid.innerHTML += `
-          <button onclick="selectModule('checklists')" class="p-3 bg-stone-50 hover:bg-stone-100 border border-stone-200 rounded-xl transition font-bold text-cb-bordo text-xs uppercase tracking-wider">
-            Checklists
+          <button onclick="selectModule('checklists')" class="p-4 bg-stone-50 hover:bg-stone-100 border border-stone-200 rounded-xl transition shadow-sm text-center">
+            <h3 class="font-bold text-cb-bordo text-xs uppercase tracking-wider">Checklists</h3>
+            <p class="text-[11px] text-stone-500 mt-0.5">Realizar auditorias e relatórios</p>
           </button>
-          <button onclick="selectModule('actions')" class="p-3 bg-stone-50 hover:bg-stone-100 border border-stone-200 rounded-xl transition font-bold text-amber-900 text-xs uppercase tracking-wider">
-            Planos de Ação
+          <button onclick="selectModule('actions')" class="p-4 bg-stone-50 hover:bg-stone-100 border border-stone-200 rounded-xl transition shadow-sm text-center">
+            <h3 class="font-bold text-amber-900 text-xs uppercase tracking-wider">Planos de Ação</h3>
+            <p class="text-[11px] text-stone-500 mt-0.5">Acompanhamento e chat de correções</p>
           </button>`;
       } else if (currentUser.role === 'operador') {
         grid.innerHTML += `
-          <button onclick="selectModule('checklists')" class="p-3 bg-stone-50 hover:bg-stone-100 border border-stone-200 rounded-xl transition font-bold text-cb-bordo text-xs uppercase tracking-wider">
-            Checklists
+          <button onclick="selectModule('checklists')" class="p-4 bg-stone-50 hover:bg-stone-100 border border-stone-200 rounded-xl transition shadow-sm text-center">
+            <h3 class="font-bold text-cb-bordo text-xs uppercase tracking-wider">Checklists</h3>
+            <p class="text-[11px] text-stone-500 mt-0.5">Realizar auditorias e relatórios</p>
+          </button>`;
+      }
+
+      if (currentUser.role === 'admin') {
+        grid.innerHTML += `
+          <button onclick="toggleUsersModal()" class="p-4 bg-stone-50 hover:bg-stone-100 border border-stone-200 rounded-xl transition shadow-sm text-center">
+            <h3 class="font-bold text-stone-900 text-xs uppercase tracking-wider">Gerenciar Unidades & Usuários</h3>
+            <p class="text-[11px] text-stone-500 mt-0.5">Lojas da rede e permissões</p>
           </button>`;
       }
     }
@@ -1043,7 +1057,7 @@
       }).then(() => input.value = "");
     }
 
-    // GERENCIAMENTO DE USUÁRIOS & UNIDADES (ADMIN)
+    // GERENCIAMENTO DE USUÁRIOS
     function toggleUsersModal() {
       if (currentUser.role !== 'admin') return alert("Acesso restrito a administradores.");
       const m = document.getElementById("users-modal");
@@ -1165,7 +1179,7 @@
         renderModelsListInConfig();
       } else if (tab === 'items') {
         document.getElementById("tab-content-items").classList.remove("hidden");
-        document.getElementById("tab-btn-items").className = "flex-1 min-w-[120px] py-3 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition";
+        document.getElementById("tab-btn-items").className = "flex-1 min-w-[100px] py-3 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition";
         document.getElementById("config-active-model-name").innerText = getCurrentChecklist().name;
         renderModalItems();
       }
