@@ -59,7 +59,7 @@
     </div>
   </div>
 
-  <!-- Tela de Seleção de Módulos (Cards) -->
+  <!-- Tela de Seleção de Módulos (Cards em Quadrados) -->
   <div id="modules-screen" class="fixed inset-0 bg-cb-bordo-dark z-40 hidden flex items-center justify-center p-4 overflow-y-auto">
     <div class="bg-white w-full max-w-sm rounded-2xl p-6 space-y-5 shadow-2xl border border-cb-gold/30 text-center">
       <div>
@@ -243,13 +243,12 @@
     </main>
   </div>
 
-  <!-- MÓDULO 2: PLANOS DE AÇÃO & MANUTENÇÃO (Em Linha + Abas Pendentes / Concluídos) -->
+  <!-- MÓDULO 2: PLANOS DE AÇÃO & MANUTENÇÃO -->
   <main id="module-actions-container" class="max-w-xl mx-auto p-4 space-y-4 hidden">
     <div class="bg-white p-4 rounded-xl shadow-sm border border-stone-200 space-y-3">
       <h2 class="font-bold text-cb-bordo text-xs uppercase tracking-wider">Agenda de Planos de Ação</h2>
       <p class="text-xs text-stone-500">Acompanhamento e chat com os responsáveis</p>
 
-      <!-- Abas Internas: Pendentes / Concluídos -->
       <div class="flex border-b border-stone-200 text-xs font-bold pt-2">
         <button id="actions-tab-pending" onclick="switchActionsTab('pending')" class="flex-1 py-2 border-b-2 border-cb-bordo text-cb-bordo transition">📋 Pendentes</button>
         <button id="actions-tab-completed" onclick="switchActionsTab('completed')" class="flex-1 py-2 border-b-2 border-transparent text-stone-400 transition">✅ Concluídos</button>
@@ -597,7 +596,7 @@
     let users = JSON.parse(localStorage.getItem("CB_LOCAL_USERS")) || defaultUsers;
     let presetUnits = JSON.parse(localStorage.getItem("CB_LOCAL_UNITS")) || defaultUnits;
     let actionStatuses = JSON.parse(localStorage.getItem("CB_LOCAL_STATUSES")) || defaultStatuses;
-    let actionCustomStatus = JSON.parse(localStorage.getItem("CB_LOCAL_CUSTOM_STATUS")) || {}; // Armazena alteração de status por ID do plano de ação
+    let actionCustomStatus = JSON.parse(localStorage.getItem("CB_LOCAL_CUSTOM_STATUS")) || {};
     let currentUser = JSON.parse(sessionStorage.getItem("CB_LOCAL_LOGGED_USER")) || null;
     let allChecklists = JSON.parse(localStorage.getItem("CB_LOCAL_CHECKLISTS")) || defaultTemplates;
     let activeChecklistId = localStorage.getItem("CB_LOCAL_ACTIVE_ID") || allChecklists[0].id;
@@ -610,7 +609,7 @@
     let customAnswers = {};
     let maintenanceOrders = {};
 
-    let currentActionsTab = 'pending'; // 'pending' ou 'completed'
+    let currentActionsTab = 'pending';
 
     function updateSyncUI(status, text) {
       const ind = document.getElementById("sync-indicator");
@@ -772,7 +771,6 @@
       }
     }
 
-    // GERENCIAMENTO DE STATUS PELO ADMIN
     function adminAddNewStatus() {
       const input = document.getElementById("admin-new-status-input");
       const val = input.value.trim();
@@ -843,6 +841,14 @@
           <button onclick="selectModule('checklists')" class="p-4 bg-stone-50 hover:bg-stone-100 border border-stone-200 rounded-xl transition shadow-sm text-center">
             <h3 class="font-bold text-cb-bordo text-xs uppercase tracking-wider">Checklists</h3>
             <p class="text-[11px] text-stone-500 mt-0.5">Realizar auditorias e relatórios</p>
+          </button>`;
+      }
+
+      if (currentUser.role === 'admin') {
+        grid.innerHTML += `
+          <button onclick="toggleUsersModal()" class="p-4 bg-stone-50 hover:bg-stone-100 border border-stone-200 rounded-xl transition shadow-sm text-center">
+            <h3 class="font-bold text-stone-900 text-xs uppercase tracking-wider">Gerenciar Unidades & Usuários</h3>
+            <p class="text-[11px] text-stone-500 mt-0.5">Lojas da rede e permissões</p>
           </button>`;
       }
     }
@@ -1081,13 +1087,11 @@
         });
       });
 
-      // Filtrar por aba (Pendentes vs Concluídos)
       let filteredActions = allActions.filter(act => {
         if (currentActionsTab === 'completed') return act.status === 'Concluído';
         else return act.status !== 'Concluído';
       });
 
-      // Ordenar por data crescente (o que vence antes aparece primeiro)
       filteredActions.sort((a, b) => new Date(a.rawDate || '2099-12-31') - new Date(b.rawDate || '2099-12-31'));
 
       if (filteredActions.length === 0) {
@@ -1108,7 +1112,6 @@
           }
         }
 
-        // Montar opções de status
         let statusOptions = actionStatuses.map(st => `<option value="${st}" ${act.status === st ? 'selected' : ''}>${st}</option>`).join("");
 
         const card = document.createElement("div");
