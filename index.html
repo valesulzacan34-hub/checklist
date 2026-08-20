@@ -5,9 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Sistema Integrado - Casa Bauducco</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- SDKs do Firebase Compat -->
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+  <!-- Áudio para o alerta de nova mensagem -->
+  <audio id="notif-sound" src="https://actions.google.com/sounds/v1/notifications/beep_short.ogg"></audio>
   <style>
     :root {
       --cb-bordo: #4A0E17;
@@ -22,6 +23,11 @@
     .border-cb-gold { border-color: var(--cb-gold); }
     .bg-cb-cream { background-color: var(--cb-cream); }
     #sidebar { transition: transform 0.3s ease-in-out; }
+    @media (min-width: 768px) {
+      .app-main { max-width: 1024px; margin: 0 auto; }
+      .modules-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+    @media (max-width: 767px) { .modules-grid { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body class="bg-cb-cream text-stone-800 antialiased pb-36 font-sans">
@@ -68,7 +74,7 @@
         <p class="text-[11px] text-stone-500">Selecione o módulo que deseja acessar</p>
       </div>
 
-      <div id="modules-grid" class="grid grid-cols-1 gap-3 text-left"></div>
+      <div id="modules-grid" class="modules-grid grid gap-3 text-left"></div>
 
       <button onclick="handleLogout()" class="text-xs text-rose-600 font-bold hover:underline pt-1 block mx-auto">
         Encerrar Sessão (Sair)
@@ -126,7 +132,7 @@
         </div>
       </div>
       <div class="flex items-center gap-2">
-        <button onclick="selectModule('actions')" class="relative p-1.5 bg-cb-bordo-dark border border-cb-gold/40 rounded-lg text-stone-200 hover:text-white transition text-sm">
+        <button onclick="openNotificationSummary()" class="relative p-1.5 bg-cb-bordo-dark border border-cb-gold/40 rounded-lg text-stone-200 hover:text-white transition text-sm">
           🔔
           <span id="global-notification-dot" class="absolute -top-1 -right-1 w-3 h-3 bg-rose-500 rounded-full border-2 border-cb-bordo hidden"></span>
         </button>
@@ -135,142 +141,144 @@
     </div>
   </header>
 
-  <!-- MÓDULO 1: CHECKLISTS -->
-  <div id="module-checklists-container">
-    <main id="checklist-home-view" class="max-w-xl mx-auto p-4 space-y-4">
-      <div class="bg-white p-5 rounded-xl shadow-sm border border-stone-200 space-y-4">
-        <h2 class="font-bold text-cb-bordo text-xs uppercase tracking-wider">Selecione o Checklist</h2>
-        <div class="space-y-3">
-          <select id="home-checklist-select" class="w-full text-xs font-semibold bg-stone-50 border rounded-lg p-3 focus:outline-none focus:ring-1 focus:ring-cb-bordo text-stone-800"></select>
-          <button type="button" onclick="startSelectedChecklist()" class="w-full py-3 bg-cb-bordo hover:bg-cb-bordo-dark text-white font-bold text-xs rounded-lg transition uppercase tracking-wider border border-cb-gold/40 shadow-md">
-            Iniciar Checklist
+  <div class="app-main">
+    <!-- MÓDULO 1: CHECKLISTS -->
+    <div id="module-checklists-container">
+      <main id="checklist-home-view" class="max-w-xl mx-auto p-4 space-y-4">
+        <div class="bg-white p-5 rounded-xl shadow-sm border border-stone-200 space-y-4">
+          <h2 class="font-bold text-cb-bordo text-xs uppercase tracking-wider">Selecione o Checklist</h2>
+          <div class="space-y-3">
+            <select id="home-checklist-select" class="w-full text-xs font-semibold bg-stone-50 border rounded-lg p-3 focus:outline-none focus:ring-1 focus:ring-cb-bordo text-stone-800"></select>
+            <button type="button" onclick="startSelectedChecklist()" class="w-full py-3 bg-cb-bordo hover:bg-cb-bordo-dark text-white font-bold text-xs rounded-lg transition uppercase tracking-wider border border-cb-gold/40 shadow-md">
+              Iniciar Checklist
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 gap-2.5">
+          <button onclick="switchChecklistTab('history')" class="p-3.5 bg-white hover:bg-stone-50 border border-stone-200 rounded-xl shadow-sm transition flex justify-between items-center text-xs font-bold text-cb-bordo uppercase tracking-wider">
+            <span>📂 Relatórios Salvos</span>
+            <span id="history-badge-count" class="bg-cb-gold text-cb-bordo-dark px-2 py-0.5 rounded-full text-[10px] font-black">0</span>
+          </button>
+          <button id="home-btn-config" onclick="toggleConfigModal()" class="hidden p-3.5 bg-white hover:bg-stone-50 border border-stone-200 rounded-xl shadow-sm transition text-left text-xs font-bold text-cb-bordo uppercase tracking-wider">
+            ⚙️ Configurações Gerais dos Checklists
           </button>
         </div>
-      </div>
+      </main>
 
-      <div class="grid grid-cols-1 gap-2.5">
-        <button onclick="switchChecklistTab('history')" class="p-3.5 bg-white hover:bg-stone-50 border border-stone-200 rounded-xl shadow-sm transition flex justify-between items-center text-xs font-bold text-cb-bordo uppercase tracking-wider">
-          <span>📂 Relatórios Salvos</span>
-          <span id="history-badge-count" class="bg-cb-gold text-cb-bordo-dark px-2 py-0.5 rounded-full text-[10px] font-black">0</span>
-        </button>
-        <button id="home-btn-config" onclick="toggleConfigModal()" class="hidden p-3.5 bg-white hover:bg-stone-50 border border-stone-200 rounded-xl shadow-sm transition text-left text-xs font-bold text-cb-bordo uppercase tracking-wider">
-          ⚙️ Configurações Gerais dos Checklists
-        </button>
-      </div>
-    </main>
-
-    <main id="audit-view" class="max-w-xl mx-auto p-4 space-y-4 hidden">
-      <div class="flex items-center justify-between bg-white p-3 rounded-xl shadow-sm border">
-        <button onclick="switchChecklistTab('home')" class="text-xs font-bold text-cb-bordo hover:underline">
-          ← Voltar à Seleção
-        </button>
-        <span id="active-model-title-badge" class="text-xs font-bold text-stone-700">Modelo Atual</span>
-      </div>
-
-      <div class="bg-cb-bordo text-white p-3.5 rounded-xl flex justify-between items-center shadow-sm border border-cb-gold/30">
-        <div>
-          <span class="text-xs font-bold text-stone-200 uppercase tracking-wider block">Conformidade Geral</span>
-          <span id="evaluated-count-display" class="text-[10px] text-stone-300">0 avaliados</span>
-        </div>
-        <span id="score-display" class="text-2xl font-black text-cb-gold">100%</span>
-      </div>
-
-      <div class="bg-white p-4 rounded-xl shadow-sm border border-stone-200 space-y-3">
-        <div class="flex justify-between items-center border-b pb-2">
-          <h2 class="font-bold text-cb-bordo text-xs uppercase tracking-wider">Unidade</h2>
-        </div>
-
-        <div class="space-y-3 text-sm">
-          <div>
-            <label class="block text-xs font-semibold text-stone-600 mb-1">Loja</label>
-            <select id="unit-selector" class="w-full border rounded-lg p-2.5 text-sm bg-stone-50 font-semibold text-stone-800"></select>
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-stone-600 mb-1">Supervisor</label>
-            <input type="text" id="supervisor-name" class="w-full border rounded-lg p-2.5 text-sm bg-stone-50">
-          </div>
-        </div>
-      </div>
-
-      <div id="checklist-container" class="space-y-4"></div>
-
-      <div class="bg-white p-4 rounded-xl shadow-sm border border-stone-200 space-y-2">
-        <h2 class="font-bold text-cb-bordo text-xs uppercase tracking-wider">Observações</h2>
-        <textarea id="notes" rows="3" placeholder="Comentários..." class="w-full border rounded-lg p-2.5 text-sm bg-stone-50"></textarea>
-      </div>
-    </main>
-
-    <main id="history-view" class="max-w-xl mx-auto p-4 space-y-4 hidden">
-      <div class="flex items-center justify-between bg-white p-3 rounded-xl shadow-sm border">
-        <button onclick="switchChecklistTab('home')" class="text-xs font-bold text-cb-bordo hover:underline">
-          ← Voltar ao Início
-        </button>
-        <span class="text-xs font-bold text-stone-700">Relatórios Salvos</span>
-      </div>
-
-      <div class="bg-white p-4 rounded-xl shadow-sm border border-stone-200 space-y-3">
-        <div class="flex justify-between items-center border-b pb-2">
-          <div>
-            <h2 class="font-bold text-cb-bordo text-xs uppercase tracking-wider">Filtragem por Período</h2>
-          </div>
-          <button onclick="clearAllHistory()" class="text-xs text-rose-600 font-bold hover:underline">
-            Limpar Tudo
+      <main id="audit-view" class="max-w-xl mx-auto p-4 space-y-4 hidden">
+        <div class="flex items-center justify-between bg-white p-3 rounded-xl shadow-sm border">
+          <button onclick="switchChecklistTab('home')" class="text-xs font-bold text-cb-bordo hover:underline">
+            ← Voltar à Seleção
           </button>
+          <span id="active-model-title-badge" class="text-xs font-bold text-stone-700">Modelo Atual</span>
         </div>
 
-        <div class="space-y-2 text-xs">
+        <div class="bg-cb-bordo text-white p-3.5 rounded-xl flex justify-between items-center shadow-sm border border-cb-gold/30">
           <div>
-            <label class="block font-bold text-stone-600 mb-1">Loja:</label>
-            <select id="filter-store" onchange="renderHistoryList()" class="w-full border rounded p-2 bg-stone-50 font-semibold"></select>
+            <span class="text-xs font-bold text-stone-200 uppercase tracking-wider block">Conformidade Geral</span>
+            <span id="evaluated-count-display" class="text-[10px] text-stone-300">0 avaliados</span>
           </div>
-          <div class="grid grid-cols-2 gap-2">
+          <span id="score-display" class="text-2xl font-black text-cb-gold">100%</span>
+        </div>
+
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-stone-200 space-y-3">
+          <div class="flex justify-between items-center border-b pb-2">
+            <h2 class="font-bold text-cb-bordo text-xs uppercase tracking-wider">Unidade</h2>
+          </div>
+
+          <div class="space-y-3 text-sm">
             <div>
-              <label class="block font-bold text-stone-600 mb-1">Data Inicial:</label>
-              <input type="date" id="filter-date-start" onchange="renderHistoryList()" class="w-full border rounded p-2 bg-stone-50">
+              <label class="block text-xs font-semibold text-stone-600 mb-1">Loja</label>
+              <select id="unit-selector" class="w-full border rounded-lg p-2.5 text-sm bg-stone-50 font-semibold text-stone-800"></select>
             </div>
             <div>
-              <label class="block font-bold text-stone-600 mb-1">Data Final:</label>
-              <input type="date" id="filter-date-end" onchange="renderHistoryList()" class="w-full border rounded p-2 bg-stone-50">
+              <label class="block text-xs font-semibold text-stone-600 mb-1">Supervisor</label>
+              <input type="text" id="supervisor-name" class="w-full border rounded-lg p-2.5 text-sm bg-stone-50">
             </div>
           </div>
         </div>
 
-        <div id="undo-container" class="hidden flex items-center justify-between bg-amber-50 p-2 rounded-lg border border-amber-300">
-          <span class="text-xs text-amber-900 font-medium">Relatório excluído.</span>
-          <button onclick="undoDeleteReport()" class="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded transition shadow-sm">
-            Desfazer
+        <div id="checklist-container" class="space-y-4"></div>
+
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-stone-200 space-y-2">
+          <h2 class="font-bold text-cb-bordo text-xs uppercase tracking-wider">Observações</h2>
+          <textarea id="notes" rows="3" placeholder="Comentários..." class="w-full border rounded-lg p-2.5 text-sm bg-stone-50"></textarea>
+        </div>
+      </main>
+
+      <main id="history-view" class="max-w-xl mx-auto p-4 space-y-4 hidden">
+        <div class="flex items-center justify-between bg-white p-3 rounded-xl shadow-sm border">
+          <button onclick="switchChecklistTab('home')" class="text-xs font-bold text-cb-bordo hover:underline">
+            ← Voltar ao Início
           </button>
+          <span class="text-xs font-bold text-stone-700">Relatórios Salvos</span>
+        </div>
+
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-stone-200 space-y-3">
+          <div class="flex justify-between items-center border-b pb-2">
+            <div>
+              <h2 class="font-bold text-cb-bordo text-xs uppercase tracking-wider">Filtragem por Período</h2>
+            </div>
+            <button onclick="clearAllHistory()" class="text-xs text-rose-600 font-bold hover:underline">
+              Limpar Tudo
+            </button>
+          </div>
+
+          <div class="space-y-2 text-xs">
+            <div>
+              <label class="block font-bold text-stone-600 mb-1">Loja:</label>
+              <select id="filter-store" onchange="renderHistoryList()" class="w-full border rounded p-2 bg-stone-50 font-semibold"></select>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block font-bold text-stone-600 mb-1">Data Inicial:</label>
+                <input type="date" id="filter-date-start" onchange="renderHistoryList()" class="w-full border rounded p-2 bg-stone-50">
+              </div>
+              <div>
+                <label class="block font-bold text-stone-600 mb-1">Data Final:</label>
+                <input type="date" id="filter-date-end" onchange="renderHistoryList()" class="w-full border rounded p-2 bg-stone-50">
+              </div>
+            </div>
+          </div>
+
+          <div id="undo-container" class="hidden flex items-center justify-between bg-amber-50 p-2 rounded-lg border border-amber-300">
+            <span class="text-xs text-amber-900 font-medium">Relatório excluído.</span>
+            <button onclick="undoDeleteReport()" class="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded transition shadow-sm">
+              Desfazer
+            </button>
+          </div>
+        </div>
+
+        <div id="history-list-container" class="space-y-2"></div>
+      </main>
+    </div>
+
+    <!-- MÓDULO 2: PLANOS DE AÇÃO & MANUTENÇÃO -->
+    <main id="module-actions-container" class="max-w-xl mx-auto p-4 space-y-4 hidden">
+      <div class="bg-white p-4 rounded-xl shadow-sm border border-stone-200 space-y-3">
+        <h2 class="font-bold text-cb-bordo text-xs uppercase tracking-wider">Agenda de Planos de Ação</h2>
+        <p class="text-xs text-stone-500">Acompanhamento e chat com os responsáveis</p>
+
+        <div class="flex border-b border-stone-200 text-xs font-bold pt-2">
+          <button id="actions-tab-pending" onclick="switchActionsTab('pending')" class="flex-1 py-2 border-b-2 border-cb-bordo text-cb-bordo transition">📋 Pendentes</button>
+          <button id="actions-tab-completed" onclick="switchActionsTab('completed')" class="flex-1 py-2 border-b-2 border-transparent text-stone-400 transition">✅ Concluídos</button>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 text-xs pt-1">
+          <div>
+            <label class="block font-bold text-stone-600 mb-1">A partir de:</label>
+            <input type="date" id="action-date-start" onchange="renderCentralizedActions()" class="w-full border rounded p-2 bg-stone-50">
+          </div>
+          <div>
+            <label class="block font-bold text-stone-600 mb-1">Até:</label>
+            <input type="date" id="action-date-end" onchange="renderCentralizedActions()" class="w-full border rounded p-2 bg-stone-50">
+          </div>
         </div>
       </div>
-
-      <div id="history-list-container" class="space-y-2"></div>
+      <div id="centralized-actions-list" class="space-y-2"></div>
     </main>
   </div>
-
-  <!-- MÓDULO 2: PLANOS DE AÇÃO & MANUTENÇÃO -->
-  <main id="module-actions-container" class="max-w-xl mx-auto p-4 space-y-4 hidden">
-    <div class="bg-white p-4 rounded-xl shadow-sm border border-stone-200 space-y-3">
-      <h2 class="font-bold text-cb-bordo text-xs uppercase tracking-wider">Agenda de Planos de Ação</h2>
-      <p class="text-xs text-stone-500">Acompanhamento e chat com os responsáveis</p>
-
-      <div class="flex border-b border-stone-200 text-xs font-bold pt-2">
-        <button id="actions-tab-pending" onclick="switchActionsTab('pending')" class="flex-1 py-2 border-b-2 border-cb-bordo text-cb-bordo transition">📋 Pendentes</button>
-        <button id="actions-tab-completed" onclick="switchActionsTab('completed')" class="flex-1 py-2 border-b-2 border-transparent text-stone-400 transition">✅ Concluídos</button>
-      </div>
-
-      <div class="grid grid-cols-2 gap-2 text-xs pt-1">
-        <div>
-          <label class="block font-bold text-stone-600 mb-1">A partir de:</label>
-          <input type="date" id="action-date-start" onchange="renderCentralizedActions()" class="w-full border rounded p-2 bg-stone-50">
-        </div>
-        <div>
-          <label class="block font-bold text-stone-600 mb-1">Até:</label>
-          <input type="date" id="action-date-end" onchange="renderCentralizedActions()" class="w-full border rounded p-2 bg-stone-50">
-        </div>
-      </div>
-    </div>
-    <div id="centralized-actions-list" class="space-y-2"></div>
-  </main>
 
   <!-- Modal de Chat -->
   <div id="chat-modal" class="fixed inset-0 bg-black/70 z-50 hidden flex items-center justify-center p-2 sm:p-4">
@@ -528,9 +536,9 @@
     ];
 
     const defaultStatuses = [
-      { name: "Pendente", color: "bg-rose-100 text-rose-800 border-rose-300" },
-      { name: "Em Andamento", color: "bg-amber-100 text-amber-900 border-amber-300" },
-      { name: "Concluído", color: "bg-emerald-100 text-emerald-800 border-emerald-300" }
+      { name: "Pendente", color: "bg-rose-100 border-rose-300" },
+      { name: "Em Andamento", color: "bg-amber-100 border-amber-300" },
+      { name: "Concluído", color: "bg-emerald-100 border-emerald-300" }
     ];
 
     const defaultTemplates = [
@@ -665,7 +673,6 @@
         });
         localStorage.setItem("CB_LOCAL_REPORTS", JSON.stringify(savedReports));
         updateHistoryBadge();
-        checkGlobalNotifications();
         
         const historyView = document.getElementById("history-view");
         const actionsView = document.getElementById("module-actions-container");
@@ -1064,6 +1071,35 @@
       renderCentralizedActions();
     }
 
+    // 🔔 Resumo no Sino de Notificações
+    function openNotificationSummary() {
+      if (!isFirebaseReady) {
+        alert("Modo Local: Sem conexão ativa para verificar notificações.");
+        return;
+      }
+      
+      let unreadList = [];
+      let allowedUnits = getAllowedUnits();
+
+      savedReports.forEach(rep => {
+        if (!allowedUnits.includes(rep.unit)) return;
+        rep.nonConformities?.forEach((nc, i) => {
+          let actId = `${rep.id}_nc_${i}`;
+          let status = actionCustomStatus[actId] || 'Pendente';
+          if (status !== 'Concluído') {
+            unreadList.push(`• [${rep.unit}] ${nc.title} (Prazo: ${nc.date || 'Indefinido'})`);
+          }
+        });
+      });
+
+      if (unreadList.length > 0) {
+        alert("🔔 Resumo de Notificações Pendentes:\n\n" + unreadList.slice(0, 5).join("\n") + (unreadList.length > 5 ? "\n\n...e mais itens na lista." : ""));
+      } else {
+        alert("🔔 Tudo em ordem! Não há planos de ação pendentes no momento.");
+      }
+      document.getElementById("global-notification-dot")?.classList.add("hidden");
+    }
+
     function checkGlobalNotifications() {
       if (!isFirebaseReady) return;
     }
@@ -1116,7 +1152,12 @@
         else return act.status !== 'Concluído';
       });
 
-      filteredActions.sort((a, b) => new Date(a.rawDate || '2099-12-31') - new Date(b.rawDate || '2099-12-31'));
+      // 📅 Organizar planos de ação por ordem crescente de data (o que vence primeiro aparece primeiro)
+      filteredActions.sort((a, b) => {
+        let dateA = a.rawDate && a.rawDate !== 'Indefinida' && a.rawDate !== 'Não definida' ? new Date(a.rawDate.split('/').reverse().join('-')) : new Date('2099-12-31');
+        let dateB = b.rawDate && b.rawDate !== 'Indefinida' && b.rawDate !== 'Não definida' ? new Date(b.rawDate.split('/').reverse().join('-')) : new Date('2099-12-31');
+        return dateA - dateB;
+      });
 
       if (filteredActions.length === 0) {
         container.innerHTML = `<div class="p-8 text-center bg-white rounded-xl border text-stone-400 text-xs">Nenhum plano de ação encontrado nesta aba.</div>`;
@@ -1140,7 +1181,6 @@
         let currentStatusObj = actionStatuses.find(s => s.name === act.status) || { color: 'bg-white border-stone-200' };
 
         const card = document.createElement("div");
-        // A linha inteira agora assume a cor definida no status
         card.className = `p-3 rounded-xl border shadow-sm flex items-center justify-between gap-3 text-xs ${currentStatusObj.color}`;
         card.innerHTML = `
           <div class="flex-1 min-w-0 space-y-1">
@@ -1191,15 +1231,29 @@
       renderCentralizedActions();
     }
 
+    // 🔊 Notificação instantânea com emissão de som ao receber mensagem
     function loadChatMessages(chatId) {
       if (!isFirebaseReady) return;
       db.collection("chats").doc(chatId).collection("messages").orderBy("createdAt", "asc").onSnapshot(snapshot => {
         const container = document.getElementById("chat-messages-container");
         container.innerHTML = "";
+        
+        snapshot.docChanges().forEach(change => {
+          if (change.type === "added") {
+            const m = change.doc.data();
+            if (m.sender !== currentUser.name && !m.seen) {
+              // Toca som de nova mensagem instantaneamente
+              document.getElementById("notif-sound").play().catch(e => console.log("Áudio bloqueado pelo navegador até interação"));
+              document.getElementById("global-notification-dot")?.classList.remove("hidden");
+            }
+          }
+        });
+
         if (snapshot.empty) {
           container.innerHTML = `<div class="text-center text-stone-400 py-6">Nenhuma mensagem ainda. Inicie a conversa.</div>`;
           return;
         }
+
         snapshot.forEach(doc => {
           const m = doc.data();
           const isMe = m.sender === currentUser.name;
