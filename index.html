@@ -147,14 +147,24 @@
 
   <!-- VIEW 2: HISTÓRICO DE RELATÓRIOS SALVOS -->
   <main id="history-view" class="max-w-xl mx-auto p-4 space-y-4 hidden">
-    <div class="bg-white p-4 rounded-xl shadow-sm border border-stone-200 flex justify-between items-center">
-      <div>
-        <h2 class="font-bold text-cb-bordo text-sm uppercase tracking-wider">Histórico de Relatórios</h2>
-        <p class="text-xs text-stone-500">Auditorias concluídas sincronizadas na nuvem</p>
+    <div class="bg-white p-4 rounded-xl shadow-sm border border-stone-200 flex flex-col gap-2.5">
+      <div class="flex justify-between items-center">
+        <div>
+          <h2 class="font-bold text-cb-bordo text-sm uppercase tracking-wider">Histórico de Relatórios</h2>
+          <p class="text-xs text-stone-500">Auditorias concluídas sincronizadas na nuvem</p>
+        </div>
+        <button onclick="clearAllHistory()" class="text-xs text-rose-600 font-bold hover:underline">
+          Limpar Tudo
+        </button>
       </div>
-      <button onclick="clearAllHistory()" class="text-xs text-rose-600 font-bold hover:underline">
-        Limpar Histórico
-      </button>
+
+      <!-- Botão de Desfazer Exclusão -->
+      <div id="undo-container" class="hidden pt-2 border-t flex items-center justify-between bg-amber-50 p-2.5 rounded-lg border border-amber-300">
+        <span class="text-xs text-amber-900 font-medium">Um relatório foi excluído.</span>
+        <button onclick="undoDeleteReport()" class="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded transition shadow-sm">
+          ↩️ Desfazer (Restaurar)
+        </button>
+      </div>
     </div>
 
     <div id="history-list-container" class="space-y-3"></div>
@@ -445,6 +455,7 @@
     let allChecklists = JSON.parse(localStorage.getItem("CB_LOCAL_CHECKLISTS")) || defaultTemplates;
     let activeChecklistId = localStorage.getItem("CB_LOCAL_ACTIVE_ID") || allChecklists[0].id;
     let savedReports = JSON.parse(localStorage.getItem("CB_LOCAL_REPORTS")) || [];
+    let lastDeletedReport = null; // Para a função Desfazer
     
     let attachedPhotos = {};
     let actionPlans = {};
@@ -458,6 +469,8 @@
       if (time) time.innerText = text;
     }
 
+    let isInitialConfigLoad = true;
+
     // ==========================================
     // SINCRONIZAÇÃO EM TEMPO REAL COM O FIRESTORE
     // ==========================================
@@ -469,7 +482,7 @@
 
       updateSyncUI("🟢 Conectando...", "Sincronizando");
 
-      // 1. Ouvinte para Lojas, Modelos e Usuários
+      // 1. Ouvinte para Configurações (Lojas, Modelos, Usuários)
       db.collection("app_config").doc("main").onSnapshot(doc => {
         if (doc.exists) {
           const data = doc.data();
@@ -485,9 +498,13 @@
             users = data.users;
             localStorage.setItem("CB_LOCAL_USERS", JSON.stringify(users));
           }
-          renderPresetUnits();
-          updateSelectorUI();
-          renderChecklist();
+
+          if (isInitialConfigLoad) {
+            renderPresetUnits();
+            updateSelectorUI();
+            renderChecklist();
+            isInitialConfigLoad = false;
+          }
           updateSyncUI("🟢 Sincronizado na Nuvem", new Date().toLocaleTimeString('pt-BR'));
         } else {
           syncConfigToCloud();
@@ -500,7 +517,7 @@
       db.collection("reports").orderBy("createdAt", "desc").onSnapshot(snapshot => {
         savedReports = [];
         snapshot.forEach(doc => {
-          savedReports.push(doc.data());
+          savedReports.push({ id: doc.id, ...doc.data() });
         });
         localStorage.setItem("CB_LOCAL_REPORTS", JSON.stringify(savedReports));
         updateHistoryBadge();
@@ -517,8 +534,6 @@
         units: presetUnits,
         users: users,
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-      }).then(() => {
-        updateSyncUI("🟢 Sincronizado na Nuvem", new Date().toLocaleTimeString('pt-BR'));
       }).catch(err => {
         console.error("Erro ao sincronizar na nuvem:", err);
       });
@@ -553,6 +568,7 @@
       const badge = document.getElementById("units-count-badge");
 
       if (select) {
+        const currentVal = select.value;
         select.innerHTML = "";
         presetUnits.forEach(u => {
           const opt = document.createElement("option");
@@ -560,6 +576,9 @@
           opt.innerText = u;
           select.appendChild(opt);
         });
+        if (currentVal && presetUnits.includes(currentVal)) {
+          select.value = currentVal;
+        }
       }
 
       if (listContainer) {
@@ -653,6 +672,15 @@
       container.innerHTML = "";
       updateHistoryBadge();
 
+      const undoBox = document.getElementById("undo-container");
+      if (undoBox) {
+        if (lastDeletedReport) {
+          undoBox.classList.remove("hidden");
+        } else {
+          undoBox.classList.add("hidden");
+        }
+      }
+
       if (savedReports.length === 0) {
         container.innerHTML = `
           <div class="p-8 text-center bg-white rounded-xl border border-stone-200 text-stone-400 text-xs font-semibold">
@@ -735,9 +763,25 @@
 
     function deleteReportFromHistory(idx) {
       if (confirm("Excluir este relatório do histórico?")) {
-        savedReports.splice(idx, 1);
+        const deleted = savedReports.splice(idx, 1)[0];
+        lastDeletedReport = deleted;
         localStorage.setItem("CB_LOCAL_REPORTS", JSON.stringify(savedReports));
+
+        if (isFirebaseReady && deleted.id) {
+          db.collection("reports").doc(deleted.id).delete().catch(err => console.error(err));
+        }
         renderHistoryList();
+      }
+    }
+
+    function undoDeleteReport() {
+      if (lastDeletedReport) {
+        const reportToRestore = { ...lastDeletedReport };
+        delete reportToRestore.id; // Remove id local para recriar no cloud
+        saveReportToCloud(reportToRestore);
+        lastDeletedReport = null;
+        renderHistoryList();
+        alert("Relatório restaurado com sucesso!");
       }
     }
 
@@ -745,6 +789,7 @@
       if (confirm("Tem certeza que deseja apagar todo o histórico de relatórios?")) {
         savedReports = [];
         localStorage.setItem("CB_LOCAL_REPORTS", JSON.stringify(savedReports));
+        lastDeletedReport = null;
         renderHistoryList();
       }
     }
