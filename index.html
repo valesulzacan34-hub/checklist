@@ -21,6 +21,9 @@
     .border-cb-gold { border-color: var(--cb-gold); }
     .bg-cb-cream { background-color: var(--cb-cream); }
     #sidebar { transition: transform 0.3s ease-in-out; }
+    .event-card { cursor: grab; }
+    .event-card:active { cursor: grabbing; }
+    .resize-handle { height: 4px; width: 100%; cursor: ns-resize; position: absolute; bottom: 0; left: 0; }
     @media (min-width: 768px) {
       .app-main, .responsive-container { max-width: 900px !important; margin: 0 auto; }
     }
@@ -383,7 +386,7 @@
       <div id="technicians-list-container" class="space-y-3"></div>
     </main>
 
-    <!-- MÓDULO 4: AGENDA / CALENDÁRIO COM IA E GOOGLE AGENDA -->
+    <!-- MÓDULO 4: AGENDA / CALENDÁRIO COM IA E DRAG & DROP -->
     <main id="module-agenda-container" class="responsive-container space-y-4 hidden">
       <!-- BARRA DE IA -->
       <div class="bg-gradient-to-r from-cb-bordo to-rose-900 p-4 rounded-xl shadow-lg border border-cb-gold/30 space-y-2">
@@ -398,7 +401,7 @@
         <div class="flex justify-between items-center flex-wrap gap-2">
           <div>
             <h2 class="font-bold text-cb-bordo text-sm uppercase tracking-wider">📅 Agenda & Calendário</h2>
-            <p class="text-xs text-stone-500">Eventos em comum, prazos e compromissos da rede</p>
+            <p class="text-xs text-stone-500">Arraste os cards entre os dias ou clique na borda para redimensionar o horário</p>
           </div>
           <button onclick="openEventModal()" class="px-3 py-2 bg-cb-bordo text-white font-bold text-xs rounded-lg hover:bg-cb-bordo-dark transition">
             + Novo Evento
@@ -479,9 +482,11 @@
           <label class="block font-bold text-stone-600 mb-1">Recorrência:</label>
           <select id="event-recurrence" class="w-full border rounded p-2 bg-stone-50 font-semibold">
             <option value="none">Não se repete</option>
-            <option value="daily">Diariamente</option>
-            <option value="weekly">Semanalmente</option>
-            <option value="monthly">Mensalmente</option>
+            <option value="daily">Todos os dias</option>
+            <option value="weekly">Semanal</option>
+            <option value="monthly">Mensal</option>
+            <option value="yearly">Anual</option>
+            <option value="weekdays">Todos os dias da semana (segunda a sexta)</option>
           </select>
         </div>
         <div>
@@ -1087,8 +1092,7 @@
 
       if (filterAgendaStore) {
         const curAgenda = filterAgendaStore.value;
-        if (currentUser.role === 'gerente') {
-          // Gerente só vê sua própria unidade
+        if (currentUser && currentUser.role === 'gerente') {
           filterAgendaStore.innerHTML = "";
           let managerUnit = currentUser.units && currentUser.units.length > 0 ? currentUser.units[0] : presetUnits[0];
           let opt = document.createElement("option"); opt.value = managerUnit; opt.innerText = managerUnit; filterAgendaStore.appendChild(opt);
@@ -1105,7 +1109,7 @@
 
       if (eventStoreSelect) {
         eventStoreSelect.innerHTML = "";
-        let unitsToDisplay = currentUser.role === 'gerente' && currentUser.units ? currentUser.units : presetUnits;
+        let unitsToDisplay = currentUser && currentUser.role === 'gerente' && currentUser.units ? currentUser.units : presetUnits;
         unitsToDisplay.forEach(u => {
           const opt = document.createElement("option"); opt.value = u; opt.innerText = u; eventStoreSelect.appendChild(opt);
         });
@@ -1225,6 +1229,7 @@
         sessionStorage.setItem("CB_LOCAL_LOGGED_USER", JSON.stringify(found));
         document.getElementById("login-screen").classList.add("hidden");
         document.getElementById("login-error").classList.add("hidden");
+        updateLogos();
         openModulesScreen();
       } else {
         document.getElementById("login-error").classList.remove("hidden");
@@ -1235,7 +1240,8 @@
 
     function openModulesScreen() {
       document.getElementById("modules-screen").classList.remove("hidden");
-      document.getElementById("current-user-badge").innerText = currentUser.name;
+      document.getElementById("current-user-badge").innerText = currentUser ? currentUser.name : '';
+      updateLogos();
       
       const grid = document.getElementById("modules-grid");
       grid.innerHTML = "";
@@ -1784,7 +1790,7 @@
       });
     }
 
-    // 📅 Lógica da Agenda com Google Agenda (Mês, Semana, Dia, IA e Permissões)
+    // 📅 Lógica do Calendário Interativo Avançado (Drag & Drop e Redimensionamento)
     function changeCalendarView(view) {
       currentCalendarView = view;
       document.getElementById("btn-view-month").className = `px-3 py-1.5 font-bold rounded transition ${view === 'month' ? 'bg-cb-bordo text-white' : 'bg-stone-200 text-stone-700'}`;
@@ -1830,6 +1836,7 @@
               title: `[Ação] ${nc.title}`,
               date: nc.date.split('/').reverse().join('-'),
               time: '09:00',
+              timeEnd: '10:00',
               store: rep.unit,
               scope: 'INDIVIDUAL',
               desc: nc.action || 'Não descrita',
@@ -1844,6 +1851,7 @@
               title: `[Manutenção] ${om.equipment}`,
               date: om.date.split('/').reverse().join('-'),
               time: '10:00',
+              timeEnd: '11:00',
               store: rep.unit,
               scope: 'INDIVIDUAL',
               desc: om.action || om.defect || 'Sem descrição',
@@ -1888,7 +1896,17 @@
           let dayEvents = filteredEvents.filter(e => e.date === dateStr);
 
           let cell = document.createElement("div");
-          cell.className = "bg-white p-1.5 border-b border-r min-h-[90px] flex flex-col justify-start text-left overflow-hidden cursor-pointer hover:bg-stone-50";
+          cell.className = "bg-white p-1.5 border-b border-r min-h-[90px] flex flex-col justify-start text-left overflow-hidden cursor-pointer hover:bg-stone-50 relative";
+          cell.setAttribute('data-date', dateStr);
+          
+          // Eventos de Drag & Drop sobre o dia
+          cell.ondragover = (e) => e.preventDefault();
+          cell.ondrop = (e) => {
+            e.preventDefault();
+            let evId = e.dataTransfer.getData("text/plain");
+            moveEventToDate(evId, dateStr);
+          };
+
           cell.onclick = (e) => {
             if (e.target.tagName !== 'DIV' && e.target.tagName !== 'SPAN') return;
             openEventModalForDate(dateStr);
@@ -1900,7 +1918,15 @@
           let eventsHtml = dayEvents.map(ev => {
             let isAuto = ev.type === 'action' || ev.type === 'maintenance';
             let bgClass = isAuto ? 'bg-amber-100 text-amber-900 border-amber-300' : (ev.scope === 'GERAL' ? 'bg-purple-100 text-purple-900 border-purple-300' : 'bg-sky-100 text-sky-900 border-sky-300');
-            return `<div onclick="event.stopPropagation(); openEventDetail('${ev.id}')" class="px-1.5 py-0.5 rounded border text-[10px] font-semibold truncate cursor-pointer mb-0.5 ${bgClass}" title="${ev.title}">• ${ev.time ? ev.time + ' ' : ''}${ev.title}</div>`;
+            return `
+              <div draggable="true" 
+                   ondragstart="event.dataTransfer.setData('text/plain', '${ev.id}')"
+                   onclick="event.stopPropagation(); openEventDetail('${ev.id}')" 
+                   class="event-card px-1.5 py-0.5 rounded border text-[10px] font-semibold truncate cursor-pointer mb-0.5 ${bgClass} relative group" 
+                   title="${ev.title}">
+                • ${ev.time ? ev.time + ' ' : ''}${ev.title}
+                <div class="resize-handle opacity-0 group-hover:opacity-100 bg-black/20" onmousedown="initResize(event, '${ev.id}')" title="Redimensionar horário"></div>
+              </div>`;
           }).join("");
 
           cell.innerHTML = `
@@ -1931,9 +1957,21 @@
 
           let row = document.createElement("div");
           row.className = "p-3 flex flex-col sm:flex-row gap-2 justify-between items-start sm:items-center bg-white hover:bg-stone-50 transition cursor-pointer";
+          row.ondragover = (e) => e.preventDefault();
+          row.ondrop = (e) => {
+            e.preventDefault();
+            let evId = e.dataTransfer.getData("text/plain");
+            moveEventToDate(evId, dateStr);
+          };
           row.onclick = () => openEventModalForDate(dateStr);
           
-          let eventsHtml = dayEvents.map(ev => `<span onclick="event.stopPropagation(); openEventDetail('${ev.id}')" class="px-2.5 py-1 bg-amber-100 text-amber-900 border rounded font-semibold text-[11px] cursor-pointer hover:bg-amber-200">${ev.time ? ev.time + ' - ' : ''}${ev.title}</span>`).join(" ");
+          let eventsHtml = dayEvents.map(ev => `
+            <span draggable="true" 
+                  ondragstart="event.dataTransfer.setData('text/plain', '${ev.id}')"
+                  onclick="event.stopPropagation(); openEventDetail('${ev.id}')" 
+                  class="event-card px-2.5 py-1 bg-amber-100 text-amber-900 border rounded font-semibold text-[11px] cursor-pointer hover:bg-amber-200">
+              ${ev.time ? ev.time + ' - ' : ''}${ev.title}
+            </span>`).join(" ");
 
           row.innerHTML = `
             <div class="font-bold text-cb-bordo w-36 pointer-events-none">${loopDate.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit' })}</div>
@@ -1968,6 +2006,55 @@
         }
         gridContainer.appendChild(listDiv);
       }
+    }
+
+    // 🖱️ Dinâmica de Arrastar entre Dias e Redimensionar Horário
+    function moveEventToDate(eventId, newDate) {
+      let ev = calendarEvents.find(e => e.id === eventId);
+      if (!ev) return;
+      if (ev.scope === 'GERAL' && currentUser.role !== 'admin') {
+        return alert("Apenas administradores podem alterar eventos em comum.");
+      }
+      if (currentUser.role === 'gerente' && ev.store !== currentUser.units?.[0]) {
+        return alert("Você só pode mover eventos da sua própria unidade.");
+      }
+
+      ev.date = newDate;
+      ev.displayDate = newDate.split('-').reverse().join('/');
+      localStorage.setItem("CB_LOCAL_CALENDAR_EVENTS", JSON.stringify(calendarEvents));
+      syncConfigToCloud();
+      renderAgendaCalendar();
+    }
+
+    function initResize(e, eventId) {
+      e.stopPropagation();
+      e.preventDefault();
+      let ev = calendarEvents.find(e => e.id === eventId);
+      if (!ev) return;
+
+      let startY = e.clientY;
+      function onMouseMove(moveEvent) {
+        let diff = moveEvent.clientY - startY;
+        if (Math.abs(diff) > 25) { // A cada 25px de arraste vertical, altera 30 min no horário fim
+          let [h, m] = (ev.timeEnd || '10:00').split(':').map(Number);
+          m += diff > 0 ? 30 : -30;
+          if (m >= 60) { h += 1; m = 0; }
+          if (m < 0) { h -= 1; m = 30; }
+          ev.timeEnd = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+          startY = moveEvent.clientY;
+          localStorage.setItem("CB_LOCAL_CALENDAR_EVENTS", JSON.stringify(calendarEvents));
+          syncConfigToCloud();
+          renderAgendaCalendar();
+        }
+      }
+
+      function onMouseUp() {
+        window.removeEventListener('mousemove', onMouseMove);
+        window.removeEventListener('mouseup', onMouseUp);
+      }
+
+      window.addEventListener('mousemove', onMouseMove);
+      window.addEventListener('mouseup', onMouseUp);
     }
 
     function processarAgendaIA() {
