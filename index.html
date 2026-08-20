@@ -108,7 +108,8 @@
         <span>📂 Relatórios Salvos</span>
         <span id="history-badge-count" class="bg-cb-gold text-cb-bordo-dark px-1.5 py-0.2 rounded-full text-[10px] font-black">0</span>
       </button>
-      <button onclick="switchActionsTab('technicians'); toggleSidebar();" class="w-full text-left px-3 py-2.5 rounded-lg hover:bg-cb-bordo transition flex items-center gap-1.5">
+      <!-- Correção do link do menu lateral para abrir o módulo de técnicos corretamente -->
+      <button onclick="selectModule('technicians'); toggleSidebar();" class="w-full text-left px-3 py-2.5 rounded-lg hover:bg-cb-bordo transition flex items-center gap-1.5">
         <span>🔧 Técnicos & Prestadores</span>
       </button>
       <button id="sidebar-btn-users" onclick="toggleUsersModal(); toggleSidebar();" class="hidden w-full text-left px-3 py-2.5 rounded-lg hover:bg-cb-bordo transition">
@@ -383,6 +384,39 @@
     </main>
   </div>
 
+  <!-- Modal de Cadastro de Novo Técnico (Admin) -->
+  <div id="tech-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-md rounded-2xl p-5 space-y-4 shadow-2xl border border-cb-gold/30 text-xs">
+      <div class="flex justify-between items-center border-b pb-2">
+        <h3 class="font-bold text-cb-bordo text-sm uppercase">Cadastrar Prestador de Serviço</h3>
+        <button onclick="toggleTechModal()" class="font-bold text-stone-400 hover:text-stone-700 text-base">✕</button>
+      </div>
+      <div class="space-y-3">
+        <div>
+          <label class="block font-bold text-stone-600 mb-1">Nome / Empresa:</label>
+          <input type="text" id="new-tech-name" placeholder="Ex: Wezley" class="w-full border rounded p-2 bg-stone-50 font-semibold">
+        </div>
+        <div>
+          <label class="block font-bold text-stone-600 mb-1">Serviço Prestado:</label>
+          <input type="text" id="new-tech-service" placeholder="Ex: Ar condicionado, Eletricista..." class="w-full border rounded p-2 bg-stone-50 font-semibold">
+        </div>
+        <div>
+          <label class="block font-bold text-stone-600 mb-1">Região:</label>
+          <select id="new-tech-region" class="w-full border rounded p-2 bg-stone-50 font-semibold">
+            <option value="São José dos Campos">São José dos Campos</option>
+            <option value="Mogi">Mogi</option>
+            <option value="São Paulo">São Paulo</option>
+          </select>
+        </div>
+        <div>
+          <label class="block font-bold text-stone-600 mb-1">Telefone / WhatsApp:</label>
+          <input type="text" id="new-tech-phone" placeholder="Ex: 12 974010864" class="w-full border rounded p-2 bg-stone-50 font-semibold">
+        </div>
+        <button onclick="addNewTechnician()" class="w-full py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded uppercase">Salvar Contato</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal de Chat com Descrição Completa e Foto -->
   <div id="chat-modal" class="fixed inset-0 bg-black/70 z-50 hidden flex items-center justify-center p-2 sm:p-4">
     <div class="bg-white w-full max-w-lg h-[90vh] rounded-2xl flex flex-col shadow-2xl overflow-hidden border border-cb-gold/30">
@@ -394,7 +428,9 @@
         <button onclick="toggleChatModal()" class="text-stone-300 hover:text-white text-xl font-bold px-2 py-0.5">✕</button>
       </div>
 
+      <!-- Resumo Detalhado da Não Conformidade / Foto -->
       <div id="chat-action-details" class="p-3.5 bg-stone-100 border-b text-xs space-y-2"></div>
+
       <div id="chat-messages-container" class="flex-1 p-4 overflow-y-auto space-y-3 bg-stone-50 text-xs"></div>
 
       <div class="p-3 border-t bg-white flex items-center gap-2">
@@ -428,6 +464,7 @@
         <button id="admin-tab-priorities" onclick="switchAdminTab('priorities')" class="flex-1 py-2.5 border-b-2 border-transparent text-stone-500 transition whitespace-nowrap">⚡ Tarjas / Prioridade</button>
       </div>
 
+      <!-- Aba Lojas (Admin) -->
       <div id="admin-content-units" class="p-4 overflow-y-auto space-y-4 flex-1 bg-stone-50 text-xs">
         <div class="bg-white p-3 rounded-xl border space-y-2 shadow-sm">
           <span class="block font-bold text-cb-bordo uppercase">Cadastrar Nova Loja / Unidade</span>
@@ -442,8 +479,10 @@
         </div>
       </div>
 
+      <!-- Aba Usuários (Admin) -->
       <div id="admin-content-users" class="hidden p-4 overflow-y-auto space-y-4 flex-1 bg-stone-50 text-xs">
         <div id="users-list" class="space-y-2 max-h-40 overflow-y-auto"></div>
+
         <div class="bg-white p-3 rounded-xl border space-y-2 shadow-sm">
           <span class="block font-bold text-cb-bordo uppercase">Cadastrar Novo Usuário</span>
           <div class="grid grid-cols-2 gap-2">
@@ -458,19 +497,24 @@
               <option value="operador">Operador (Vinculado)</option>
             </select>
           </div>
+          
           <div id="new-user-units-box" class="hidden space-y-1">
             <label class="block font-bold text-stone-600">Lojas Permitidas (Ctrl para múltiplas):</label>
             <select id="new-user-units" multiple class="w-full border rounded p-2 bg-stone-50 h-16"></select>
           </div>
-          <button onclick="addNewUser()" class="w-full py-2 bg-cb-bordo hover:bg-cb-bordo-dark text-white font-bold rounded uppercase">+ Criar Acesso</button>
+
+          <button onclick="addNewUser()" class="w-full py-2 bg-cb-bordo hover:bg-cb-bordo-dark text-white font-bold rounded uppercase">
+            + Criar Acesso
+          </button>
         </div>
       </div>
 
+      <!-- Aba Status (Admin) -->
       <div id="admin-content-status" class="hidden p-4 overflow-y-auto space-y-4 flex-1 bg-stone-50 text-xs">
         <div class="bg-white p-3 rounded-xl border space-y-3 shadow-sm">
           <span class="block font-bold text-cb-bordo uppercase">Cadastrar Novo Status & Cor</span>
           <div class="space-y-2">
-            <input type="text" id="admin-new-status-input" placeholder="Ex: Em Análise..." class="w-full border rounded p-2 bg-stone-50 font-semibold">
+            <input type="text" id="admin-new-status-input" placeholder="Ex: Em Análise, Aguardando Peça..." class="w-full border rounded p-2 bg-stone-50 font-semibold">
             <div class="flex items-center gap-2">
               <label class="font-bold text-stone-600">Cor do Status:</label>
               <select id="admin-new-status-color" class="border rounded p-1.5 bg-stone-50 font-semibold">
@@ -490,11 +534,12 @@
         </div>
       </div>
 
+      <!-- Aba Tarjas / Prioridades (Admin) -->
       <div id="admin-content-priorities" class="hidden p-4 overflow-y-auto space-y-4 flex-1 bg-stone-50 text-xs">
         <div class="bg-white p-3 rounded-xl border space-y-3 shadow-sm">
           <span class="block font-bold text-cb-bordo uppercase">Cadastrar Nova Tarja de Prioridade</span>
           <div class="space-y-2">
-            <input type="text" id="admin-new-priority-input" placeholder="Ex: Urgente..." class="w-full border rounded p-2 bg-stone-50 font-semibold">
+            <input type="text" id="admin-new-priority-input" placeholder="Ex: Urgente, Importante, Não Urgente..." class="w-full border rounded p-2 bg-stone-50 font-semibold">
             <div class="flex items-center gap-2">
               <label class="font-bold text-stone-600">Estilo da Tarja:</label>
               <select id="admin-new-priority-style" class="border rounded p-1.5 bg-stone-50 font-semibold">
@@ -513,39 +558,63 @@
           <div id="admin-priorities-list" class="space-y-1.5 max-h-48 overflow-y-auto"></div>
         </div>
       </div>
+
     </div>
   </div>
 
-  <!-- Modal de Configuração de Checklists (Agora com Edição Completa) -->
+  <!-- Barra Inferior de Ações -->
+  <footer id="audit-footer" class="fixed bottom-0 left-0 right-0 bg-white border-t border-stone-200 p-3 z-30 shadow-lg hidden">
+    <div class="max-w-xl mx-auto flex gap-2">
+      <button onclick="resetChecklist()" class="w-1/4 py-3 rounded-lg border border-stone-300 text-stone-700 text-xs font-bold hover:bg-stone-50 transition">
+        Limpar
+      </button>
+      <button onclick="generatePDF()" class="w-1/3 py-3 rounded-lg bg-cb-bordo hover:bg-cb-bordo-dark text-white text-xs font-bold tracking-wide transition flex items-center justify-center gap-1 border border-cb-gold/40">
+        <span>Salvar / PDF</span>
+      </button>
+      <button onclick="shareWhatsApp()" class="flex-1 py-3 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold tracking-wide transition flex items-center justify-center gap-1">
+        <span>WhatsApp</span>
+      </button>
+    </div>
+  </footer>
+
+  <!-- Modal de Configuração -->
   <div id="config-modal" class="fixed inset-0 bg-black/70 z-50 hidden flex items-center justify-center p-2 sm:p-4">
     <div class="bg-white w-full max-w-2xl h-[92vh] rounded-2xl flex flex-col shadow-2xl overflow-hidden border border-cb-gold/30">
       
       <div class="p-3.5 border-b border-stone-200 flex justify-between items-center bg-cb-bordo text-white">
-        <div><h3 class="font-bold text-sm text-cb-gold">Configurações Gerais</h3></div>
+        <div>
+          <h3 class="font-bold text-sm text-cb-gold">Configurações Gerais</h3>
+        </div>
         <button onclick="toggleConfigModal()" class="text-stone-300 hover:text-white text-xl font-bold px-2 py-0.5">✕</button>
       </div>
 
       <div class="flex border-b border-stone-200 bg-stone-100 text-xs font-bold overflow-x-auto">
-        <button id="tab-btn-models" onclick="switchConfigTab('models')" class="flex-1 py-3 border-b-2 border-cb-bordo text-cb-bordo bg-white transition">Checklists</button>
-        <button id="tab-btn-items" onclick="switchConfigTab('items')" class="flex-1 py-3 border-b-2 border-transparent text-stone-500 hover:text-cb-bordo transition">Setores & Perguntas</button>
+        <button id="tab-btn-models" onclick="switchConfigTab('models')" class="flex-1 py-3 border-b-2 border-cb-bordo text-cb-bordo bg-white transition">
+          Checklists
+        </button>
+        <button id="tab-btn-items" onclick="switchConfigTab('items')" class="flex-1 py-3 border-b-2 border-transparent text-stone-500 hover:text-cb-bordo transition">
+          Setores & Perguntas
+        </button>
       </div>
 
-      <!-- Aba Checklists com Opção de Editar Nome -->
+      <!-- Aba Checklists -->
       <div id="tab-content-models" class="p-5 space-y-5 overflow-y-auto flex-1 bg-stone-50 text-sm">
         <div class="bg-white p-4 rounded-xl border border-stone-200 space-y-3 shadow-sm">
           <span class="block text-xs font-bold text-cb-bordo uppercase tracking-wider">Novo Modelo</span>
           <div class="flex gap-2">
             <input type="text" id="new-checklist-name" placeholder="Ex: Fechamento" class="flex-1 text-xs border rounded-lg p-2.5 bg-stone-50">
-            <button onclick="createNewChecklistType()" class="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-lg transition">+ Criar</button>
+            <button onclick="createNewChecklistType()" class="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-lg transition">
+              + Criar
+            </button>
           </div>
         </div>
         <div class="bg-white p-4 rounded-xl border border-stone-200 space-y-3 shadow-sm">
-          <span class="block text-xs font-bold text-cb-bordo uppercase tracking-wider">Modelos Existentes (Editar / Excluir)</span>
+          <span class="block text-xs font-bold text-cb-bordo uppercase tracking-wider">Modelos Existentes</span>
           <div id="models-list-container" class="space-y-2"></div>
         </div>
       </div>
 
-      <!-- Aba Setores & Perguntas com Opção de Editar Pergunta -->
+      <!-- Aba Setores & Perguntas -->
       <div id="tab-content-items" class="hidden flex-1 flex flex-col overflow-hidden">
         <div class="p-3 bg-stone-100 border-b flex items-center justify-between">
           <span class="text-xs font-bold text-cb-bordo">Modelo: <span id="config-active-model-name" class="underline"></span></span>
@@ -555,7 +624,9 @@
         <div class="p-3 border-t border-stone-200 bg-white space-y-2.5">
           <div class="flex items-center justify-between">
             <span class="text-xs font-bold text-cb-bordo uppercase">Adicionar Pergunta</span>
-            <button onclick="toggleNewCategoryInput()" class="text-[11px] text-cb-bordo font-bold hover:underline">+ Novo Setor</button>
+            <button onclick="toggleNewCategoryInput()" class="text-[11px] text-cb-bordo font-bold hover:underline">
+              + Novo Setor
+            </button>
           </div>
 
           <div id="new-cat-box" class="hidden flex gap-2 p-2 bg-stone-100 rounded-lg border">
@@ -579,27 +650,24 @@
               <input type="checkbox" id="new-item-req-photo" class="rounded text-cb-bordo focus:ring-0">
               <span>Exigir Foto</span>
             </label>
-            <button onclick="addNewItem()" class="px-4 py-2 bg-cb-bordo hover:bg-cb-bordo-dark text-white text-xs font-bold rounded-lg transition shadow-sm">+ Inserir</button>
+            <button onclick="addNewItem()" class="px-4 py-2 bg-cb-bordo hover:bg-cb-bordo-dark text-white text-xs font-bold rounded-lg transition shadow-sm">
+              + Inserir
+            </button>
           </div>
         </div>
       </div>
 
       <div class="p-3 border-t flex justify-between bg-white text-xs items-center">
-        <button onclick="restoreDefaultChecklist()" class="text-rose-600 font-semibold hover:underline">Restaurar Padrões</button>
-        <button onclick="toggleConfigModal()" class="bg-stone-900 hover:bg-black text-white font-bold px-6 py-2 rounded-lg transition">Concluir</button>
+        <button onclick="restoreDefaultChecklist()" class="text-rose-600 font-semibold hover:underline">
+          Restaurar Padrões
+        </button>
+        <button onclick="toggleConfigModal()" class="bg-stone-900 hover:bg-black text-white font-bold px-6 py-2 rounded-lg transition">
+          Concluir
+        </button>
       </div>
 
     </div>
   </div>
-
-  <!-- Barra Inferior de Ações -->
-  <footer id="audit-footer" class="fixed bottom-0 left-0 right-0 bg-white border-t border-stone-200 p-3 z-30 shadow-lg hidden">
-    <div class="max-w-xl mx-auto flex gap-2">
-      <button onclick="resetChecklist()" class="w-1/4 py-3 rounded-lg border border-stone-300 text-stone-700 text-xs font-bold hover:bg-stone-50 transition">Limpar</button>
-      <button onclick="generatePDF()" class="w-1/3 py-3 rounded-lg bg-cb-bordo hover:bg-cb-bordo-dark text-white text-xs font-bold tracking-wide transition flex items-center justify-center gap-1 border border-cb-gold/40"><span>Salvar / PDF</span></button>
-      <button onclick="shareWhatsApp()" class="flex-1 py-3 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold tracking-wide transition flex items-center justify-center gap-1"><span>WhatsApp</span></button>
-    </div>
-  </footer>
 
   <script>
     const firebaseConfig = {
@@ -1846,7 +1914,7 @@
       }).then(() => input.value = "");
     }
 
-    // --- CONFIGURAÇÃO DE CHECKLISTS COM SUPORTE A EDIÇÃO COMPLETA DE TUDO ---
+    // --- CONFIGURAÇÃO DE CHECKLISTS ---
     function toggleConfigModal() {
       const modal = document.getElementById("config-modal");
       modal.classList.toggle("hidden");
@@ -2136,7 +2204,7 @@
       updateLogos(); renderPresetUnits(); updateHistoryBadge(); setupCloudListeners();
       
       if (!currentUser) {
-        document.getElementById("login-screen").classList.add("hidden"); // Evita conflito
+        document.getElementById("login-screen").classList.remove("hidden");
         document.getElementById("modules-screen").classList.add("hidden");
         return;
       }
