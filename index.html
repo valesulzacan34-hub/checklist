@@ -153,7 +153,6 @@
           <span id="global-notification-dot" class="absolute -top-1.5 -right-1.5 px-1.5 py-0.2 bg-rose-600 text-white rounded-full text-[9px] font-black border border-white hidden">0</span>
         </button>
         
-        <!-- Dropdown Estilo Rede Social -->
         <div id="notification-dropdown" class="hidden absolute right-0 top-11 w-72 bg-white text-stone-800 rounded-xl shadow-2xl border border-stone-200 z-50 overflow-hidden">
           <div class="bg-cb-bordo text-white px-3 py-2 text-xs font-bold flex justify-between items-center">
             <span>Notificações Pendentes</span>
@@ -266,13 +265,6 @@
                 <input type="date" id="filter-date-end" onchange="renderHistoryList()" class="w-full border rounded p-2 bg-stone-50">
               </div>
             </div>
-          </div>
-
-          <div id="undo-container" class="hidden flex items-center justify-between bg-amber-50 p-2 rounded-lg border border-amber-300">
-            <span class="text-xs text-amber-900 font-medium">Relatório excluído.</span>
-            <button onclick="undoDeleteReport()" class="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded transition shadow-sm">
-              Desfazer
-            </button>
           </div>
         </div>
 
@@ -388,7 +380,6 @@
 
     <!-- MÓDULO 4: AGENDA / CALENDÁRIO COM IA E DRAG & DROP -->
     <main id="module-agenda-container" class="responsive-container space-y-4 hidden">
-      <!-- BARRA DE IA -->
       <div class="bg-gradient-to-r from-cb-bordo to-rose-900 p-4 rounded-xl shadow-lg border border-cb-gold/30 space-y-2">
         <h3 class="text-white font-bold text-xs flex items-center gap-2">🤖 Agendamento Inteligente (IA)</h3>
         <div class="flex gap-2">
@@ -428,12 +419,10 @@
         </div>
       </div>
 
-      <!-- Display do Período Atual -->
       <div class="bg-cb-bordo text-cb-gold px-4 py-2 rounded-xl text-center font-bold text-sm uppercase tracking-wider shadow-sm" id="calendar-period-title">
         Mês / Ano
       </div>
 
-      <!-- Container do Calendário Interativo -->
       <div id="calendar-grid-container" class="bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden"></div>
     </main>
   </div>
@@ -634,7 +623,7 @@
     </div>
   </div>
 
-  <!-- Modal de Configuração -->
+  <!-- Modal de Configuração de Checklists -->
   <div id="config-modal" class="fixed inset-0 bg-black/70 z-50 hidden flex items-center justify-center p-2 sm:p-4">
     <div class="bg-white w-full max-w-2xl h-[92vh] rounded-2xl flex flex-col shadow-2xl overflow-hidden border border-cb-gold/30">
       
@@ -687,7 +676,7 @@
               <option value="stars">Estrelas (1 a 5)</option>
               <option value="text">Texto Aberto</option>
             </select>
-            <input type="text" id="new-item-text" placeholder="Título..." class="text-xs border rounded-lg p-2 bg-white">
+            <input type="text" id="new-item-text" placeholder="Título da Pergunta..." class="text-xs border rounded-lg p-2 bg-white">
           </div>
 
           <div class="flex items-center justify-between pt-1">
@@ -695,7 +684,7 @@
               <input type="checkbox" id="new-item-req-photo" class="rounded text-cb-bordo focus:ring-0">
               <span>Exigir Foto</span>
             </label>
-            <button onclick="addNewItem()" class="px-4 py-2 bg-cb-bordo hover:bg-cb-bordo-dark text-white text-xs font-bold rounded-lg transition shadow-sm">+ Inserir</button>
+            <button onclick="addNewItem()" class="px-4 py-2 bg-cb-bordo hover:bg-cb-bordo-dark text-white text-xs font-bold rounded-lg transition shadow-sm">+ Inserir Pergunta</button>
           </div>
         </div>
       </div>
@@ -705,6 +694,41 @@
         <button onclick="toggleConfigModal()" class="bg-stone-900 hover:bg-black text-white font-bold px-6 py-2 rounded-lg transition">Concluir</button>
       </div>
 
+    </div>
+  </div>
+
+  <!-- Modal de Edição de Pergunta Específica -->
+  <div id="edit-question-modal" class="fixed inset-0 bg-black/60 z-[60] hidden flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-md rounded-2xl p-5 space-y-4 shadow-2xl border text-xs">
+      <div class="flex justify-between items-center border-b pb-2">
+        <h3 class="font-bold text-cb-bordo text-sm uppercase">Editar Pergunta</h3>
+        <button onclick="closeEditQuestionModal()" class="font-bold text-stone-400 hover:text-stone-700 text-base">✕</button>
+      </div>
+      <input type="hidden" id="edit-q-sec-idx">
+      <input type="hidden" id="edit-q-item-idx">
+      <div class="space-y-3">
+        <div>
+          <label class="block font-bold text-stone-600 mb-1">Título da Pergunta:</label>
+          <input type="text" id="edit-q-title" class="w-full border rounded p-2 bg-stone-50 font-semibold">
+        </div>
+        <div>
+          <label class="block font-bold text-stone-600 mb-1">Tipo de Resposta:</label>
+          <select id="edit-q-type" class="w-full border rounded p-2 bg-stone-50 font-semibold">
+            <option value="boolean">Sim / Não / N/A</option>
+            <option value="maintenance">Ordem de Manutenção</option>
+            <option value="stars">Estrelas (1 a 5)</option>
+            <option value="text">Texto Aberto</option>
+          </select>
+        </div>
+        <div class="flex items-center gap-2 pt-2">
+          <input type="checkbox" id="edit-q-photo" class="rounded text-cb-bordo">
+          <label for="edit-q-photo" class="font-bold text-stone-700">Exigir foto obrigatoriamente</label>
+        </div>
+        <div class="flex justify-end gap-2 pt-3 border-t">
+          <button onclick="closeEditQuestionModal()" class="px-4 py-2 border rounded font-bold text-stone-600">Cancelar</button>
+          <button onclick="saveEditedQuestion()" class="px-5 py-2 bg-cb-bordo text-white font-bold rounded">Salvar Alterações</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -740,7 +764,6 @@
     }
 
     const DEFAULT_EMBEDDED_LOGO = "./logo.png";
-    let currentLogo = DEFAULT_EMBEDDED_LOGO;
 
     const defaultUsers = [
       { username: "alcides", pass: "12345678", name: "Alcides Ramos", role: "admin", units: [] }
@@ -892,8 +915,6 @@
     let allChecklists = JSON.parse(localStorage.getItem("CB_LOCAL_CHECKLISTS")) || defaultTemplates;
     let activeChecklistId = localStorage.getItem("CB_LOCAL_ACTIVE_ID") || allChecklists[0].id;
     let savedReports = JSON.parse(localStorage.getItem("CB_LOCAL_REPORTS")) || [];
-    let lastDeletedReport = null;
-    let activeChatActionId = null;
     
     let attachedPhotos = {};
     let actionPlans = {};
@@ -908,8 +929,6 @@
       if (ind) ind.innerText = status;
       if (time) time.innerText = text;
     }
-
-    let isInitialConfigLoad = true;
 
     function setupCloudListeners() {
       if (!isFirebaseReady) {
@@ -947,60 +966,6 @@
         });
         localStorage.setItem("CB_LOCAL_REPORTS", JSON.stringify(savedReports));
         updateHistoryBadge();
-        
-        const historyView = document.getElementById("history-view");
-        const actionsView = document.getElementById("module-actions-container");
-        const agendaView = document.getElementById("module-agenda-container");
-
-        if (historyView && !historyView.classList.contains("hidden")) renderHistoryList();
-        if (actionsView && !actionsView.classList.contains("hidden")) renderCentralizedActions();
-        if (agendaView && !agendaView.classList.contains("hidden")) renderAgendaCalendar();
-        
-        setupGlobalChatListeners();
-      });
-    }
-
-    function playAudioBeep() {
-      try {
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = audioCtx.createOscillator();
-        const gainNode = audioCtx.createGain();
-        osc.type = "sine";
-        osc.frequency.setValueAtTime(880, audioCtx.currentTime);
-        gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
-        osc.connect(gainNode);
-        gainNode.connect(audioCtx.destination);
-        osc.start();
-        osc.stop(audioCtx.currentTime + 0.15);
-      } catch (e) {
-        console.log("Áudio restrito pelo navegador");
-      }
-    }
-
-    let activeChatListeners = {};
-    function setupGlobalChatListeners() {
-      if (!isFirebaseReady) return;
-      let allowedUnits = getAllowedUnits();
-
-      savedReports.forEach(rep => {
-        if (!allowedUnits.includes(rep.unit)) return;
-        rep.nonConformities?.forEach((nc, i) => {
-          let actId = `${rep.id}_nc_${i}`;
-          if (!activeChatListeners[actId]) {
-            activeChatListeners[actId] = db.collection("chats").doc(actId).collection("messages").orderBy("createdAt", "desc").limit(1).onSnapshot(snap => {
-              snap.docChanges().forEach(change => {
-                if (change.type === "added") {
-                  let m = change.doc.data();
-                  if (m.sender !== currentUser?.name && !m.seen) {
-                    playAudioBeep();
-                    updateNotificationBadgeCount();
-                    document.getElementById(`chat-dot-${actId}`)?.classList.remove("hidden");
-                  }
-                }
-              });
-            });
-          }
-        });
       });
     }
 
@@ -1018,19 +983,6 @@
         customPriority: actionCustomPriority,
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       }).catch(err => console.error(err));
-    }
-
-    function saveReportToCloud(reportData) {
-      if (!isFirebaseReady) {
-        savedReports.unshift(reportData);
-        localStorage.setItem("CB_LOCAL_REPORTS", JSON.stringify(savedReports));
-        updateHistoryBadge();
-        updateNotificationBadgeCount();
-        return;
-      }
-
-      reportData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-      db.collection("reports").add(reportData).catch(err => console.error(err));
     }
 
     function toggleSidebar() {
@@ -1124,8 +1076,6 @@
           listContainer.appendChild(item);
         });
       }
-      renderAdminStatusList();
-      renderAdminPrioritiesList();
     }
 
     function adminAddNewUnit() {
@@ -1154,70 +1104,6 @@
         localStorage.setItem("CB_LOCAL_UNITS", JSON.stringify(presetUnits));
         syncConfigToCloud(); renderPresetUnits(); renderUserUnitsCheckboxes();
       }
-    }
-
-    function adminAddNewStatus() {
-      const input = document.getElementById("admin-new-status-input");
-      const val = input.value.trim();
-      const color = document.getElementById("admin-new-status-color").value;
-      if (!val) return alert("Digite o nome do status.");
-      if (actionStatuses.some(s => s.name.toLowerCase() === val.toLowerCase())) return alert("Status já cadastrado.");
-      actionStatuses.push({ name: val, color });
-      localStorage.setItem("CB_LOCAL_STATUSES", JSON.stringify(actionStatuses));
-      syncConfigToCloud(); input.value = ""; renderAdminStatusList();
-    }
-
-    function adminDeleteStatus(idx) {
-      if (actionStatuses.length <= 1) return alert("Mantenha ao menos um status.");
-      if (confirm("Excluir este status?")) {
-        actionStatuses.splice(idx, 1);
-        localStorage.setItem("CB_LOCAL_STATUSES", JSON.stringify(actionStatuses));
-        syncConfigToCloud(); renderAdminStatusList();
-      }
-    }
-
-    function renderAdminStatusList() {
-      const container = document.getElementById("admin-status-list");
-      if (!container) return;
-      container.innerHTML = "";
-      actionStatuses.forEach((st, idx) => {
-        const item = document.createElement("div");
-        item.className = "flex justify-between items-center p-2 bg-stone-50 rounded border text-xs";
-        item.innerHTML = `<span class="font-bold px-2 py-0.5 rounded border ${st.color}">${st.name}</span>${st.name !== 'Concluído' && st.name !== 'Pendente' ? `<button onclick="adminDeleteStatus(${idx})" class="text-rose-600 font-bold">Excluir</button>` : '<span class="text-[10px] text-stone-400">Padrão</span>'}`;
-        container.appendChild(item);
-      });
-    }
-
-    function adminAddNewPriority() {
-      const input = document.getElementById("admin-new-priority-input");
-      const val = input.value.trim();
-      const style = document.getElementById("admin-new-priority-style").value;
-      if (!val) return alert("Digite o nome da tarja.");
-      if (actionPriorities.some(p => p.name.toLowerCase() === val.toLowerCase())) return alert("Tarja já cadastrada.");
-      actionPriorities.push({ name: val, style });
-      localStorage.setItem("CB_LOCAL_PRIORITIES", JSON.stringify(actionPriorities));
-      syncConfigToCloud(); input.value = ""; renderAdminPrioritiesList();
-    }
-
-    function adminDeletePriority(idx) {
-      if (actionPriorities.length <= 1) return alert("Mantenha ao menos uma tarja.");
-      if (confirm("Excluir esta tarja?")) {
-        actionPriorities.splice(idx, 1);
-        localStorage.setItem("CB_LOCAL_PRIORITIES", JSON.stringify(actionPriorities));
-        syncConfigToCloud(); renderAdminPrioritiesList();
-      }
-    }
-
-    function renderAdminPrioritiesList() {
-      const container = document.getElementById("admin-priorities-list");
-      if (!container) return;
-      container.innerHTML = "";
-      actionPriorities.forEach((pr, idx) => {
-        const item = document.createElement("div");
-        item.className = "flex justify-between items-center p-2 bg-stone-50 rounded border text-xs";
-        item.innerHTML = `<span class="font-bold px-2 py-0.5 rounded ${pr.style}">${pr.name}</span><button onclick="adminDeletePriority(${idx})" class="text-rose-600 font-bold">Excluir</button>`;
-        container.appendChild(item);
-      });
     }
 
     function handleLogin() {
@@ -1278,10 +1164,7 @@
     }
 
     function selectModule(mod) {
-      if (mod === 'users') {
-        toggleUsersModal();
-        return;
-      }
+      if (mod === 'users') { toggleUsersModal(); return; }
 
       document.getElementById("modules-screen").classList.add("hidden");
       const checklistsMod = document.getElementById("module-checklists-container");
@@ -1331,12 +1214,6 @@
         if (currentUser.role === 'operador') return alert("Acesso não autorizado para operadores.");
         agendaMod.classList.remove("hidden");
         badgeMod.innerText = "Agenda";
-        
-        if (currentUser.role === 'gerente' && currentUser.units && currentUser.units.length > 0) {
-          document.getElementById("filter-agenda-store").value = currentUser.units[0];
-          document.getElementById("filter-agenda-store").disabled = true;
-        }
-
         renderAgendaCalendar();
       }
     }
@@ -1396,7 +1273,6 @@
     function updateHistoryBadge() {
       const badge = document.getElementById("history-badge-count");
       if (badge) badge.innerText = savedReports.length;
-      updateNotificationBadgeCount();
     }
 
     function renderHistoryList() {
@@ -1469,7 +1345,6 @@
         localStorage.setItem("CB_LOCAL_REPORTS", JSON.stringify(savedReports));
         if (isFirebaseReady && docId) db.collection("reports").doc(docId).delete();
         renderHistoryList();
-        updateNotificationBadgeCount();
       }
     }
 
@@ -1490,941 +1365,6 @@
         btnCompleted.className = "flex-1 py-2 border-b-2 border-cb-bordo text-cb-bordo transition";
       }
       renderCentralizedActions();
-    }
-
-    function updateActionStatus(actionId, newStatus) {
-      actionCustomStatus[actionId] = newStatus;
-      localStorage.setItem("CB_LOCAL_CUSTOM_STATUS", JSON.stringify(actionCustomStatus));
-      syncConfigToCloud();
-      renderCentralizedActions();
-      updateNotificationBadgeCount();
-    }
-
-    function updateActionPriority(actionId, newPriority) {
-      actionCustomPriority[actionId] = newPriority;
-      localStorage.setItem("CB_LOCAL_CUSTOM_PRIORITY", JSON.stringify(actionCustomPriority));
-      syncConfigToCloud();
-      renderCentralizedActions();
-    }
-
-    function updateNotificationBadgeCount() {
-      let unreadCount = 0;
-      let allowedUnits = getAllowedUnits();
-
-      savedReports.forEach(rep => {
-        if (!allowedUnits.includes(rep.unit)) return;
-        rep.nonConformities?.forEach((nc, i) => {
-          let actId = `${rep.id}_nc_${i}`;
-          let status = actionCustomStatus[actId] || 'Pendente';
-          if (!status.toLowerCase().includes('concluído')) {
-            unreadCount++;
-          }
-        });
-      });
-
-      const badge = document.getElementById("global-notification-dot");
-      if (badge) {
-        if (unreadCount > 0) {
-          badge.innerText = unreadCount;
-          badge.classList.remove("hidden");
-        } else {
-          badge.classList.add("hidden");
-        }
-      }
-    }
-
-    function toggleNotificationDropdown(event) {
-      event.stopPropagation();
-      const dropdown = document.getElementById("notification-dropdown");
-      const listContainer = document.getElementById("notification-list");
-      const countBadge = document.getElementById("notif-count-badge");
-      
-      dropdown.classList.toggle("hidden");
-      if (!dropdown.classList.contains("hidden")) {
-        listContainer.innerHTML = "";
-        let unreadList = [];
-        let allowedUnits = getAllowedUnits();
-
-        savedReports.forEach(rep => {
-          if (!allowedUnits.includes(rep.unit)) return;
-          rep.nonConformities?.forEach((nc, i) => {
-            let actId = `${rep.id}_nc_${i}`;
-            let status = actionCustomStatus[actId] || 'Pendente';
-            if (!status.toLowerCase().includes('concluído')) {
-              unreadList.push({ unit: rep.unit, title: nc.title, date: nc.date || 'Indefinido', chatId: actId, reportId: rep.id, type: 'nc', index: i });
-            }
-          });
-        });
-
-        countBadge.innerText = unreadList.length;
-
-        if (unreadList.length === 0) {
-          listContainer.innerHTML = `<div class="p-4 text-center text-stone-400 text-xs">Nenhum plano pendente.</div>`;
-          return;
-        }
-
-        unreadList.forEach(item => {
-          const div = document.createElement("div");
-          div.className = "p-2.5 hover:bg-stone-50 cursor-pointer transition space-y-0.5";
-          div.onclick = () => {
-            dropdown.classList.add("hidden");
-            selectModule('actions');
-            openChatModal(item.chatId, item.reportId, item.type, item.index);
-          };
-          div.innerHTML = `
-            <div class="font-bold text-cb-bordo uppercase text-[11px]">${item.unit}</div>
-            <div class="text-stone-700 truncate">${item.title}</div>
-            <div class="text-[10px] text-stone-400">📅 Prazo: ${item.date}</div>
-          `;
-          listContainer.appendChild(div);
-        });
-      }
-    }
-
-    window.onclick = function(event) {
-      if (!event.target.closest('#notification-dropdown') && !event.target.closest('button[onclick*="toggleNotificationDropdown"]')) {
-        document.getElementById("notification-dropdown")?.classList.add("hidden");
-      }
-    };
-
-    function renderCentralizedActions() {
-      const container = document.getElementById("centralized-actions-list");
-      container.innerHTML = "";
-      const startFilter = document.getElementById("action-date-start").value;
-      const endFilter = document.getElementById("action-date-end").value;
-      const storeFilter = document.getElementById("filter-action-store").value;
-      const statusFilter = document.getElementById("filter-status").value;
-      const priorityFilter = document.getElementById("filter-priority").value;
-      const actionTypeFilter = document.getElementById("filter-action-type").value;
-      const allowedUnits = getAllowedUnits();
-
-      const statusSelect = document.getElementById("filter-status");
-      if (statusSelect && statusSelect.options.length <= 1) {
-        actionStatuses.forEach(st => {
-          let opt = document.createElement("option");
-          opt.value = st.name;
-          opt.innerText = st.name;
-          statusSelect.appendChild(opt);
-        });
-        statusSelect.value = statusFilter;
-      }
-
-      const prioritySelect = document.getElementById("filter-priority");
-      if (prioritySelect && prioritySelect.options.length <= 1) {
-        actionPriorities.forEach(pr => {
-          let opt = document.createElement("option");
-          opt.value = pr.name;
-          opt.innerText = pr.name;
-          prioritySelect.appendChild(opt);
-        });
-        prioritySelect.value = priorityFilter;
-      }
-
-      let allActions = [];
-      let counts = { pending: 0, progress: 0, completed: 0 };
-
-      savedReports.forEach(rep => {
-        if (!allowedUnits.includes(rep.unit)) return;
-        
-        let storeMatchForCounters = !storeFilter || rep.unit === storeFilter;
-
-        rep.nonConformities?.forEach((nc, i) => {
-          let dueDate = nc.date || '';
-          let matchDate = true;
-          if (dueDate && dueDate !== 'Não definida') {
-            let parts = dueDate.split('/');
-            let iso = `${parts[2]}-${parts[1]}-${parts[0]}`;
-            if (startFilter && iso < startFilter) matchDate = false;
-            if (endFilter && iso > endFilter) matchDate = false;
-          }
-          let actId = `${rep.id}_nc_${i}`;
-          let statusObj = actionCustomStatus[actId] || 'Pendente';
-          let priorityObj = actionCustomPriority[actId] || 'Urgente';
-
-          if (storeMatchForCounters) {
-            let sLower = statusObj.toLowerCase();
-            if (sLower.includes('concluído')) counts.completed++;
-            else if (sLower.includes('andamento')) counts.progress++;
-            else counts.pending++;
-          }
-
-          let storeMatchCard = !storeFilter || rep.unit === storeFilter;
-          if (matchDate && storeMatchCard) {
-            allActions.push({ 
-              unit: rep.unit, 
-              title: nc.title, 
-              action: nc.action || 'Não descrita', 
-              date: dueDate || 'Indefinida', 
-              rawDate: dueDate, 
-              chatId: actId, 
-              status: statusObj,
-              priority: priorityObj,
-              fullReportId: rep.id,
-              type: 'nc',
-              index: i
-            });
-          }
-        });
-
-        rep.maintenanceOrders?.forEach((om, i) => {
-          let dueDate = om.date || '';
-          let matchDate = true;
-          if (dueDate && dueDate !== 'Não definida') {
-            let parts = dueDate.split('/');
-            let iso = `${parts[2]}-${parts[1]}-${parts[0]}`;
-            if (startFilter && iso < startFilter) matchDate = false;
-            if (endFilter && iso > endFilter) matchDate = false;
-          }
-          let actId = `${rep.id}_om_${i}`;
-          let statusObj = actionCustomStatus[actId] || 'Pendente';
-          let priorityObj = actionCustomPriority[actId] || 'Urgente';
-
-          if (storeMatchForCounters) {
-            let sLower = statusObj.toLowerCase();
-            if (sLower.includes('concluído')) counts.completed++;
-            else if (sLower.includes('andamento')) counts.progress++;
-            else counts.pending++;
-          }
-
-          let storeMatchCard = !storeFilter || rep.unit === storeFilter;
-          if (matchDate && storeMatchCard) {
-            allActions.push({ 
-              unit: rep.unit, 
-              title: `Manutenção: ${om.equipment}`, 
-              action: om.action || 'Não descrito', 
-              date: dueDate || 'Indefinida', 
-              rawDate: dueDate, 
-              chatId: actId, 
-              status: statusObj,
-              priority: priorityObj,
-              fullReportId: rep.id,
-              type: 'om',
-              index: i
-            });
-          }
-        });
-      });
-
-      document.getElementById("counter-pending").innerText = counts.pending;
-      document.getElementById("counter-progress").innerText = counts.progress;
-      document.getElementById("counter-completed").innerText = counts.completed;
-
-      let filteredActions = allActions.filter(act => {
-        let isDone = act.status.toLowerCase().includes('concluído');
-        let tabMatch = (currentActionsTab === 'completed') ? isDone : !isDone;
-        let statusMatch = !statusFilter || act.status === statusFilter;
-        let priorityMatch = !priorityFilter || act.priority === priorityFilter;
-        let typeMatch = !actionTypeFilter || act.type === actionTypeFilter;
-        return tabMatch && statusMatch && priorityMatch && typeMatch;
-      });
-
-      filteredActions.sort((a, b) => {
-        let dateA = a.rawDate && a.rawDate !== 'Indefinida' && a.rawDate !== 'Não definida' ? new Date(a.rawDate.split('/').reverse().join('-')) : new Date('2099-12-31');
-        let dateB = b.rawDate && b.rawDate !== 'Indefinida' && b.rawDate !== 'Não definida' ? new Date(b.rawDate.split('/').reverse().join('-')) : new Date('2099-12-31');
-        return dateA - dateB;
-      });
-
-      if (filteredActions.length === 0) {
-        container.innerHTML = `<div class="p-8 text-center bg-white rounded-xl border text-stone-400 text-xs">Nenhum plano de ação encontrado nesta aba/filtro.</div>`;
-        return;
-      }
-
-      filteredActions.forEach(act => {
-        let atrasoHtml = "";
-        let isDone = act.status.toLowerCase().includes('concluído');
-        if (!isDone && act.rawDate && act.rawDate !== 'Indefinida' && act.rawDate !== 'Não definida') {
-          let parts = act.rawDate.split('/');
-          let dueIso = `${parts[2]}-${parts[1]}-${parts[0]}`;
-          let todayIso = new Date().toISOString().split('T')[0];
-          if (dueIso < todayIso) {
-            let diffTime = Math.abs(new Date(todayIso) - new Date(dueIso));
-            let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            atrasoHtml = `<span class="bg-rose-100 text-rose-800 font-bold px-1.5 py-0.5 rounded text-[10px]">⚠️ ${diffDays}d atraso</span>`;
-          }
-        }
-
-        let statusOptions = actionStatuses.map(st => `<option value="${st.name}" ${act.status === st.name ? 'selected' : ''}>${st.name}</option>`).join("");
-        let currentStatusObj = actionStatuses.find(s => s.name === act.status) || { color: 'bg-white border-stone-200' };
-
-        let priorityOptions = actionPriorities.map(pr => `<option value="${pr.name}" ${act.priority === pr.name ? 'selected' : ''}>${pr.name}</option>`).join("");
-        let currentPriorityObj = actionPriorities.find(p => p.name === act.priority) || { style: 'bg-stone-200 text-stone-800 font-semibold' };
-
-        const card = document.createElement("div");
-        card.className = `p-4 rounded-xl border shadow-sm flex flex-col gap-2.5 text-xs ${currentStatusObj.color}`;
-        card.innerHTML = `
-          <div class="flex items-center justify-between gap-2 flex-wrap">
-            <div class="flex items-center gap-2 flex-wrap">
-              <span class="font-bold text-sm text-cb-bordo uppercase">${act.unit}</span>
-              <span class="text-stone-500 font-medium">📅 ${act.date}</span>
-              <select onchange="updateActionPriority('${act.chatId}', this.value)" class="border rounded px-2 py-0.5 text-[10px] ${currentPriorityObj.style} focus:outline-none cursor-pointer">
-                ${priorityOptions}
-              </select>
-              ${atrasoHtml}
-            </div>
-            <div class="flex items-center gap-2">
-              <select onchange="updateActionStatus('${act.chatId}', this.value)" class="border rounded px-2.5 py-1 text-xs font-bold bg-white shadow-sm cursor-pointer">
-                ${statusOptions}
-              </select>
-              <button id="btn-chat-${act.chatId}" onclick="openChatModal('${act.chatId}', '${act.fullReportId}', '${act.type}', ${act.index})" class="relative px-3 py-1 bg-white text-cb-bordo font-bold rounded shadow-sm border border-stone-200 hover:bg-stone-50 transition">
-                💬 Chat & Detalhes
-                <span id="chat-dot-${act.chatId}" class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-white hidden"></span>
-              </button>
-            </div>
-          </div>
-          <div class="text-stone-800 text-sm leading-relaxed pt-1 border-t border-stone-200/60">
-            <strong>${act.title}</strong> — <span class="text-stone-700">${act.action}</span>
-          </div>`;
-        container.appendChild(card);
-        
-        if (isFirebaseReady) {
-          db.collection("chats").doc(act.chatId).collection("messages").orderBy("createdAt", "desc").limit(1).get().then(snap => {
-            if (!snap.empty) {
-              let lastMsg = snap.docs[0].data();
-              if (lastMsg.sender !== currentUser.name && !lastMsg.seen) {
-                document.getElementById(`chat-dot-${act.chatId}`)?.classList.remove("hidden");
-                updateNotificationBadgeCount();
-              }
-            }
-          });
-        }
-      });
-    }
-
-    // 📅 Lógica do Calendário Interativo Avançado (Drag & Drop e Redimensionamento)
-    function changeCalendarView(view) {
-      currentCalendarView = view;
-      document.getElementById("btn-view-month").className = `px-3 py-1.5 font-bold rounded transition ${view === 'month' ? 'bg-cb-bordo text-white' : 'bg-stone-200 text-stone-700'}`;
-      document.getElementById("btn-view-week").className = `px-3 py-1.5 font-bold rounded transition ${view === 'week' ? 'bg-cb-bordo text-white' : 'bg-stone-200 text-stone-700'}`;
-      document.getElementById("btn-view-day").className = `px-3 py-1.5 font-bold rounded transition ${view === 'day' ? 'bg-cb-bordo text-white' : 'bg-stone-200 text-stone-700'}`;
-      renderAgendaCalendar();
-    }
-
-    function navigateCalendar(dir) {
-      if (dir === 0) {
-        currentCalendarDate = new Date();
-      } else {
-        if (currentCalendarView === 'month') {
-          currentCalendarDate.setMonth(currentCalendarDate.getMonth() + dir);
-        } else if (currentCalendarView === 'week') {
-          currentCalendarDate.setDate(currentCalendarDate.getDate() + (dir * 7));
-        } else if (currentCalendarView === 'day') {
-          currentCalendarDate.setDate(currentCalendarDate.getDate() + dir);
-        }
-      }
-      renderAgendaCalendar();
-    }
-
-    function renderAgendaCalendar() {
-      const gridContainer = document.getElementById("calendar-grid-container");
-      const titleEl = document.getElementById("calendar-period-title");
-      if (!gridContainer) return;
-      gridContainer.innerHTML = "";
-
-      let storeSelection = document.getElementById("filter-agenda-store").value;
-      if (currentUser.role === 'gerente' && currentUser.units && currentUser.units.length > 0) {
-        storeSelection = currentUser.units[0];
-      }
-
-      let allEvents = [...calendarEvents];
-
-      savedReports.forEach(rep => {
-        if (currentUser.role === 'gerente' && rep.unit !== storeSelection) return;
-        rep.nonConformities?.forEach((nc, i) => {
-          if (nc.date && nc.date !== 'Não definida' && nc.date !== 'Indefinida') {
-            allEvents.push({
-              id: `rep_nc_${rep.id}_${i}`,
-              title: `[Ação] ${nc.title}`,
-              date: nc.date.split('/').reverse().join('-'),
-              time: '09:00',
-              timeEnd: '10:00',
-              store: rep.unit,
-              scope: 'INDIVIDUAL',
-              desc: nc.action || 'Não descrita',
-              type: 'action'
-            });
-          }
-        });
-        rep.maintenanceOrders?.forEach((om, i) => {
-          if (om.date && om.date !== 'Não definida' && om.date !== 'Indefinida') {
-            allEvents.push({
-              id: `rep_om_${rep.id}_${i}`,
-              title: `[Manutenção] ${om.equipment}`,
-              date: om.date.split('/').reverse().join('-'),
-              time: '10:00',
-              timeEnd: '11:00',
-              store: rep.unit,
-              scope: 'INDIVIDUAL',
-              desc: om.action || om.defect || 'Sem descrição',
-              type: 'maintenance'
-            });
-          }
-        });
-      });
-
-      let filteredEvents = allEvents.filter(ev => {
-        if (storeSelection === 'GERAL') return ev.scope === 'GERAL';
-        return ev.scope === 'GERAL' || ev.store === storeSelection;
-      });
-
-      let year = currentCalendarDate.getFullYear();
-      let month = currentCalendarDate.getMonth();
-      const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
-
-      if (currentCalendarView === 'month') {
-        titleEl.innerText = `${monthNames[month]} de ${year}`;
-        let firstDayIndex = new Date(year, month, 1).getDay();
-        let totalDays = new Date(year, month + 1, 0).getDate();
-
-        let table = document.createElement("div");
-        table.className = "grid grid-cols-7 text-xs text-center border-stone-200";
-
-        ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].forEach(d => {
-          let cell = document.createElement("div");
-          cell.className = "bg-cb-bordo text-cb-gold font-bold p-2 border-b";
-          cell.innerText = d;
-          table.appendChild(cell);
-        });
-
-        for (let i = 0; i < firstDayIndex; i++) {
-          let emptyCell = document.createElement("div");
-          emptyCell.className = "bg-stone-50/50 p-2 border-b border-r min-h-[90px]";
-          table.appendChild(emptyCell);
-        }
-
-        for (let d = 1; d <= totalDays; d++) {
-          let dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-          let dayEvents = filteredEvents.filter(e => e.date === dateStr);
-
-          let cell = document.createElement("div");
-          cell.className = "bg-white p-1.5 border-b border-r min-h-[90px] flex flex-col justify-start text-left overflow-hidden cursor-pointer hover:bg-stone-50 relative";
-          cell.setAttribute('data-date', dateStr);
-          
-          // Eventos de Drag & Drop sobre o dia
-          cell.ondragover = (e) => e.preventDefault();
-          cell.ondrop = (e) => {
-            e.preventDefault();
-            let evId = e.dataTransfer.getData("text/plain");
-            moveEventToDate(evId, dateStr);
-          };
-
-          cell.onclick = (e) => {
-            if (e.target.tagName !== 'DIV' && e.target.tagName !== 'SPAN') return;
-            openEventModalForDate(dateStr);
-          };
-          
-          let todayStr = new Date().toISOString().split('T')[0];
-          let isToday = dateStr === todayStr;
-
-          let eventsHtml = dayEvents.map(ev => {
-            let isAuto = ev.type === 'action' || ev.type === 'maintenance';
-            let bgClass = isAuto ? 'bg-amber-100 text-amber-900 border-amber-300' : (ev.scope === 'GERAL' ? 'bg-purple-100 text-purple-900 border-purple-300' : 'bg-sky-100 text-sky-900 border-sky-300');
-            return `
-              <div draggable="true" 
-                   ondragstart="event.dataTransfer.setData('text/plain', '${ev.id}')"
-                   onclick="event.stopPropagation(); openEventDetail('${ev.id}')" 
-                   class="event-card px-1.5 py-0.5 rounded border text-[10px] font-semibold truncate cursor-pointer mb-0.5 ${bgClass} relative group" 
-                   title="${ev.title}">
-                • ${ev.time ? ev.time + ' ' : ''}${ev.title}
-                <div class="resize-handle opacity-0 group-hover:opacity-100 bg-black/20" onmousedown="initResize(event, '${ev.id}')" title="Redimensionar horário"></div>
-              </div>`;
-          }).join("");
-
-          cell.innerHTML = `
-            <div class="font-bold text-stone-700 mb-1 flex justify-between items-center pointer-events-none">
-              <span class="${isToday ? 'bg-cb-bordo text-cb-gold px-1.5 py-0.5 rounded-full' : ''}">${d}</span>
-            </div>
-            <div class="flex-1 overflow-y-auto space-y-0.5 max-h-[70px]">${eventsHtml}</div>`;
-          table.appendChild(cell);
-        }
-        gridContainer.appendChild(table);
-
-      } else if (currentCalendarView === 'week') {
-        let currDate = new Date(currentCalendarDate);
-        let firstDayOfWeek = new Date(currDate.setDate(currDate.getDate() - currDate.getDay()));
-        let lastDayOfWeek = new Date(firstDayOfWeek);
-        lastDayOfWeek.setDate(lastDayOfWeek.getDate() + 6);
-
-        titleEl.innerText = `Semana: ${firstDayOfWeek.toLocaleDateString('pt-BR')} a ${lastDayOfWeek.toLocaleDateString('pt-BR')}`;
-
-        let table = document.createElement("div");
-        table.className = "divide-y text-xs";
-
-        for (let i = 0; i < 7; i++) {
-          let loopDate = new Date(firstDayOfWeek);
-          loopDate.setDate(loopDate.getDate() + i);
-          let dateStr = loopDate.toISOString().split('T')[0];
-          let dayEvents = filteredEvents.filter(e => e.date === dateStr);
-
-          let row = document.createElement("div");
-          row.className = "p-3 flex flex-col sm:flex-row gap-2 justify-between items-start sm:items-center bg-white hover:bg-stone-50 transition cursor-pointer";
-          row.ondragover = (e) => e.preventDefault();
-          row.ondrop = (e) => {
-            e.preventDefault();
-            let evId = e.dataTransfer.getData("text/plain");
-            moveEventToDate(evId, dateStr);
-          };
-          row.onclick = () => openEventModalForDate(dateStr);
-          
-          let eventsHtml = dayEvents.map(ev => `
-            <span draggable="true" 
-                  ondragstart="event.dataTransfer.setData('text/plain', '${ev.id}')"
-                  onclick="event.stopPropagation(); openEventDetail('${ev.id}')" 
-                  class="event-card px-2.5 py-1 bg-amber-100 text-amber-900 border rounded font-semibold text-[11px] cursor-pointer hover:bg-amber-200">
-              ${ev.time ? ev.time + ' - ' : ''}${ev.title}
-            </span>`).join(" ");
-
-          row.innerHTML = `
-            <div class="font-bold text-cb-bordo w-36 pointer-events-none">${loopDate.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit' })}</div>
-            <div class="flex-1 flex gap-2 flex-wrap items-center">${eventsHtml || '<span class="text-stone-400 italic">Nenhum evento neste dia</span>'}</div>`;
-          table.appendChild(row);
-        }
-        gridContainer.appendChild(table);
-
-      } else if (currentCalendarView === 'day') {
-        let dateStr = currentCalendarDate.toISOString().split('T')[0];
-        titleEl.innerText = `Dia: ${currentCalendarDate.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}`;
-
-        let dayEvents = filteredEvents.filter(e => e.date === dateStr);
-        let listDiv = document.createElement("div");
-        listDiv.className = "p-4 space-y-3 text-xs";
-
-        if (dayEvents.length === 0) {
-          listDiv.innerHTML = `<div class="text-center text-stone-400 py-6">Nenhum compromisso ou evento agendado para hoje. <button onclick="openEventModalForDate('${dateStr}')" class="text-cb-bordo font-bold underline block mx-auto mt-1">+ Criar Evento</button></div>`;
-        } else {
-          dayEvents.forEach(ev => {
-            let item = document.createElement("div");
-            item.className = "p-3 bg-stone-50 border rounded-xl flex justify-between items-center";
-            item.innerHTML = `
-              <div class="space-y-1">
-                <span class="font-bold text-sm text-cb-bordo block">${ev.time ? '⏰ ' + ev.time + ' — ' : ''}${ev.title}</span>
-                <span class="text-stone-600">${ev.desc}</span>
-                <span class="text-[10px] text-stone-400 block">Loja: ${ev.store}</span>
-              </div>
-              <button onclick="openEventDetail('${ev.id}')" class="px-3 py-1.5 bg-cb-bordo text-white font-bold rounded">Detalhes / Editar</button>`;
-            listDiv.appendChild(item);
-          });
-        }
-        gridContainer.appendChild(listDiv);
-      }
-    }
-
-    // 🖱️ Dinâmica de Arrastar entre Dias e Redimensionar Horário
-    function moveEventToDate(eventId, newDate) {
-      let ev = calendarEvents.find(e => e.id === eventId);
-      if (!ev) return;
-      if (ev.scope === 'GERAL' && currentUser.role !== 'admin') {
-        return alert("Apenas administradores podem alterar eventos em comum.");
-      }
-      if (currentUser.role === 'gerente' && ev.store !== currentUser.units?.[0]) {
-        return alert("Você só pode mover eventos da sua própria unidade.");
-      }
-
-      ev.date = newDate;
-      ev.displayDate = newDate.split('-').reverse().join('/');
-      localStorage.setItem("CB_LOCAL_CALENDAR_EVENTS", JSON.stringify(calendarEvents));
-      syncConfigToCloud();
-      renderAgendaCalendar();
-    }
-
-    function initResize(e, eventId) {
-      e.stopPropagation();
-      e.preventDefault();
-      let ev = calendarEvents.find(e => e.id === eventId);
-      if (!ev) return;
-
-      let startY = e.clientY;
-      function onMouseMove(moveEvent) {
-        let diff = moveEvent.clientY - startY;
-        if (Math.abs(diff) > 25) { // A cada 25px de arraste vertical, altera 30 min no horário fim
-          let [h, m] = (ev.timeEnd || '10:00').split(':').map(Number);
-          m += diff > 0 ? 30 : -30;
-          if (m >= 60) { h += 1; m = 0; }
-          if (m < 0) { h -= 1; m = 30; }
-          ev.timeEnd = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-          startY = moveEvent.clientY;
-          localStorage.setItem("CB_LOCAL_CALENDAR_EVENTS", JSON.stringify(calendarEvents));
-          syncConfigToCloud();
-          renderAgendaCalendar();
-        }
-      }
-
-      function onMouseUp() {
-        window.removeEventListener('mousemove', onMouseMove);
-        window.removeEventListener('mouseup', onMouseUp);
-      }
-
-      window.addEventListener('mousemove', onMouseMove);
-      window.addEventListener('mouseup', onMouseUp);
-    }
-
-    function processarAgendaIA() {
-      const texto = document.getElementById("ia-input").value;
-      if (!texto) return alert("Digite um comando para a IA.");
-
-      let novoEvento = { title: texto.split(/dia|às/i)[0].trim(), data: "", hora: "09:00", loja: "" };
-      
-      const dataMatch = texto.match(/\d{2}\/\d{2}(\/\d{4})?/);
-      if (dataMatch) {
-          let partes = dataMatch[0].split('/');
-          let ano = partes[2] || new Date().getFullYear();
-          novoEvento.data = `${ano}-${partes[1]}-${partes[0]}`;
-      }
-
-      presetUnits.forEach(u => {
-          if (texto.toLowerCase().includes(u.toLowerCase().split(' ').slice(1).join(' '))) novoEvento.loja = u;
-      });
-
-      document.getElementById("event-title").value = novoEvento.title;
-      document.getElementById("event-date").value = novoEvento.data || new Date().toISOString().split('T')[0];
-      document.getElementById("event-time-start").value = novoEvento.hora;
-      
-      if (novoEvento.loja) {
-          document.getElementById("event-scope").value = "INDIVIDUAL";
-          document.getElementById("event-store").value = novoEvento.loja;
-          toggleEventStoreSelect();
-      }
-
-      document.getElementById("event-modal").classList.remove("hidden");
-      document.getElementById("ia-input").value = "";
-    }
-
-    function openEventModalForDate(dateStr) {
-      if (currentUser.role === 'operador') return alert("Acesso não autorizado.");
-      document.getElementById("event-modal-title").innerText = "Novo Evento na Agenda";
-      document.getElementById("event-edit-id").value = "";
-      document.getElementById("event-title").value = "";
-      document.getElementById("event-date").value = dateStr;
-      document.getElementById("event-time-start").value = "09:00";
-      document.getElementById("event-time-end").value = "10:00";
-      document.getElementById("event-recurrence").value = "none";
-      document.getElementById("event-desc").value = "";
-      
-      let scopeSelect = document.getElementById("event-scope");
-      if (currentUser.role === 'gerente') {
-        scopeSelect.value = 'INDIVIDUAL';
-        scopeSelect.disabled = true;
-      } else {
-        scopeSelect.value = 'GERAL';
-        scopeSelect.disabled = false;
-      }
-      toggleEventStoreSelect();
-      document.getElementById("btn-delete-event").classList.add("hidden");
-      document.getElementById("event-modal").classList.remove("hidden");
-    }
-
-    function openEventDetail(id) {
-      let ev = calendarEvents.find(e => e.id === id);
-      if (!ev) return;
-
-      if (ev.scope === 'GERAL' && currentUser.role !== 'admin') {
-        return alert(`Evento em Comum da Rede: ${ev.title}\nData: ${ev.displayDate || ev.date}\n${ev.desc}\n\n(Apenas administradores podem editar este evento).`);
-      }
-      if (currentUser.role === 'gerente' && ev.store !== currentUser.units?.[0]) {
-        return alert("Você só pode editar eventos da sua própria unidade.");
-      }
-
-      document.getElementById("event-modal-title").innerText = "Editar Evento";
-      document.getElementById("event-edit-id").value = ev.id;
-      document.getElementById("event-title").value = ev.title;
-      document.getElementById("event-date").value = ev.date;
-      document.getElementById("event-scope").value = ev.scope;
-      document.getElementById("event-store").value = ev.store || '';
-      document.getElementById("event-time-start").value = ev.time || '09:00';
-      document.getElementById("event-time-end").value = ev.timeEnd || '10:00';
-      document.getElementById("event-recurrence").value = ev.recurrence || 'none';
-      document.getElementById("event-desc").value = ev.desc || '';
-      
-      toggleEventStoreSelect();
-      document.getElementById("btn-delete-event").classList.remove("hidden");
-      document.getElementById("event-modal").classList.remove("hidden");
-    }
-
-    function openEventModal() {
-      openEventModalForDate(new Date().toISOString().split('T')[0]);
-    }
-
-    function toggleEventModal() {
-      document.getElementById("event-modal").classList.toggle("hidden");
-    }
-
-    function toggleEventStoreSelect() {
-      let scope = document.getElementById("event-scope").value;
-      let box = document.getElementById("event-store-box");
-      if (scope === 'INDIVIDUAL') box.classList.remove("hidden");
-      else box.classList.add("hidden");
-    }
-
-    function saveCalendarEvent() {
-      let id = document.getElementById("event-edit-id").value || "ev_" + Date.now();
-      let title = document.getElementById("event-title").value.trim();
-      let date = document.getElementById("event-date").value;
-      let scope = document.getElementById("event-scope").value;
-      let store = scope === 'INDIVIDUAL' ? (currentUser.role === 'gerente' ? currentUser.units[0] : document.getElementById("event-store").value) : 'GERAL';
-      let time = document.getElementById("event-time-start").value;
-      let timeEnd = document.getElementById("event-time-end").value;
-      let recurrence = document.getElementById("event-recurrence").value;
-      let desc = document.getElementById("event-desc").value.trim();
-
-      if (!title || !date) return alert("Preencha o título e a data do evento.");
-      if (scope === 'GERAL' && currentUser.role !== 'admin') return alert("Apenas administradores podem criar ou editar eventos em comum para toda a rede.");
-
-      let existingIdx = calendarEvents.findIndex(e => e.id === id);
-      let evObj = { id, title, date, displayDate: date.split('-').reverse().join('/'), store, scope, time, timeEnd, recurrence, desc, type: 'manual' };
-
-      if (existingIdx >= 0) {
-        if (calendarEvents[existingIdx].scope === 'GERAL' && currentUser.role !== 'admin') {
-          return alert("Apenas administradores podem modificar eventos em comum.");
-        }
-        calendarEvents[existingIdx] = evObj;
-      } else {
-        calendarEvents.push(evObj);
-      }
-
-      localStorage.setItem("CB_LOCAL_CALENDAR_EVENTS", JSON.stringify(calendarEvents));
-      syncConfigToCloud();
-      toggleEventModal();
-      renderAgendaCalendar();
-      alert("Evento salvo com sucesso na agenda!");
-    }
-
-    function deleteCalendarEventFromModal() {
-      let id = document.getElementById("event-edit-id").value;
-      if (!id) return;
-      let ev = calendarEvents.find(e => e.id === id);
-      if (ev && ev.scope === 'GERAL' && currentUser.role !== 'admin') {
-        return alert("Apenas administradores podem excluir eventos em comum.");
-      }
-
-      if (confirm("Deseja realmente excluir este evento?")) {
-        calendarEvents = calendarEvents.filter(e => e.id !== id);
-        localStorage.setItem("CB_LOCAL_CALENDAR_EVENTS", JSON.stringify(calendarEvents));
-        syncConfigToCloud();
-        toggleEventModal();
-        renderAgendaCalendar();
-      }
-    }
-
-    // --- CHAT E TÉCNICOS ---
-    function renderTechniciansList() {
-      const container = document.getElementById("technicians-list-container");
-      if (!container) return;
-      container.innerHTML = "";
-
-      const regionFilter = document.getElementById("filter-tech-region").value;
-      const serviceFilter = document.getElementById("filter-tech-service").value;
-
-      const serviceSelect = document.getElementById("filter-tech-service");
-      if (serviceSelect && serviceSelect.options.length <= 1) {
-        let uniqueServices = [...new Set(techniciansList.map(t => t.service))].sort();
-        uniqueServices.forEach(srv => {
-          let opt = document.createElement("option");
-          opt.value = srv;
-          opt.innerText = srv;
-          serviceSelect.appendChild(opt);
-        });
-        serviceSelect.value = serviceFilter;
-      }
-
-      let filtered = techniciansList.filter(t => {
-        let matchReg = !regionFilter || t.region.includes(regionFilter) || t.region === "Geral";
-        let matchSrv = !serviceFilter || t.service === serviceFilter;
-        return matchReg && matchSrv;
-      });
-
-      if (filtered.length === 0) {
-        container.innerHTML = `<div class="p-8 text-center bg-white rounded-xl border text-stone-400 text-xs">Nenhum técnico encontrado.</div>`;
-        return;
-      }
-
-      let groups = {};
-      filtered.forEach(t => {
-        let reg = t.region || "Geral";
-        if (!groups[reg]) groups[reg] = [];
-        groups[reg].push(t);
-      });
-
-      for (let reg in groups) {
-        let section = document.createElement("div");
-        section.className = "bg-white p-4 rounded-xl border shadow-sm space-y-3";
-        section.innerHTML = `<h3 class="font-bold text-cb-bordo text-xs uppercase tracking-wider border-b pb-1.5">📍 ${reg}</h3>`;
-
-        let listDiv = document.createElement("div");
-        listDiv.className = "grid grid-cols-1 sm:grid-cols-2 gap-2";
-
-        groups[reg].forEach(tech => {
-          let cleanPhone = tech.phone.replace(/\D/g, '');
-          let whatsAppUrl = `https://api.whatsapp.com/send?phone=55${cleanPhone}`;
-
-          let card = document.createElement("div");
-          card.className = "p-3 bg-stone-50 border rounded-xl flex justify-between items-center text-xs";
-          card.innerHTML = `
-            <div class="space-y-0.5">
-              <span class="font-bold text-stone-900 block text-sm">${tech.name}</span>
-              <span class="inline-block bg-amber-100 text-amber-900 font-semibold px-2 py-0.5 rounded text-[10px]">${tech.service}</span>
-              <span class="block text-stone-500 font-mono">📞 ${tech.phone}</span>
-            </div>
-            <a href="${whatsAppUrl}" target="_blank" class="px-3 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-lg transition flex items-center gap-1 shadow-sm shrink-0">
-              <span>💬 WhatsApp</span>
-            </a>`;
-          listDiv.appendChild(card);
-        });
-
-        section.appendChild(listDiv);
-        container.appendChild(section);
-      }
-    }
-
-    function toggleTechModal() {
-      if (currentUser.role !== 'admin') return alert("Acesso restrito a administradores.");
-      document.getElementById("tech-modal").classList.toggle("hidden");
-    }
-
-    function addNewTechnician() {
-      const name = document.getElementById("new-tech-name").value.trim();
-      const service = document.getElementById("new-tech-service").value.trim();
-      const region = document.getElementById("new-tech-region").value;
-      const phone = document.getElementById("new-tech-phone").value.trim();
-
-      if (!name || !service || !phone) return alert("Preencha todos os campos.");
-
-      techniciansList.push({ name, service, region, phone });
-      localStorage.setItem("CB_LOCAL_TECHNICIANS", JSON.stringify(techniciansList));
-      syncConfigToCloud();
-
-      document.getElementById("new-tech-name").value = "";
-      document.getElementById("new-tech-service").value = "";
-      document.getElementById("new-tech-phone").value = "";
-      toggleTechModal();
-      renderTechniciansList();
-      alert("Técnico cadastrado com sucesso!");
-    }
-
-    function openChatModal(chatId, reportId, type, index) {
-      activeChatActionId = chatId;
-      const rep = savedReports.find(r => r.id === reportId);
-      const detailsContainer = document.getElementById("chat-action-details");
-      detailsContainer.innerHTML = "";
-
-      if (rep) {
-        let itemData = type === 'nc' ? rep.nonConformities?.[index] : rep.maintenanceOrders?.[index];
-        if (itemData) {
-          document.getElementById("chat-modal-title").innerText = type === 'nc' ? itemData.title : `Manutenção: ${itemData.equipment}`;
-          document.getElementById("chat-modal-subtitle").innerText = `${rep.unit} • Prazo: ${itemData.date}`;
-          
-          detailsContainer.innerHTML = `
-            <div><strong>Descrição / Ação Sugerida:</strong> ${itemData.action || itemData.defect || 'Não especificada'}</div>
-            ${itemData.photoUrl ? `<div class="mt-2"><span class="block font-bold mb-1">Foto do Checklist:</span><img src="${itemData.photoUrl}" onclick="openImageViewer('${itemData.photoUrl}')" class="h-28 w-auto rounded-lg border object-cover cursor-pointer hover:opacity-90"></div>` : ''}
-          `;
-        }
-      }
-
-      document.getElementById("chat-modal").classList.remove("hidden");
-      loadChatMessages(chatId);
-      document.getElementById(`chat-dot-${chatId}`)?.classList.add("hidden");
-    }
-
-    function toggleChatModal() {
-      document.getElementById("chat-modal").classList.add("hidden");
-      activeChatActionId = null;
-      renderCentralizedActions();
-    }
-
-    function openImageViewer(url) {
-      document.getElementById("viewer-img").src = url;
-      document.getElementById("image-viewer-modal").classList.remove("hidden");
-    }
-
-    function sendChatAttachment(event) {
-      const file = event.target.files[0];
-      if (!file || !activeChatActionId || !isFirebaseReady) return;
-
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        const fileData = e.target.result;
-        let isImage = file.type.startsWith('image/');
-
-        db.collection("chats").doc(activeChatActionId).collection("messages").add({
-          text: fileData, 
-          sender: currentUser.name, 
-          seen: false, 
-          isAttachment: true,
-          fileType: isImage ? 'image' : 'file',
-          fileName: file.name,
-          time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }), 
-          createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        }).then(() => {
-          event.target.value = '';
-        });
-      };
-      reader.readAsDataURL(file);
-    }
-
-    function loadChatMessages(chatId) {
-      if (!isFirebaseReady) return;
-      db.collection("chats").doc(chatId).collection("messages").orderBy("createdAt", "asc").onSnapshot(snapshot => {
-        const container = document.getElementById("chat-messages-container");
-        container.innerHTML = "";
-        
-        snapshot.docChanges().forEach(change => {
-          if (change.type === "added") {
-            const m = change.doc.data();
-            if (m.sender !== currentUser.name && !m.seen) {
-              playAudioBeep();
-              updateNotificationBadgeCount();
-              document.getElementById(`chat-dot-${chatId}`)?.classList.remove("hidden");
-            }
-          }
-        });
-
-        if (snapshot.empty) {
-          container.innerHTML = `<div class="text-center text-stone-400 py-6">Nenhuma mensagem ainda. Inicie a conversa.</div>`;
-          return;
-        }
-
-        snapshot.forEach(doc => {
-          const m = doc.data();
-          const isMe = m.sender === currentUser.name;
-          
-          if (!isMe && !m.seen) {
-            db.collection("chats").doc(chatId).collection("messages").doc(doc.id).update({ seen: true });
-          }
-
-          const msgDiv = document.createElement("div");
-          msgDiv.className = `flex flex-col ${isMe ? 'items-end' : 'items-start'}`;
-          
-          let bubbleContent = "";
-          if (m.isAttachment) {
-            if (m.fileType === 'image') {
-              bubbleContent = `<img src="${m.text}" onclick="openImageViewer('${m.text}')" class="max-h-40 rounded-lg cursor-pointer border hover:opacity-90 object-cover mb-1"><a href="${m.text}" download="anexo" class="text-[10px] underline block font-bold">Baixar Imagem</a>`;
-            } else {
-              bubbleContent = `<a href="${m.text}" download="${m.fileName || 'arquivo'}" class="underline font-bold text-blue-600 block">📄 Baixar: ${m.fileName || 'Arquivo'}</a>`;
-            }
-          } else {
-            bubbleContent = `<span>${m.text}</span>`;
-          }
-
-          msgDiv.innerHTML = `
-            <div class="max-w-[80%] p-2.5 rounded-xl ${isMe ? 'bg-cb-bordo text-white' : 'bg-stone-200 text-stone-800'}">
-              <span class="block text-[9px] font-bold opacity-75 mb-0.5">${m.sender}</span>
-              ${bubbleContent}
-            </div>
-            <div class="flex items-center gap-1 mt-0.5">
-              <span class="text-[9px] text-stone-400">${m.time || ''}</span>
-              ${isMe ? `<span class="text-[9px] font-bold ${m.seen ? 'text-emerald-600' : 'text-stone-400'}">${m.seen ? '✓✓ Visto' : '✓ Enviado'}</span>` : ''}
-            </div>`;
-          container.appendChild(msgDiv);
-        });
-        container.scrollTop = container.scrollHeight;
-      });
-    }
-
-    function sendChatMessage() {
-      const input = document.getElementById("chat-input-msg");
-      const text = input.value.trim();
-      if (!text || !activeChatActionId || !isFirebaseReady) return;
-      db.collection("chats").doc(activeChatActionId).collection("messages").add({
-        text: text, sender: currentUser.name, seen: false, time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }), createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      }).then(() => input.value = "");
     }
 
     function toggleConfigModal() {
@@ -2484,28 +1424,7 @@
       }
     }
 
-    function editQuestion(sIdx, iIdx) {
-      const currentItem = getCurrentChecklist().categories[sIdx].items[iIdx];
-      const newTitle = prompt("Editar título da pergunta:", currentItem.title);
-      if (newTitle && newTitle.trim()) {
-        currentItem.title = newTitle.trim();
-        localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
-        syncConfigToCloud();
-        renderModalItems();
-        alert("Pergunta atualizada com sucesso!");
-      }
-    }
-
-    function editCategory(sIdx) {
-      const current = getCurrentChecklist();
-      const newName = prompt("Editar setor:", current.categories[sIdx].category);
-      if (newName?.trim()) {
-        current.categories[sIdx].category = newName.trim();
-        localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
-        syncConfigToCloud(); renderModalItems();
-      }
-    }
-
+    // ⚙️ Gerenciamento e Edição Completa de Perguntas e Fotos Obrigatórias
     function renderModalItems() {
       const container = document.getElementById("modal-item-list");
       const catSelect = document.getElementById("new-item-category");
@@ -2517,11 +1436,68 @@
         const secBox = document.createElement("div");
         secBox.className = "border rounded-xl p-3 bg-white space-y-2 text-xs";
         secBox.innerHTML = `<div class="flex justify-between items-center border-b pb-1"><span class="font-bold uppercase">${sec.category}</span><button onclick="editCategory(${sIdx})" class="underline font-bold">Editar Setor</button></div>`;
+        
         sec.items.forEach((item, iIdx) => {
-          secBox.innerHTML += `<div class="bg-stone-50 p-2 rounded border flex justify-between items-center"><span>${item.title}</span><div class="flex gap-2"><button onclick="editQuestion(${sIdx}, ${iIdx})" class="text-blue-600 font-bold">Editar</button><button onclick="removeItem(${sIdx}, ${iIdx})" class="text-rose-600 font-bold">Remover</button></div></div>`;
+          let typeLabel = item.type === 'maintenance' ? 'Manutenção' : item.type === 'stars' ? 'Estrelas' : item.type === 'text' ? 'Texto' : 'Sim/Não';
+          secBox.innerHTML += `
+            <div class="bg-stone-50 p-2.5 rounded border flex justify-between items-center gap-2">
+              <div class="space-y-0.5">
+                <span class="font-bold text-stone-900 block">${item.title}</span>
+                <span class="text-[10px] text-stone-500 font-medium">[Tipo: ${typeLabel}] • [Foto: ${item.requirePhoto ? 'Obrigatória' : 'Opcional'}]</span>
+              </div>
+              <div class="flex gap-2 shrink-0">
+                <button onclick="openEditQuestionModal(${sIdx}, ${iIdx})" class="text-blue-600 font-bold hover:underline">Configurar</button>
+                <button onclick="removeItem(${sIdx}, ${iIdx})" class="text-rose-600 font-bold hover:underline">Remover</button>
+              </div>
+            </div>`;
         });
         container.appendChild(secBox);
       });
+    }
+
+    function openEditQuestionModal(sIdx, iIdx) {
+      const item = getCurrentChecklist().categories[sIdx].items[iIdx];
+      document.getElementById("edit-q-sec-idx").value = sIdx;
+      document.getElementById("edit-q-item-idx").value = iIdx;
+      document.getElementById("edit-q-title").value = item.title;
+      document.getElementById("edit-q-type").value = item.type || 'boolean';
+      document.getElementById("edit-q-photo").checked = !!item.requirePhoto;
+      document.getElementById("edit-question-modal").classList.remove("hidden");
+    }
+
+    function closeEditQuestionModal() {
+      document.getElementById("edit-question-modal").classList.add("hidden");
+    }
+
+    function saveEditedQuestion() {
+      const sIdx = parseInt(document.getElementById("edit-q-sec-idx").value);
+      const iIdx = parseInt(document.getElementById("edit-q-item-idx").value);
+      const title = document.getElementById("edit-q-title").value.trim();
+      const type = document.getElementById("edit-q-type").value;
+      const requirePhoto = document.getElementById("edit-q-photo").checked;
+
+      if (!title) return alert("O título não pode ser vazio.");
+
+      let item = getCurrentChecklist().categories[sIdx].items[iIdx];
+      item.title = title;
+      item.type = type;
+      item.requirePhoto = requirePhoto;
+
+      localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
+      syncConfigToCloud();
+      closeEditQuestionModal();
+      renderModalItems();
+      alert("Configuração da pergunta atualizada com sucesso!");
+    }
+
+    function editCategory(sIdx) {
+      const current = getCurrentChecklist();
+      const newName = prompt("Editar setor:", current.categories[sIdx].category);
+      if (newName?.trim()) {
+        current.categories[sIdx].category = newName.trim();
+        localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
+        syncConfigToCloud(); renderModalItems();
+      }
     }
 
     function toggleUsersModal() {
@@ -2566,11 +1542,9 @@
       } else if (tab === 'status') {
         uStatus.classList.remove("hidden");
         btnSt.className = "flex-1 py-2.5 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition whitespace-nowrap";
-        renderAdminStatusList();
       } else if (tab === 'priorities') {
         uPriorities.classList.remove("hidden");
         btnPr.className = "flex-1 py-2.5 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition whitespace-nowrap";
-        renderAdminPrioritiesList();
       }
     }
 
@@ -2706,7 +1680,6 @@
 
     function resetChecklist() {
       if (confirm("Zerar respostas?")) {
-        document.querySelectorAll('input[type="radio"]').forEach(r => r.checked = false);
         attachedPhotos = {}; actionPlans = {}; customAnswers = {}; maintenanceOrders = {}; renderChecklist();
       }
     }
@@ -2738,6 +1711,7 @@
     }
 
     function handleEvaluationChange(itemKey, value) {
+      customAnswers[itemKey] = value;
       const planBox = document.getElementById(`plan-box-${itemKey}`);
       if (value === "nao-conforme") planBox?.classList.remove("hidden");
       else planBox?.classList.add("hidden");
@@ -2745,6 +1719,7 @@
     }
 
     function handleMaintenanceChange(itemKey, value) {
+      customAnswers[itemKey] = value;
       const omBox = document.getElementById(`maintenance-box-${itemKey}`);
       if (value === "abrir") omBox?.classList.remove("hidden");
       else omBox?.classList.add("hidden");
@@ -2762,7 +1737,8 @@
         const starBtn = document.getElementById(`star-${itemKey}-${s}`);
         if (starBtn) starBtn.className = `text-xl ${i <= stars ? 'text-amber-400 scale-110' : 'text-stone-300'}`;
       }
-      document.getElementById(`star-label-${itemKey}`).innerText = `${stars} de 5`;
+      const label = document.getElementById(`star-label-${itemKey}`);
+      if (label) label.innerText = `${stars} de 5`;
       calculateScore();
     }
 
@@ -2778,14 +1754,13 @@
         sec.items.forEach((item, iIdx) => {
           const itemKey = `${sIdx}-${iIdx}`;
           const itemType = item.type || "boolean";
-          if (itemType === "boolean") {
-            const selected = document.querySelector(`input[name="item-${itemKey}"]:checked`);
-            if (selected) { pointsEarned += (selected.value === "conforme" ? 1.0 : 0.0); totalQuestionsEvaluated += 1.0; }
-          } else if (itemType === "maintenance") {
-            const selected = document.querySelector(`input[name="item-${itemKey}"]:checked`);
-            if (selected) { pointsEarned += (selected.value === "regular" ? 1.0 : 0.0); totalQuestionsEvaluated += 1.0; }
-          } else if (itemType === "stars") {
-            const rating = parseInt(customAnswers[itemKey]) || 0;
+          let ans = customAnswers[itemKey];
+          if (itemType === "boolean" && ans) {
+            pointsEarned += (ans === "conforme" ? 1.0 : 0.0); totalQuestionsEvaluated += 1.0;
+          } else if (itemType === "maintenance" && ans) {
+            pointsEarned += (ans === "regular" ? 1.0 : 0.0); totalQuestionsEvaluated += 1.0;
+          } else if (itemType === "stars" && ans) {
+            let rating = parseInt(ans) || 0;
             if (rating > 0) { pointsEarned += (rating / 5); totalQuestionsEvaluated += 1.0; }
           }
         });
@@ -2796,6 +1771,7 @@
       return { score, total: Math.round(totalQuestionsEvaluated) };
     }
 
+    // 🛠️ Renderização do Checklist Mantendo o Estado sem apagar respostas
     function renderChecklist() {
       const container = document.getElementById("checklist-container");
       const current = getCurrentChecklist();
@@ -2816,34 +1792,45 @@
           let controlHtml = "";
 
           if (itemType === "boolean") {
+            let isConf = savedAnswer === 'conforme' ? 'checked' : '';
+            let isNaoConf = savedAnswer === 'nao-conforme' ? 'checked' : '';
+            let isNa = savedAnswer === 'na' ? 'checked' : '';
+            let planHidden = savedAnswer === 'nao-conforme' ? '' : 'hidden';
+
             controlHtml = `
               <div class="flex gap-2 text-xs">
-                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="conforme" class="hidden peer" onchange="handleEvaluationChange('${itemKey}', 'conforme')"><div class="text-center py-2 rounded-md border peer-checked:bg-emerald-600 peer-checked:text-white font-bold">Sim</div></label>
-                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="nao-conforme" class="hidden peer" onchange="handleEvaluationChange('${itemKey}', 'nao-conforme')"><div class="text-center py-2 rounded-md border peer-checked:bg-rose-700 peer-checked:text-white font-bold">Não</div></label>
-                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="na" class="hidden peer" onchange="handleEvaluationChange('${itemKey}', 'na')"><div class="text-center py-2 rounded-md border peer-checked:bg-stone-500 peer-checked:text-white font-bold">N/A</div></label>
+                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="conforme" ${isConf} class="hidden peer" onchange="handleEvaluationChange('${itemKey}', 'conforme')"><div class="text-center py-2 rounded-md border peer-checked:bg-emerald-600 peer-checked:text-white font-bold">Sim</div></label>
+                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="nao-conforme" ${isNaoConf} class="hidden peer" onchange="handleEvaluationChange('${itemKey}', 'nao-conforme')"><div class="text-center py-2 rounded-md border peer-checked:bg-rose-700 peer-checked:text-white font-bold">Não</div></label>
+                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="na" ${isNa} class="hidden peer" onchange="handleEvaluationChange('${itemKey}', 'na')"><div class="text-center py-2 rounded-md border peer-checked:bg-stone-500 peer-checked:text-white font-bold">N/A</div></label>
               </div>
-              <div id="plan-box-${itemKey}" class="hidden p-3 bg-rose-50 border rounded-lg space-y-2 text-xs">
+              <div id="plan-box-${itemKey}" class="${planHidden} p-3 bg-rose-50 border rounded-lg space-y-2 text-xs">
                 <span class="block font-bold text-rose-800 uppercase text-[10px]">⚠️ Plano de Ação</span>
                 <input type="text" value="${planData.action}" placeholder="Ação..." oninput="updateActionPlan('${itemKey}', 'action', this.value)" class="w-full border p-2 bg-white rounded">
                 <input type="date" value="${planData.date}" oninput="updateActionPlan('${itemKey}', 'date', this.value)" class="w-full border p-2 bg-white rounded">
               </div>`;
           } else if (itemType === "maintenance") {
+            let isAbrir = savedAnswer === 'abrir' ? 'checked' : '';
+            let isReg = savedAnswer === 'regular' ? 'checked' : '';
+            let isNa = savedAnswer === 'na' ? 'checked' : '';
+            let omHidden = savedAnswer === 'abrir' ? '' : 'hidden';
+
             controlHtml = `
               <div class="flex gap-2 text-xs">
-                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="abrir" class="hidden peer" onchange="handleMaintenanceChange('${itemKey}', 'abrir')"><div class="text-center py-2 rounded-md border peer-checked:bg-amber-600 peer-checked:text-white font-bold">Abrir</div></label>
-                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="regular" class="hidden peer" onchange="handleMaintenanceChange('${itemKey}', 'regular')"><div class="text-center py-2 rounded-md border peer-checked:bg-emerald-600 peer-checked:text-white font-bold">Regular / Ok</div></label>
-                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="na" class="hidden peer" onchange="handleMaintenanceChange('${itemKey}', 'na')"><div class="text-center py-2 rounded-md border peer-checked:bg-stone-500 peer-checked:text-white font-bold">N/A</div></label>
+                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="abrir" ${isAbrir} class="hidden peer" onchange="handleMaintenanceChange('${itemKey}', 'abrir')"><div class="text-center py-2 rounded-md border peer-checked:bg-amber-600 peer-checked:text-white font-bold">Abrir</div></label>
+                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="regular" ${isReg} class="hidden peer" onchange="handleMaintenanceChange('${itemKey}', 'regular')"><div class="text-center py-2 rounded-md border peer-checked:bg-emerald-600 peer-checked:text-white font-bold">Regular / Ok</div></label>
+                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="na" ${isNa} class="hidden peer" onchange="handleMaintenanceChange('${itemKey}', 'na')"><div class="text-center py-2 rounded-md border peer-checked:bg-stone-500 peer-checked:text-white font-bold">N/A</div></label>
               </div>
-              <div id="maintenance-box-${itemKey}" class="hidden p-3 bg-amber-50 border rounded-lg space-y-2 text-xs">
+              <div id="maintenance-box-${itemKey}" class="${omHidden} p-3 bg-amber-50 border rounded-lg space-y-2 text-xs">
                 <span class="block font-bold text-amber-900 uppercase text-[10px]">Abertura de Ordem de Manutenção</span>
                 <input type="text" value="${omData.equipment}" placeholder="Equipamento..." oninput="updateMaintenanceOrder('${itemKey}', 'equipment', this.value)" class="w-full border p-2 bg-white rounded">
                 <input type="text" value="${omData.action}" placeholder="Defeito..." oninput="updateMaintenanceOrder('${itemKey}', 'action', this.value)" class="w-full border p-2 bg-white rounded">
                 <input type="date" value="${omData.date}" oninput="updateMaintenanceOrder('${itemKey}', 'date', this.value)" class="w-full border p-2 bg-white rounded">
               </div>`;
           } else if (itemType === "stars") {
+            let currentStars = parseInt(savedAnswer) || 0;
             let starsSpans = "";
-            for (let s = 1; s <= 5; s++) starsSpans += `<button type="button" id="star-${itemKey}-${s}" onclick="setStarRating('${itemKey}', ${s})" class="text-xl ${s <= (savedAnswer||0) ? 'text-amber-400' : 'text-stone-300'}">★</button>`;
-            controlHtml = `<div class="flex items-center justify-between bg-stone-50 p-2.5 rounded border"><div class="flex gap-2">${starsSpans}</div><span id="star-label-${itemKey}" class="text-xs font-bold">${savedAnswer ? savedAnswer + ' de 5' : 'Avalie'}</span></div>`;
+            for (let s = 1; s <= 5; s++) starsSpans += `<button type="button" id="star-${itemKey}-${s}" onclick="setStarRating('${itemKey}', ${s})" class="text-xl ${s <= currentStars ? 'text-amber-400' : 'text-stone-300'}">★</button>`;
+            controlHtml = `<div class="flex items-center justify-between bg-stone-50 p-2.5 rounded border"><div class="flex gap-2">${starsSpans}</div><span id="star-label-${itemKey}" class="text-xs font-bold">${currentStars ? currentStars + ' de 5' : 'Avalie'}</span></div>`;
           } else if (itemType === "text") {
             controlHtml = `<div><textarea rows="2" placeholder="Digite..." oninput="updateTextInput('${itemKey}', this.value)" class="w-full border p-2 text-xs bg-stone-50 rounded">${savedAnswer || ''}</textarea></div>`;
           }
@@ -2879,22 +1866,6 @@
         };
         reader.readAsDataURL(file);
       }
-    }
-
-    function validatePhotos() {
-      let missing = [];
-      const current = getCurrentChecklist();
-      current.categories.forEach((sec, sIdx) => {
-        sec.items.forEach((item, iIdx) => {
-          const key = `${sIdx}-${iIdx}`;
-          if (item.requirePhoto && !attachedPhotos[key]) {
-            const isNc = document.querySelector(`input[name="item-${key}"][value="nao-conforme"]`)?.checked;
-            const isOm = document.querySelector(`input[name="item-${key}"][value="abrir"]`)?.checked;
-            if (isNc || isOm) missing.push(item.title);
-          }
-        });
-      });
-      return missing;
     }
 
     initApp();
