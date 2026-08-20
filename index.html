@@ -299,7 +299,7 @@
     </div>
   </div>
 
-  <!-- Barra Inferior de Ações (Visível APENAS durante a auditoria em andamento) -->
+  <!-- Barra Inferior de Ações -->
   <footer id="audit-footer" class="fixed bottom-0 left-0 right-0 bg-white border-t border-stone-200 p-3 z-30 shadow-lg hidden">
     <div class="max-w-xl mx-auto flex gap-2">
       <button onclick="resetChecklist()" class="w-1/4 py-3 rounded-lg border border-stone-300 text-stone-700 text-xs font-bold hover:bg-stone-50 transition">
@@ -350,7 +350,7 @@
         </div>
         <div class="bg-white p-4 rounded-xl border border-stone-200 space-y-3 shadow-sm">
           <div class="flex justify-between items-center border-b pb-2">
-            <span class="text-xs font-bold text-cb-bordo uppercase tracking-wider">Unidades Cadastradas</span>
+            <span class="block text-xs font-bold text-cb-bordo uppercase tracking-wider">Unidades Cadastradas</span>
             <span id="units-count-badge" class="text-xs text-stone-500 font-bold">0</span>
           </div>
           <div id="units-list-container" class="space-y-2 max-h-64 overflow-y-auto"></div>
@@ -576,11 +576,8 @@
           if (data.units) { presetUnits = data.units; localStorage.setItem("CB_LOCAL_UNITS", JSON.stringify(presetUnits)); }
           if (data.users) { users = data.users; localStorage.setItem("CB_LOCAL_USERS", JSON.stringify(users)); }
 
-          if (isInitialConfigLoad) {
-            renderPresetUnits();
-            renderHomeChecklistCards();
-            isInitialConfigLoad = false;
-          }
+          renderPresetUnits();
+          renderHomeChecklistCards();
           updateSyncUI("🟢 Sincronizado na Nuvem", new Date().toLocaleTimeString('pt-BR'));
         } else {
           syncConfigToCloud();
@@ -738,7 +735,7 @@
 
       if (mod === 'checklists') {
         checklistsMod.classList.remove("hidden"); actionsMod.classList.add("hidden");
-        auditFooter.classList.add("hidden"); // Oculto por padrão até clicar em Iniciar
+        auditFooter.classList.add("hidden"); // Mantém oculto até clicar em Iniciar
         subNav.classList.remove("hidden");
         badgeMod.innerText = "Checklists";
         switchChecklistTab('home');
@@ -761,7 +758,7 @@
       homeView.classList.add("hidden");
       auditView.classList.add("hidden");
       historyView.classList.add("hidden");
-      footer.classList.add("hidden"); // Esconde rodapé por padrão
+      footer.classList.add("hidden");
 
       if (tab === 'home') {
         homeView.classList.remove("hidden");
@@ -770,7 +767,7 @@
         renderHomeChecklistCards();
       } else if (tab === 'audit') {
         auditView.classList.remove("hidden");
-        footer.classList.remove("hidden"); // Mostra rodapé apenas no checklist em andamento
+        footer.classList.remove("hidden"); // Exibe barra inferior apenas no formulário ativo
         tabHome.className = "flex-1 py-2.5 border-b-2 border-cb-gold text-cb-gold font-bold transition flex items-center justify-center";
         tabHistory.className = "flex-1 py-2.5 border-b-2 border-transparent text-stone-300 font-bold transition flex items-center justify-center";
       } else if (tab === 'history') {
@@ -812,7 +809,7 @@
       
       document.getElementById("checklist-home-view").classList.add("hidden");
       document.getElementById("audit-view").classList.remove("hidden");
-      document.getElementById("audit-footer").classList.remove("hidden"); // Exibe barra de rodapé ao iniciar
+      document.getElementById("audit-footer").classList.remove("hidden");
     }
 
     function updateHistoryBadge() {
