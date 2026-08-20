@@ -117,7 +117,7 @@
     </div>
   </div>
 
-  <!-- Header Global com Sino de Notificações e Contador Numérico -->
+  <!-- Header Global com Sino de Notificações -->
   <header class="bg-cb-bordo text-white sticky top-0 z-30 shadow-lg border-b-2 border-cb-gold">
     <div class="max-w-4xl mx-auto px-4 py-2.5 flex justify-between items-center">
       <div class="flex items-center gap-2.5">
@@ -135,7 +135,6 @@
       <div class="flex items-center gap-2 relative">
         <button onclick="toggleNotificationDropdown(event)" class="relative p-1.5 bg-cb-bordo-dark border border-cb-gold/40 rounded-lg text-stone-200 hover:text-white transition text-sm">
           🔔
-          <!-- Contador numérico na bolinha vermelha -->
           <span id="global-notification-dot" class="absolute -top-1.5 -right-1.5 px-1.5 py-0.2 bg-rose-600 text-white rounded-full text-[9px] font-black border border-white hidden">0</span>
         </button>
         
@@ -700,34 +699,6 @@
       });
     }
 
-    // 🔔 Atualiza dinamicamente o número da bolinha vermelha no sino
-    function updateNotificationBadgeCount() {
-      let unreadCount = 0;
-      let allowedUnits = getAllowedUnits();
-
-      savedReports.forEach(rep => {
-        if (!allowedUnits.includes(rep.unit)) return;
-        rep.nonConformities?.forEach((nc, i) => {
-          let actId = `${rep.id}_nc_${i}`;
-          let status = actionCustomStatus[actId] || 'Pendente';
-          if (!status.toLowerCase().includes('concluído')) {
-            unreadCount++;
-          }
-        });
-      });
-
-      const badge = document.getElementById("global-notification-dot");
-      if (badge) {
-        if (unreadCount > 0) {
-          badge.innerText = unreadCount;
-          badge.classList.remove("hidden");
-        } else {
-          badge.classList.add("hidden");
-        }
-      }
-    }
-
-    // 🔊 Função de Áudio Sintetizado (AudioContext) para tocar garantido instantaneamente
     function playAudioBeep() {
       try {
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -762,7 +733,6 @@
                   if (m.sender !== currentUser?.name && !m.seen) {
                     playAudioBeep();
                     updateNotificationBadgeCount();
-                    document.getElementById(`chat-dot-${actId}`)?.classList.remove("hidden");
                   }
                 }
               });
@@ -1164,7 +1134,34 @@
       updateNotificationBadgeCount();
     }
 
-    // 🔔 Dropdown Estilo Rede Social para o Sino de Notificações com Contagem
+    // 🔔 Atualização do Contador Numérico no Sino
+    function updateNotificationBadgeCount() {
+      let unreadCount = 0;
+      let allowedUnits = getAllowedUnits();
+
+      savedReports.forEach(rep => {
+        if (!allowedUnits.includes(rep.unit)) return;
+        rep.nonConformities?.forEach((nc, i) => {
+          let actId = `${rep.id}_nc_${i}`;
+          let status = actionCustomStatus[actId] || 'Pendente';
+          if (!status.toLowerCase().includes('concluído')) {
+            unreadCount++;
+          }
+        });
+      });
+
+      const badge = document.getElementById("global-notification-dot");
+      if (badge) {
+        if (unreadCount > 0) {
+          badge.innerText = unreadCount;
+          badge.classList.remove("hidden");
+        } else {
+          badge.classList.add("hidden");
+        }
+      }
+    }
+
+    // 🔔 Dropdown Estilo Rede Social para o Sino de Notificações
     function toggleNotificationDropdown(event) {
       event.stopPropagation();
       const dropdown = document.getElementById("notification-dropdown");
@@ -1340,6 +1337,18 @@
             </button>
           </div>`;
         container.appendChild(card);
+        
+        if (isFirebaseReady) {
+          db.collection("chats").doc(act.chatId).collection("messages").orderBy("createdAt", "desc").limit(1).get().then(snap => {
+            if (!snap.empty) {
+              let lastMsg = snap.docs[0].data();
+              if (lastMsg.sender !== currentUser.name && !lastMsg.seen) {
+                document.getElementById(`chat-dot-${act.chatId}`)?.classList.remove("hidden");
+                updateNotificationBadgeCount();
+              }
+            }
+          });
+        }
       });
     }
 
@@ -1429,6 +1438,15 @@
       db.collection("chats").doc(activeChatActionId).collection("messages").add({
         text: text, sender: currentUser.name, seen: false, time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }), createdAt: firebase.firestore.FieldValue.serverTimestamp()
       }).then(() => input.value = "");
+    }
+
+    // --- CORREÇÃO: MODAL DE CONFIGURAÇÃO DE CHECKLISTS ---
+    function toggleConfigModal() {
+      const modal = document.getElementById("config-modal");
+      modal.classList.toggle("hidden");
+      if (!modal.classList.contains("hidden")) {
+        switchConfigTab('models');
+      }
     }
 
     // GERENCIAMENTO DE USUÁRIOS
