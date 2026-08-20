@@ -97,6 +97,10 @@
       <button onclick="openModulesScreen(); toggleSidebar();" class="w-full text-left px-3 py-2.5 rounded-lg hover:bg-cb-bordo transition">
         🔀 Módulos
       </button>
+      <button onclick="switchChecklistTab('history'); toggleSidebar();" class="w-full text-left px-3 py-2.5 rounded-lg hover:bg-cb-bordo transition flex justify-between items-center">
+        <span>📂 Relatórios Salvos</span>
+        <span id="history-badge-count" class="bg-cb-gold text-cb-bordo-dark px-1.5 py-0.2 rounded-full text-[10px] font-black">0</span>
+      </button>
       <button id="sidebar-btn-users" onclick="toggleUsersModal(); toggleSidebar();" class="hidden w-full text-left px-3 py-2.5 rounded-lg hover:bg-cb-bordo transition">
         👥 Gerenciar Usuários
       </button>
@@ -166,7 +170,7 @@
     <main id="audit-view" class="max-w-xl mx-auto p-4 space-y-4 hidden">
       <div class="flex items-center justify-between bg-white p-3 rounded-xl shadow-sm border">
         <button onclick="switchChecklistTab('home')" class="text-xs font-bold text-cb-bordo hover:underline">
-          ← Voltar ao Início
+          ← Voltar à Seleção
         </button>
         <span id="active-model-title-badge" class="text-xs font-bold text-stone-700">Modelo Atual</span>
       </div>
@@ -207,7 +211,7 @@
       </div>
     </main>
 
-    <!-- Tela de Relatórios Salvos -->
+    <!-- Tela de Relatórios Salvos (Com Filtro entre Datas) -->
     <main id="history-view" class="max-w-xl mx-auto p-4 space-y-4 hidden">
       <div class="flex items-center justify-between bg-white p-3 rounded-xl shadow-sm border">
         <button onclick="switchChecklistTab('home')" class="text-xs font-bold text-cb-bordo hover:underline">
@@ -219,21 +223,27 @@
       <div class="bg-white p-4 rounded-xl shadow-sm border border-stone-200 space-y-3">
         <div class="flex justify-between items-center border-b pb-2">
           <div>
-            <h2 class="font-bold text-cb-bordo text-xs uppercase tracking-wider">Filtragem de Auditorias</h2>
+            <h2 class="font-bold text-cb-bordo text-xs uppercase tracking-wider">Filtragem por Período</h2>
           </div>
           <button onclick="clearAllHistory()" class="text-xs text-rose-600 font-bold hover:underline">
             Limpar Tudo
           </button>
         </div>
 
-        <div class="grid grid-cols-2 gap-2 text-xs">
+        <div class="space-y-2 text-xs">
           <div>
             <label class="block font-bold text-stone-600 mb-1">Loja:</label>
             <select id="filter-store" onchange="renderHistoryList()" class="w-full border rounded p-2 bg-stone-50 font-semibold"></select>
           </div>
-          <div>
-            <label class="block font-bold text-stone-600 mb-1">Data:</label>
-            <input type="date" id="filter-date" onchange="renderHistoryList()" class="w-full border rounded p-2 bg-stone-50">
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block font-bold text-stone-600 mb-1">Data Inicial:</label>
+              <input type="date" id="filter-date-start" onchange="renderHistoryList()" class="w-full border rounded p-2 bg-stone-50">
+            </div>
+            <div>
+              <label class="block font-bold text-stone-600 mb-1">Data Final:</label>
+              <input type="date" id="filter-date-end" onchange="renderHistoryList()" class="w-full border rounded p-2 bg-stone-50">
+            </div>
           </div>
         </div>
 
@@ -249,11 +259,22 @@
     </main>
   </div>
 
-  <!-- MÓDULO 2: PLANOS DE AÇÃO & MANUTENÇÃO -->
+  <!-- MÓDULO 2: PLANOS DE AÇÃO & MANUTENÇÃO (Com Filtro por Data e Ordem Crescente) -->
   <main id="module-actions-container" class="max-w-xl mx-auto p-4 space-y-4 hidden">
-    <div class="bg-white p-4 rounded-xl shadow-sm border border-stone-200">
+    <div class="bg-white p-4 rounded-xl shadow-sm border border-stone-200 space-y-3">
       <h2 class="font-bold text-cb-bordo text-xs uppercase tracking-wider">Agenda de Planos de Ação</h2>
-      <p class="text-xs text-stone-500">Acompanhamento e chat com os responsáveis</p>
+      <p class="text-xs text-stone-500">Acompanhamento e chat com os responsáveis (ordenado por vencimento)</p>
+
+      <div class="grid grid-cols-2 gap-2 text-xs pt-1 border-t pt-3">
+        <div>
+          <label class="block font-bold text-stone-600 mb-1">A partir de:</label>
+          <input type="date" id="action-date-start" onchange="renderCentralizedActions()" class="w-full border rounded p-2 bg-stone-50">
+        </div>
+        <div>
+          <label class="block font-bold text-stone-600 mb-1">Até:</label>
+          <input type="date" id="action-date-end" onchange="renderCentralizedActions()" class="w-full border rounded p-2 bg-stone-50">
+        </div>
+      </div>
     </div>
     <div id="centralized-actions-list" class="space-y-3"></div>
   </main>
@@ -813,20 +834,23 @@
       const container = document.getElementById("history-list-container");
       container.innerHTML = ""; updateHistoryBadge();
       const storeFilter = document.getElementById("filter-store").value;
-      const dateFilter = document.getElementById("filter-date").value;
+      const startFilter = document.getElementById("filter-date-start").value;
+      const endFilter = document.getElementById("filter-date-end").value;
 
       let filtered = savedReports.filter(rep => {
         let matchStore = !storeFilter || rep.unit === storeFilter;
         let matchDate = true;
-        if (dateFilter && rep.date) {
+        if (rep.date) {
           let parts = rep.date.split(',')[0].split('/');
-          matchDate = `${parts[2]}-${parts[1]}-${parts[0]}` === dateFilter;
+          let repIso = `${parts[2]}-${parts[1]}-${parts[0]}`;
+          if (startFilter && repIso < startFilter) matchDate = false;
+          if (endFilter && repIso > endFilter) matchDate = false;
         }
         return matchStore && matchDate;
       });
 
       if (filtered.length === 0) {
-        container.innerHTML = `<div class="p-8 text-center bg-white rounded-xl border text-stone-400 text-xs">Nenhum relatório encontrado.</div>`;
+        container.innerHTML = `<div class="p-8 text-center bg-white rounded-xl border text-stone-400 text-xs">Nenhum relatório encontrado para o período.</div>`;
         return;
       }
 
@@ -885,21 +909,45 @@
     function renderCentralizedActions() {
       const container = document.getElementById("centralized-actions-list");
       container.innerHTML = "";
+      const startFilter = document.getElementById("action-date-start").value;
+      const endFilter = document.getElementById("action-date-end").value;
+
       let allActions = [];
 
       savedReports.forEach(rep => {
         rep.nonConformities?.forEach((nc, i) => {
-          allActions.push({ unit: rep.unit, title: `❌ ${nc.title}`, action: nc.action || 'Não descrita', date: nc.date || '31/12/2099', rawDate: nc.date, chatId: `${rep.id}_nc_${i}` });
+          let dueDate = nc.date || '';
+          let matchDate = true;
+          if (dueDate && dueDate !== 'Não definida') {
+            let parts = dueDate.split('/');
+            let iso = `${parts[2]}-${parts[1]}-${parts[0]}`;
+            if (startFilter && iso < startFilter) matchDate = false;
+            if (endFilter && iso > endFilter) matchDate = false;
+          }
+          if (matchDate) {
+            allActions.push({ unit: rep.unit, title: `❌ ${nc.title}`, action: nc.action || 'Não descrita', date: dueDate || 'Indefinida', rawDate: dueDate, chatId: `${rep.id}_nc_${i}` });
+          }
         });
         rep.maintenanceOrders?.forEach((om, i) => {
-          allActions.push({ unit: rep.unit, title: `🔧 Manutenção: ${om.equipment}`, action: om.action || 'Não descrito', date: om.date || '31/12/2099', rawDate: om.date, chatId: `${rep.id}_om_${i}` });
+          let dueDate = om.date || '';
+          let matchDate = true;
+          if (dueDate && dueDate !== 'Não definida') {
+            let parts = dueDate.split('/');
+            let iso = `${parts[2]}-${parts[1]}-${parts[0]}`;
+            if (startFilter && iso < startFilter) matchDate = false;
+            if (endFilter && iso > endFilter) matchDate = false;
+          }
+          if (matchDate) {
+            allActions.push({ unit: rep.unit, title: `🔧 Manutenção: ${om.equipment}`, action: om.action || 'Não descrito', date: dueDate || 'Indefinida', rawDate: dueDate, chatId: `${rep.id}_om_${i}` });
+          }
         });
       });
 
+      // Ordenação crescente por data (o que vence antes aparece primeiro)
       allActions.sort((a, b) => new Date(a.rawDate || '2099-12-31') - new Date(b.rawDate || '2099-12-31'));
 
       if (allActions.length === 0) {
-        container.innerHTML = `<div class="p-8 text-center bg-white rounded-xl border text-stone-400 text-xs">Nenhum plano de ação pendente.</div>`;
+        container.innerHTML = `<div class="p-8 text-center bg-white rounded-xl border text-stone-400 text-xs">Nenhum plano de ação encontrado para o período.</div>`;
         return;
       }
 
