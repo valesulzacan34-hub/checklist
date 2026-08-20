@@ -95,13 +95,17 @@
 
     <div class="p-3 space-y-1.5 flex-1 text-xs font-semibold">
       <button onclick="openModulesScreen(); toggleSidebar();" class="w-full text-left px-3 py-2.5 rounded-lg hover:bg-cb-bordo transition">
-        Módulos
+        🔀 Módulos
+      </button>
+      <button onclick="switchChecklistTab('history'); toggleSidebar();" class="w-full text-left px-3 py-2.5 rounded-lg hover:bg-cb-bordo transition flex justify-between items-center">
+        <span>📂 Relatórios Salvos</span>
+        <span id="history-badge-count" class="bg-cb-gold text-cb-bordo-dark px-1.5 py-0.2 rounded-full text-[10px] font-black">0</span>
       </button>
       <button id="sidebar-btn-users" onclick="toggleUsersModal(); toggleSidebar();" class="hidden w-full text-left px-3 py-2.5 rounded-lg hover:bg-cb-bordo transition">
-        Usuários
+        👥 Gerenciar Usuários
       </button>
       <button onclick="toggleConfigModal(); toggleSidebar();" class="w-full text-left px-3 py-2.5 rounded-lg hover:bg-cb-bordo transition">
-        Configurações
+        ⚙️ Configurações Gerais
       </button>
     </div>
 
@@ -112,9 +116,9 @@
     </div>
   </div>
 
-  <!-- Header Global -->
+  <!-- Header Global Limpo -->
   <header class="bg-cb-bordo text-white sticky top-0 z-30 shadow-lg border-b-2 border-cb-gold">
-    <div class="max-w-xl mx-auto px-4 py-2 flex justify-between items-center">
+    <div class="max-w-xl mx-auto px-4 py-2.5 flex justify-between items-center">
       <div class="flex items-center gap-2.5">
         <button onclick="toggleSidebar()" class="p-1.5 bg-cb-bordo-dark border border-cb-gold/40 rounded-lg text-stone-200 hover:text-white transition text-sm font-bold">
           ☰
@@ -130,17 +134,6 @@
       <div>
         <span id="current-module-badge" class="text-[10px] bg-cb-bordo-dark border border-cb-gold/30 px-2.5 py-1 rounded-full text-cb-gold font-bold uppercase tracking-wider">Checklists</span>
       </div>
-    </div>
-
-    <!-- Sub-menu do Módulo Checklists -->
-    <div id="checklist-subnav" class="bg-cb-bordo-dark border-t border-cb-gold/20 flex text-xs font-bold text-center">
-      <button id="main-tab-home" onclick="switchChecklistTab('home')" class="flex-1 py-2.5 border-b-2 border-cb-gold text-cb-gold transition flex items-center justify-center">
-        <span>Início</span>
-      </button>
-      <button id="main-tab-history" onclick="switchChecklistTab('history')" class="flex-1 py-2.5 border-b-2 border-transparent text-stone-300 hover:text-white transition flex items-center justify-center gap-1.5">
-        <span>Relatórios</span>
-        <span id="history-badge-count" class="bg-cb-gold text-cb-bordo-dark px-1.5 py-0.2 rounded-full text-[10px] font-black">0</span>
-      </button>
     </div>
   </header>
 
@@ -165,7 +158,7 @@
     <main id="audit-view" class="max-w-xl mx-auto p-4 space-y-4 hidden">
       <div class="flex items-center justify-between bg-white p-3 rounded-xl shadow-sm border">
         <button onclick="switchChecklistTab('home')" class="text-xs font-bold text-cb-bordo hover:underline">
-          ← Voltar
+          ← Voltar à Seleção
         </button>
         <span id="active-model-title-badge" class="text-xs font-bold text-stone-700">Modelo Atual</span>
       </div>
@@ -208,10 +201,17 @@
 
     <!-- Tela de Relatórios Salvos -->
     <main id="history-view" class="max-w-xl mx-auto p-4 space-y-4 hidden">
+      <div class="flex items-center justify-between bg-white p-3 rounded-xl shadow-sm border">
+        <button onclick="switchChecklistTab('home')" class="text-xs font-bold text-cb-bordo hover:underline">
+          ← Voltar ao Início
+        </button>
+        <span class="text-xs font-bold text-stone-700">Relatórios Salvos</span>
+      </div>
+
       <div class="bg-white p-4 rounded-xl shadow-sm border border-stone-200 space-y-3">
         <div class="flex justify-between items-center border-b pb-2">
           <div>
-            <h2 class="font-bold text-cb-bordo text-xs uppercase tracking-wider">Relatórios Salvos</h2>
+            <h2 class="font-bold text-cb-bordo text-xs uppercase tracking-wider">Filtragem de Auditorias</h2>
           </div>
           <button onclick="clearAllHistory()" class="text-xs text-rose-600 font-bold hover:underline">
             Limpar Tudo
@@ -729,18 +729,16 @@
       const checklistsMod = document.getElementById("module-checklists-container");
       const actionsMod = document.getElementById("module-actions-container");
       const auditFooter = document.getElementById("audit-footer");
-      const subNav = document.getElementById("checklist-subnav");
       const badgeMod = document.getElementById("current-module-badge");
 
       if (mod === 'checklists') {
         checklistsMod.classList.remove("hidden"); actionsMod.classList.add("hidden");
         auditFooter.classList.add("hidden");
-        subNav.classList.remove("hidden");
         badgeMod.innerText = "Checklists";
         switchChecklistTab('home');
       } else if (mod === 'actions') {
         checklistsMod.classList.add("hidden"); actionsMod.classList.remove("hidden");
-        auditFooter.classList.add("hidden"); subNav.classList.add("hidden");
+        auditFooter.classList.add("hidden");
         badgeMod.innerText = "Planos de Ação";
         renderCentralizedActions();
       }
@@ -750,8 +748,6 @@
       const homeView = document.getElementById("checklist-home-view");
       const auditView = document.getElementById("audit-view");
       const historyView = document.getElementById("history-view");
-      const tabHome = document.getElementById("main-tab-home");
-      const tabHistory = document.getElementById("main-tab-history");
       const footer = document.getElementById("audit-footer");
 
       homeView.classList.add("hidden");
@@ -761,18 +757,12 @@
 
       if (tab === 'home') {
         homeView.classList.remove("hidden");
-        tabHome.className = "flex-1 py-2.5 border-b-2 border-cb-gold text-cb-gold font-bold transition flex items-center justify-center";
-        tabHistory.className = "flex-1 py-2.5 border-b-2 border-transparent text-stone-300 font-bold transition flex items-center justify-center";
         renderHomeChecklistSelect();
       } else if (tab === 'audit') {
         auditView.classList.remove("hidden");
         footer.classList.remove("hidden");
-        tabHome.className = "flex-1 py-2.5 border-b-2 border-cb-gold text-cb-gold font-bold transition flex items-center justify-center";
-        tabHistory.className = "flex-1 py-2.5 border-b-2 border-transparent text-stone-300 font-bold transition flex items-center justify-center";
       } else if (tab === 'history') {
         historyView.classList.remove("hidden");
-        tabHome.className = "flex-1 py-2.5 border-b-2 border-transparent text-stone-300 font-bold transition flex items-center justify-center";
-        tabHistory.className = "flex-1 py-2.5 border-b-2 border-cb-gold text-cb-gold font-bold transition flex items-center justify-center";
         renderHistoryList();
       }
     }
@@ -798,6 +788,7 @@
       customAnswers = {};
       maintenanceOrders = {};
       localStorage.setItem("CB_LOCAL_ACTIVE_ID", activeChecklistId);
+      document.getElementById("active-model-title-badge").innerText = getCurrentChecklist().name;
       renderChecklist();
       
       document.getElementById("checklist-home-view").classList.add("hidden");
@@ -1005,7 +996,6 @@
         localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
         syncConfigToCloud();
         renderModelsListInConfig();
-        renderHomeChecklistSelect();
       }
     }
 
@@ -1021,7 +1011,7 @@
       localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
       localStorage.setItem("CB_LOCAL_ACTIVE_ID", activeChecklistId);
       syncConfigToCloud(); document.getElementById("new-checklist-name").value = "";
-      renderModelsListInConfig(); renderHomeChecklistSelect(); switchConfigTab('items'); alert("Modelo criado com sucesso!");
+      renderModelsListInConfig(); switchConfigTab('items'); alert("Modelo criado com sucesso!");
     }
 
     function addNewCategory() {
@@ -1080,7 +1070,7 @@
       if (confirm("Restaurar padrões?")) {
         allChecklists = JSON.parse(JSON.stringify(defaultTemplates));
         localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
-        syncConfigToCloud(); renderModelsListInConfig(); renderHomeChecklistSelect(); alert("Restaurado!");
+        syncConfigToCloud(); renderModelsListInConfig(); alert("Restaurado!");
       }
     }
 
@@ -1130,7 +1120,7 @@
     function setStarRating(itemKey, stars) {
       customAnswers[itemKey] = stars;
       for (let i = 1; i <= 5; i++) {
-        const starBtn = document.getElementById(`star-${itemKey}-${i}`);
+        const starBtn = document.getElementById(`star-${itemKey}-${s}`);
         if (starBtn) starBtn.className = `text-xl ${i <= stars ? 'text-amber-400 scale-110' : 'text-stone-300'}`;
       }
       document.getElementById(`star-label-${itemKey}`).innerText = `${stars} de 5`;
