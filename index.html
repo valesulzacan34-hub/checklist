@@ -24,9 +24,7 @@
     #sidebar { transition: transform 0.3s ease-in-out; }
     @media (min-width: 768px) {
       .app-main { max-width: 1024px; margin: 0 auto; }
-      .modules-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     }
-    @media (max-width: 767px) { .modules-grid { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body class="bg-cb-cream text-stone-800 antialiased pb-36 font-sans">
@@ -64,16 +62,16 @@
     </div>
   </div>
 
-  <!-- Tela de Seleção de Módulos (Cards) -->
+  <!-- Tela de Seleção de Módulos (Cards Verticais) -->
   <div id="modules-screen" class="fixed inset-0 bg-cb-bordo-dark z-40 hidden flex items-center justify-center p-4 overflow-y-auto">
-    <div class="bg-white w-full max-w-sm rounded-2xl p-6 space-y-5 shadow-2xl border border-cb-gold/30 text-center">
+    <div class="bg-white w-full max-w-sm rounded-2xl p-6 space-y-4 shadow-2xl border border-cb-gold/30 text-center">
       <div>
         <img id="modules-logo-img" alt="Casa Bauducco" class="h-14 w-auto object-contain mx-auto mb-1">
         <h2 class="text-xs font-bold text-cb-bordo uppercase tracking-wider">Painel Principal</h2>
         <p class="text-[11px] text-stone-500">Selecione o módulo que deseja acessar</p>
       </div>
 
-      <div id="modules-grid" class="modules-grid grid gap-3 text-left"></div>
+      <div id="modules-grid" class="grid grid-cols-1 gap-2.5 text-left"></div>
 
       <button onclick="handleLogout()" class="text-xs text-rose-600 font-bold hover:underline pt-1 block mx-auto">
         Encerrar Sessão (Sair)
@@ -852,17 +850,17 @@
 
       if (currentUser.role === 'admin' || currentUser.role === 'gerente') {
         grid.innerHTML += `
-          <button onclick="selectModule('checklists')" class="p-4 bg-stone-50 hover:bg-stone-100 border border-stone-200 rounded-xl transition shadow-sm text-center">
+          <button onclick="selectModule('checklists')" class="p-3.5 bg-stone-50 hover:bg-stone-100 border border-stone-200 rounded-xl transition shadow-sm text-center block w-full">
             <h3 class="font-bold text-cb-bordo text-xs uppercase tracking-wider">Checklists</h3>
             <p class="text-[11px] text-stone-500 mt-0.5">Realizar auditorias e relatórios</p>
           </button>
-          <button onclick="selectModule('actions')" class="p-4 bg-stone-50 hover:bg-stone-100 border border-stone-200 rounded-xl transition shadow-sm text-center">
+          <button onclick="selectModule('actions')" class="p-3.5 bg-stone-50 hover:bg-stone-100 border border-stone-200 rounded-xl transition shadow-sm text-center block w-full">
             <h3 class="font-bold text-amber-900 text-xs uppercase tracking-wider">Planos de Ação</h3>
             <p class="text-[11px] text-stone-500 mt-0.5">Acompanhamento e chat de correções</p>
           </button>`;
       } else if (currentUser.role === 'operador') {
         grid.innerHTML += `
-          <button onclick="selectModule('checklists')" class="p-4 bg-stone-50 hover:bg-stone-100 border border-stone-200 rounded-xl transition shadow-sm text-center">
+          <button onclick="selectModule('checklists')" class="p-3.5 bg-stone-50 hover:bg-stone-100 border border-stone-200 rounded-xl transition shadow-sm text-center block w-full">
             <h3 class="font-bold text-cb-bordo text-xs uppercase tracking-wider">Checklists</h3>
             <p class="text-[11px] text-stone-500 mt-0.5">Realizar auditorias e relatórios</p>
           </button>`;
@@ -870,7 +868,7 @@
 
       if (currentUser.role === 'admin') {
         grid.innerHTML += `
-          <button onclick="toggleUsersModal()" class="p-4 bg-stone-50 hover:bg-stone-100 border border-stone-200 rounded-xl transition shadow-sm text-center">
+          <button onclick="toggleUsersModal()" class="p-3.5 bg-stone-50 hover:bg-stone-100 border border-stone-200 rounded-xl transition shadow-sm text-center block w-full">
             <h3 class="font-bold text-stone-900 text-xs uppercase tracking-wider">Gerenciar Unidades & Usuários</h3>
             <p class="text-[11px] text-stone-500 mt-0.5">Lojas da rede e permissões</p>
           </button>`;
@@ -1167,7 +1165,7 @@
         else return act.status !== 'Concluído';
       });
 
-      // 📅 Organizar em ordem crescente de data (o que vence primeiro aparece no topo)
+      // 📅 Organizar planos de ação por ordem crescente de data (o que vence primeiro aparece no topo)
       filteredActions.sort((a, b) => {
         let dateA = a.rawDate && a.rawDate !== 'Indefinida' && a.rawDate !== 'Não definida' ? new Date(a.rawDate.split('/').reverse().join('-')) : new Date('2099-12-31');
         let dateB = b.rawDate && b.rawDate !== 'Indefinida' && b.rawDate !== 'Não definida' ? new Date(b.rawDate.split('/').reverse().join('-')) : new Date('2099-12-31');
@@ -1211,7 +1209,7 @@
               ${statusOptions}
             </select>
             <button id="btn-chat-${act.chatId}" onclick="openChatModal('${act.chatId}', '${act.fullReportId}', '${act.type}', ${act.index})" class="relative px-2.5 py-1.5 bg-white text-cb-bordo font-bold rounded shadow-sm">
-              💬 Chat & Detalhes
+              💬 Chat
               <span id="chat-dot-${act.chatId}" class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-white hidden"></span>
             </button>
           </div>`;
@@ -1273,7 +1271,8 @@
           if (change.type === "added") {
             const m = change.doc.data();
             if (m.sender !== currentUser.name && !m.seen) {
-              document.getElementById("notif-sound").play().catch(e => console.log("Áudio aguardando interação"));
+              const beep = new Audio('https://actions.google.com/sounds/v1/notifications/beep_short.ogg');
+              beep.play().catch(e => console.log("Áudio bloqueado pelo navegador"));
               document.getElementById("global-notification-dot")?.classList.remove("hidden");
             }
           }
@@ -1719,66 +1718,6 @@
       calculateScore();
     }
 
-    function buildReportData() {
-      const current = getCurrentChecklist();
-      const unit = document.getElementById("unit-selector").value || "Unidade Não Informada";
-      const supervisor = document.getElementById("supervisor-name").value || currentUser.name;
-      const notes = document.getElementById("notes").value || "Sem observações.";
-      const { score, total } = calculateScore();
-      const dateStr = new Date().toLocaleString("pt-BR");
-
-      let itemsRows = "", nonConformitiesRows = "", maintenanceRows = "";
-      let ncCount = 0, omCount = 0, nonConformitiesList = [], maintenanceList = [];
-
-      current.categories.forEach((sec, sIdx) => {
-        if (sec.items.length === 0) return;
-        itemsRows += `<tr style="background-color: #FAF7F2;"><td colspan="2" style="padding: 7px; font-weight: bold; border: 1px solid #d6d3d1; color: #4A0E17; text-transform: uppercase; font-size:11px;">${sec.category}</td></tr>`;
-
-        sec.items.forEach((item, iIdx) => {
-          const key = `${sIdx}-${iIdx}`;
-          const itemType = item.type || "boolean";
-          let statusBadge = "";
-          let photoUrl = attachedPhotos[key] || '';
-
-          if (itemType === "boolean") {
-            const selected = document.querySelector(`input[name="item-${key}"]:checked`);
-            const val = selected ? selected.value : "na";
-            if (val === "conforme") statusBadge = "SIM";
-            if (val === "na") statusBadge = "N/A";
-            if (val === "nao-conforme") {
-              statusBadge = "NÃO"; ncCount++;
-              const plan = actionPlans[key] || { action: '', date: '' };
-              nonConformitiesList.push({ title: item.title, category: sec.category, action: plan.action, date: plan.date || 'Não definida', photoUrl: photoUrl });
-              nonConformitiesRows += `<tr><td style="padding: 6px; border: 1px solid #fecdd3;">${item.title}</td><td style="padding: 6px; border: 1px solid #fecdd3;">${plan.action}</td><td style="padding: 6px; text-align: center; border: 1px solid #fecdd3;">${plan.date}</td></tr>`;
-            }
-          } else if (itemType === "maintenance") {
-            const selected = document.querySelector(`input[name="item-${key}"]:checked`);
-            const val = selected ? selected.value : "na";
-            if (val === "regular") statusBadge = "REGULAR";
-            if (val === "na") statusBadge = "N/A";
-            if (val === "abrir") {
-              statusBadge = "ABERTO"; omCount++;
-              const om = maintenanceOrders[key] || { equipment: '', action: '', date: '' };
-              maintenanceList.push({ equipment: om.equipment, action: om.action, date: om.date || 'Não definida', photoUrl: photoUrl });
-              maintenanceRows += `<tr><td style="padding: 6px; border: 1px solid #fde68a;">${om.equipment}</td><td style="padding: 6px; border: 1px solid #fde68a;">${om.action}</td><td style="padding: 6px; text-align: center; border: 1px solid #fde68a;">${om.date}</td></tr>`;
-            }
-          }
-          itemsRows += `<tr><td style="padding: 5px; font-size: 10px; border: 1px solid #e7e5e4;">${item.title}</td><td style="padding: 5px; font-size: 10px; text-align: center; border: 1px solid #e7e5e4;">${statusBadge}</td></tr>`;
-        });
-      });
-
-      const fullHtml = `
-        <table style="width: 100%; border-collapse: collapse; border-bottom: 3px solid #4A0E17; margin-bottom: 10px;"><tr><td><strong>${current.name}</strong><br><span style="font-size:10px;">Data: ${dateStr}</span></td><td style="text-align: right;"><span style="font-size:18px; font-weight:900; color:#4A0E17;">${score}%</span></td></tr></table>
-        <table style="background: #FAF7F2; border: 1px solid #D4AF37; width: 100%; margin-bottom: 10px; font-size:10px;"><tr><td style="padding: 6px;"><strong>Unidade:</strong> ${unit}</td><td style="padding: 6px;"><strong>Supervisor:</strong> ${supervisor}</td></tr></table>
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size:10px;"><thead><tr style="background: #4A0E17; color: white;"><th style="padding: 5px; text-align:left;">Item</th><th style="padding: 5px; text-align:center;">Resultado</th></tr></thead><tbody>${itemsRows}</tbody></table>
-        <div style="font-size:10px; background:#FAF7F2; padding:6px; margin-bottom:10px;"><strong>Obs:</strong> ${notes}</div>
-        ${ncCount > 0 ? `<table style="width:100%; border-collapse:collapse; margin-bottom:10px; font-size:10px;"><thead><tr style="background:#be123c; color:white;"><th style="padding:5px;">Não Conformidade</th><th style="padding:5px;">Ação</th><th style="padding:5px; text-align:center;">Prazo</th></tr></thead><tbody>${nonConformitiesRows}</tbody></table>` : ''}
-        ${omCount > 0 ? `<table style="width:100%; border-collapse:collapse; margin-bottom:10px; font-size:10px;"><thead><tr style="background:#d97706; color:white;"><th style="padding:5px;">Equipamento</th><th style="padding:5px;">Defeito</th><th style="padding:5px; text-align:center;">Prazo</th></tr></thead><tbody>${maintenanceRows}</tbody></table>` : ''}
-      `;
-
-      return { unit, supervisor, notes, score, total, date: dateStr, checklistName: current.name, nonConformities: nonConformitiesList, maintenanceOrders: maintenanceList, htmlContent: fullHtml };
-    }
-
     function handlePhotoUpload(event, key) {
       const file = event.target.files[0];
       if (file) {
@@ -1798,7 +1737,6 @@
         sec.items.forEach((item, iIdx) => {
           const key = `${sIdx}-${iIdx}`;
           if (item.requirePhoto && !attachedPhotos[key]) {
-            // Verifica se gerou não conformidade ou manutenção aberta
             const isNc = document.querySelector(`input[name="item-${key}"][value="nao-conforme"]`)?.checked;
             const isOm = document.querySelector(`input[name="item-${key}"][value="abrir"]`)?.checked;
             if (isNc || isOm) missing.push(item.title);
@@ -1806,32 +1744,6 @@
         });
       });
       return missing;
-    }
-
-    function openPrintWindow(htmlContent) {
-      const p = window.open('', '_blank');
-      p.document.write(`<!DOCTYPE html><html><head><style>@page { size: A4; margin: 10mm; } body { font-family: Arial; }</style></head><body>${htmlContent}</body></html>`);
-      p.document.close(); p.focus(); setTimeout(() => p.print(), 500);
-    }
-
-    function generatePDF() {
-      if (validatePhotos().length > 0) return alert("Fotos obrigatórias pendentes para itens não conformes.");
-      const report = buildReportData(); saveReportToCloud(report); openPrintWindow(report.htmlContent);
-    }
-
-    function shareWhatsApp() {
-      if (validatePhotos().length > 0) return alert("Fotos obrigatórias pendentes para itens não conformes.");
-      const report = buildReportData(); saveReportToCloud(report);
-      let text = `*RELATÓRIO OPERACIONAL*\n📍 *Unidade:* ${report.unit}\n📊 *Conformidade:* ${report.score}%\n\n`;
-      report.nonConformities.forEach(nc => text += `❌ *${nc.title}*\n   ↳ Ação: ${nc.action} (Prazo: ${nc.date})\n\n`);
-      report.maintenanceOrders.forEach(om => text += `🔧 *OM:* ${om.equipment}\n   ↳ Ação: ${om.action} (Prazo: ${om.date})\n\n`);
-      window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, "_blank");
-    }
-
-    function toggleConfigModal() {
-      const modal = document.getElementById("config-modal");
-      modal.classList.toggle("hidden");
-      if (!modal.classList.contains("hidden")) switchConfigTab('models');
     }
 
     initApp();
