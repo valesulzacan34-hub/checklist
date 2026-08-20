@@ -282,7 +282,8 @@
           <button id="actions-tab-completed" onclick="switchActionsTab('completed')" class="flex-1 py-2 border-b-2 border-transparent text-stone-400 transition">✅ Concluídos</button>
         </div>
 
-        <div class="grid grid-cols-2 gap-2 text-xs pt-1">
+        <!-- Filtros Adicionais de Status e Prioridade (Tarja) -->
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-2 text-xs pt-1">
           <div>
             <label class="block font-bold text-stone-600 mb-1">A partir de:</label>
             <input type="date" id="action-date-start" onchange="renderCentralizedActions()" class="w-full border rounded p-2 bg-stone-50">
@@ -290,6 +291,18 @@
           <div>
             <label class="block font-bold text-stone-600 mb-1">Até:</label>
             <input type="date" id="action-date-end" onchange="renderCentralizedActions()" class="w-full border rounded p-2 bg-stone-50">
+          </div>
+          <div>
+            <label class="block font-bold text-stone-600 mb-1">Filtrar Status:</label>
+            <select id="filter-status" onchange="renderCentralizedActions()" class="w-full border rounded p-2 bg-stone-50 font-semibold">
+              <option value="">Todos os Status</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-bold text-stone-600 mb-1">Filtrar Tarja:</label>
+            <select id="filter-priority" onchange="renderCentralizedActions()" class="w-full border rounded p-2 bg-stone-50 font-semibold">
+              <option value="">Todas as Tarjas</option>
+            </select>
           </div>
         </div>
       </div>
@@ -1309,7 +1322,32 @@
       container.innerHTML = "";
       const startFilter = document.getElementById("action-date-start").value;
       const endFilter = document.getElementById("action-date-end").value;
+      const statusFilter = document.getElementById("filter-status").value;
+      const priorityFilter = document.getElementById("filter-priority").value;
       const allowedUnits = getAllowedUnits();
+
+      // Popular dinamicamente os selects de filtro caso estejam vazios
+      const statusSelect = document.getElementById("filter-status");
+      if (statusSelect && statusSelect.options.length <= 1) {
+        actionStatuses.forEach(st => {
+          let opt = document.createElement("option");
+          opt.value = st.name;
+          opt.innerText = st.name;
+          statusSelect.appendChild(opt);
+        });
+        statusSelect.value = statusFilter;
+      }
+
+      const prioritySelect = document.getElementById("filter-priority");
+      if (prioritySelect && prioritySelect.options.length <= 1) {
+        actionPriorities.forEach(pr => {
+          let opt = document.createElement("option");
+          opt.value = pr.name;
+          opt.innerText = pr.name;
+          prioritySelect.appendChild(opt);
+        });
+        prioritySelect.value = priorityFilter;
+      }
 
       let allActions = [];
 
@@ -1375,8 +1413,10 @@
 
       let filteredActions = allActions.filter(act => {
         let isDone = act.status.toLowerCase().includes('concluído');
-        if (currentActionsTab === 'completed') return isDone;
-        else return !isDone;
+        let tabMatch = (currentActionsTab === 'completed') ? isDone : !isDone;
+        let statusMatch = !statusFilter || act.status === statusFilter;
+        let priorityMatch = !priorityFilter || act.priority === priorityFilter;
+        return tabMatch && statusMatch && priorityMatch;
       });
 
       // 📅 Organizar planos de ação por ordem crescente de data (o que vence primeiro aparece no topo)
@@ -1387,7 +1427,7 @@
       });
 
       if (filteredActions.length === 0) {
-        container.innerHTML = `<div class="p-8 text-center bg-white rounded-xl border text-stone-400 text-xs">Nenhum plano de ação encontrado nesta aba.</div>`;
+        container.innerHTML = `<div class="p-8 text-center bg-white rounded-xl border text-stone-400 text-xs">Nenhum plano de ação encontrado nesta aba/filtro.</div>`;
         return;
       }
 
