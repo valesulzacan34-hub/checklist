@@ -95,7 +95,7 @@
         <span id="history-badge-count" class="bg-cb-gold text-cb-bordo-dark px-1.5 py-0.2 rounded-full text-[10px] font-black">0</span>
       </button>
       <button id="sidebar-btn-users" onclick="toggleUsersModal(); toggleSidebar();" class="hidden w-full text-left px-3 py-2.5 rounded-lg hover:bg-cb-bordo transition">
-        👥 Gerenciar Usuários
+        👥 Gerenciar Unidades & Usuários
       </button>
       <button id="sidebar-btn-config" onclick="toggleConfigModal(); toggleSidebar();" class="hidden w-full text-left px-3 py-2.5 rounded-lg hover:bg-cb-bordo transition">
         ⚙️ Configurações Gerais
@@ -173,9 +173,6 @@
       <div class="bg-white p-4 rounded-xl shadow-sm border border-stone-200 space-y-3">
         <div class="flex justify-between items-center border-b pb-2">
           <h2 class="font-bold text-cb-bordo text-xs uppercase tracking-wider">Unidade</h2>
-          <button id="audit-btn-units" onclick="openUnitsConfigTab()" class="hidden text-[11px] text-cb-bordo font-bold hover:underline">
-            Gerenciar Lojas
-          </button>
         </div>
 
         <div class="space-y-3 text-sm">
@@ -287,42 +284,67 @@
     </div>
   </div>
 
-  <!-- Modal de Usuários -->
+  <!-- Modal de Gerenciamento de Usuários e Unidades (Exclusivo Admin) -->
   <div id="users-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white w-full max-w-lg rounded-2xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden border border-cb-gold/30">
+    <div class="bg-white w-full max-w-xl h-[90vh] rounded-2xl flex flex-col shadow-2xl overflow-hidden border border-cb-gold/30">
       <div class="p-4 border-b border-stone-200 flex justify-between items-center bg-cb-cream">
         <div>
-          <h3 class="font-bold text-cb-bordo text-sm">Gerenciar Usuários & Unidades Vinculadas</h3>
+          <h3 class="font-bold text-cb-bordo text-sm">Gerenciamento de Unidades & Usuários</h3>
+          <p class="text-xs text-stone-500">Cadastre lojas e defina o acesso dos gestores/operadores</p>
         </div>
         <button onclick="toggleUsersModal()" class="text-stone-400 hover:text-stone-700 text-lg font-bold p-1">✕</button>
       </div>
 
-      <div id="users-list" class="p-4 overflow-y-auto space-y-3 flex-1 text-sm bg-stone-50"></div>
-
-      <div class="p-4 border-t border-stone-200 bg-white space-y-3">
-        <span class="block text-xs font-bold text-cb-bordo uppercase">Cadastrar Novo Usuário</span>
-        <div class="grid grid-cols-2 gap-2">
-          <input type="text" id="new-user-name" placeholder="Login (ex: gerente_valesul)" class="text-xs border rounded-lg p-2 bg-stone-50">
-          <input type="text" id="new-user-pass" placeholder="Senha" class="text-xs border rounded-lg p-2 bg-stone-50">
-        </div>
-        <div class="grid grid-cols-2 gap-2">
-          <input type="text" id="new-user-fullname" placeholder="Nome Completo" class="text-xs border rounded-lg p-2 bg-stone-50">
-          <select id="new-user-role" onchange="toggleUnitSelectionBox()" class="text-xs border rounded-lg p-2 bg-stone-50 font-semibold">
-            <option value="admin">Admin (Todos acessos)</option>
-            <option value="gerente">Gerente (Checklists + Planos)</option>
-            <option value="operador">Operador (Apenas Checklists)</option>
-          </select>
-        </div>
-        
-        <div id="new-user-units-box" class="hidden space-y-1">
-          <label class="block text-[11px] font-bold text-stone-600">Unidades Vinculadas (Segure Ctrl para selecionar mais de uma):</label>
-          <select id="new-user-units" multiple class="w-full text-xs border rounded-lg p-2 bg-stone-50 h-20"></select>
-        </div>
-
-        <button onclick="addNewUser()" class="w-full py-2.5 bg-cb-bordo hover:bg-cb-bordo-dark text-white text-xs font-bold rounded-lg transition uppercase tracking-wider">
-          + Criar Acesso
-        </button>
+      <div class="flex border-b border-stone-200 bg-stone-100 text-xs font-bold">
+        <button id="admin-tab-units" onclick="switchAdminTab('units')" class="flex-1 py-2.5 border-b-2 border-cb-bordo text-cb-bordo bg-white transition">🏢 Lojas da Rede</button>
+        <button id="admin-tab-users" onclick="switchAdminTab('users')" class="flex-1 py-2.5 border-b-2 border-transparent text-stone-500 transition">👥 Usuários & Vínculos</button>
       </div>
+
+      <!-- Aba Lojas (Admin) -->
+      <div id="admin-content-units" class="p-4 overflow-y-auto space-y-4 flex-1 bg-stone-50 text-xs">
+        <div class="bg-white p-3 rounded-xl border space-y-2 shadow-sm">
+          <span class="block font-bold text-cb-bordo uppercase">Cadastrar Nova Loja / Unidade</span>
+          <div class="flex gap-2">
+            <input type="text" id="admin-new-unit-input" placeholder="Ex: Shopping..." class="flex-1 border rounded p-2 bg-stone-50 font-semibold">
+            <button onclick="adminAddNewUnit()" class="px-3 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded">Adicionar</button>
+          </div>
+        </div>
+        <div class="bg-white p-3 rounded-xl border space-y-2 shadow-sm">
+          <span class="block font-bold text-cb-bordo uppercase">Lojas Cadastradas</span>
+          <div id="admin-units-list" class="space-y-1.5 max-h-48 overflow-y-auto"></div>
+        </div>
+      </div>
+
+      <!-- Aba Usuários (Admin) -->
+      <div id="admin-content-users" class="hidden p-4 overflow-y-auto space-y-4 flex-1 bg-stone-50 text-xs">
+        <div id="users-list" class="space-y-2 max-h-40 overflow-y-auto"></div>
+
+        <div class="bg-white p-3 rounded-xl border space-y-2 shadow-sm">
+          <span class="block font-bold text-cb-bordo uppercase">Cadastrar Novo Usuário</span>
+          <div class="grid grid-cols-2 gap-2">
+            <input type="text" id="new-user-name" placeholder="Login" class="border rounded p-2 bg-stone-50">
+            <input type="text" id="new-user-pass" placeholder="Senha" class="border rounded p-2 bg-stone-50">
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <input type="text" id="new-user-fullname" placeholder="Nome Completo" class="border rounded p-2 bg-stone-50">
+            <select id="new-user-role" onchange="toggleUnitSelectionBox()" class="border rounded p-2 bg-stone-50 font-semibold">
+              <option value="admin">Admin (Total)</option>
+              <option value="gerente">Gerente (Vinculado)</option>
+              <option value="operador">Operador (Vinculado)</option>
+            </select>
+          </div>
+          
+          <div id="new-user-units-box" class="hidden space-y-1">
+            <label class="block font-bold text-stone-600">Lojas Permitidas (Ctrl para múltiplas):</label>
+            <select id="new-user-units" multiple class="w-full border rounded p-2 bg-stone-50 h-16"></select>
+          </div>
+
+          <button onclick="addNewUser()" class="w-full py-2 bg-cb-bordo hover:bg-cb-bordo-dark text-white font-bold rounded uppercase">
+            + Criar Acesso
+          </button>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -347,45 +369,22 @@
       
       <div class="p-3.5 border-b border-stone-200 flex justify-between items-center bg-cb-bordo text-white">
         <div>
-          <h3 class="font-bold text-sm text-cb-gold">Configurações Gerais</h3>
+          <h3 class="font-bold text-sm text-cb-gold">Configurações Gerais dos Checklists</h3>
         </div>
         <button onclick="toggleConfigModal()" class="text-stone-300 hover:text-white text-xl font-bold px-2 py-0.5">✕</button>
       </div>
 
       <div class="flex border-b border-stone-200 bg-stone-100 text-xs font-bold overflow-x-auto">
-        <button id="tab-btn-units" onclick="switchConfigTab('units')" class="flex-1 min-w-[100px] py-3 border-b-2 border-cb-bordo text-cb-bordo bg-white transition">
-          Lojas
+        <button id="tab-btn-models" onclick="switchConfigTab('models')" class="flex-1 py-3 border-b-2 border-cb-bordo text-cb-bordo bg-white transition">
+          Modelos de Checklists
         </button>
-        <button id="tab-btn-models" onclick="switchConfigTab('models')" class="flex-1 min-w-[100px] py-3 border-b-2 border-transparent text-stone-500 hover:text-cb-bordo transition">
-          Checklists
-        </button>
-        <button id="tab-btn-items" onclick="switchConfigTab('items')" class="flex-1 min-w-[120px] py-3 border-b-2 border-transparent text-stone-500 hover:text-cb-bordo transition">
+        <button id="tab-btn-items" onclick="switchConfigTab('items')" class="flex-1 py-3 border-b-2 border-transparent text-stone-500 hover:text-cb-bordo transition">
           Setores & Perguntas
         </button>
       </div>
 
-      <!-- Aba Lojas -->
-      <div id="tab-content-units" class="p-4 space-y-4 overflow-y-auto flex-1 bg-stone-50 text-sm">
-        <div class="bg-white p-4 rounded-xl border border-stone-200 space-y-3 shadow-sm">
-          <span class="block text-xs font-bold text-cb-bordo uppercase tracking-wider">Nova Unidade</span>
-          <div class="flex gap-2">
-            <input type="text" id="new-unit-input" placeholder="Ex: Shopping..." class="flex-1 text-xs border rounded-lg p-2.5 bg-stone-50 font-medium">
-            <button onclick="addNewPresetUnit()" class="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-lg transition">
-              + Adicionar
-            </button>
-          </div>
-        </div>
-        <div class="bg-white p-4 rounded-xl border border-stone-200 space-y-3 shadow-sm">
-          <div class="flex justify-between items-center border-b pb-2">
-            <span class="block text-xs font-bold text-cb-bordo uppercase tracking-wider">Unidades Cadastradas</span>
-            <span id="units-count-badge" class="text-xs text-stone-500 font-bold">0</span>
-          </div>
-          <div id="units-list-container" class="space-y-2 max-h-64 overflow-y-auto"></div>
-        </div>
-      </div>
-
       <!-- Aba Checklists -->
-      <div id="tab-content-models" class="hidden p-5 space-y-5 overflow-y-auto flex-1 bg-stone-50 text-sm">
+      <div id="tab-content-models" class="p-5 space-y-5 overflow-y-auto flex-1 bg-stone-50 text-sm">
         <div class="bg-white p-4 rounded-xl border border-stone-200 space-y-3 shadow-sm">
           <span class="block text-xs font-bold text-cb-bordo uppercase tracking-wider">Novo Modelo</span>
           <div class="flex gap-2">
@@ -674,8 +673,7 @@
     function renderPresetUnits() {
       const select = document.getElementById("unit-selector");
       const filterStore = document.getElementById("filter-store");
-      const listContainer = document.getElementById("units-list-container");
-      const badge = document.getElementById("units-count-badge");
+      const listContainer = document.getElementById("admin-units-list");
       const allowedUnits = getAllowedUnits();
 
       if (select) {
@@ -700,16 +698,15 @@
         listContainer.innerHTML = "";
         presetUnits.forEach((u, idx) => {
           const item = document.createElement("div");
-          item.className = "flex justify-between items-center p-2.5 bg-stone-50 rounded-lg border text-xs text-stone-800";
-          item.innerHTML = `<span class="font-bold">${u}</span><div class="flex gap-2"><button onclick="editPresetUnit(${idx})" class="text-stone-600 font-bold">Editar</button><button onclick="deletePresetUnit(${idx})" class="text-rose-600 font-bold">Excluir</button></div>`;
+          item.className = "flex justify-between items-center p-2 bg-stone-50 rounded border text-xs";
+          item.innerHTML = `<span class="font-bold">${u}</span><div class="flex gap-2"><button onclick="adminEditUnit(${idx})" class="text-stone-600 font-bold">Editar</button><button onclick="adminDeleteUnit(${idx})" class="text-rose-600 font-bold">Excluir</button></div>`;
           listContainer.appendChild(item);
         });
       }
-      if (badge) badge.innerText = `${presetUnits.length}`;
     }
 
-    function addNewPresetUnit() {
-      const input = document.getElementById("new-unit-input");
+    function adminAddNewUnit() {
+      const input = document.getElementById("admin-new-unit-input");
       const val = input.value.trim();
       if (!val) return alert("Digite o nome da loja.");
       if (presetUnits.includes(val)) return alert("Já cadastrada.");
@@ -718,7 +715,7 @@
       syncConfigToCloud(); input.value = ""; renderPresetUnits(); renderUserUnitsCheckboxes();
     }
 
-    function editPresetUnit(idx) {
+    function adminEditUnit(idx) {
       const newName = prompt("Editar nome da unidade:", presetUnits[idx]);
       if (newName && newName.trim()) {
         presetUnits[idx] = newName.trim();
@@ -727,7 +724,7 @@
       }
     }
 
-    function deletePresetUnit(idx) {
+    function adminDeleteUnit(idx) {
       if (presetUnits.length <= 1) return alert("Mantenha ao menos uma unidade.");
       if (confirm("Excluir unidade?")) {
         presetUnits.splice(idx, 1);
@@ -735,8 +732,6 @@
         syncConfigToCloud(); renderPresetUnits(); renderUserUnitsCheckboxes();
       }
     }
-
-    function openUnitsConfigTab() { toggleConfigModal(); switchConfigTab('units'); }
 
     function handleLogin() {
       const u = document.getElementById("login-user").value.trim().toLowerCase();
@@ -785,21 +780,18 @@
       const auditFooter = document.getElementById("audit-footer");
       const badgeMod = document.getElementById("current-module-badge");
 
-      const btnConfig = document.getElementById("home-btn-config");
-      const sideBtnConfig = document.getElementById("sidebar-btn-config");
       const sideBtnUsers = document.getElementById("sidebar-btn-users");
-      const auditBtnUnits = document.getElementById("audit-btn-units");
+      const sideBtnConfig = document.getElementById("sidebar-btn-config");
+      const homeBtnConfig = document.getElementById("home-btn-config");
 
       if (currentUser.role === 'admin') {
-        if (btnConfig) btnConfig.classList.remove("hidden");
-        if (sideBtnConfig) sideBtnConfig.classList.remove("hidden");
         if (sideBtnUsers) sideBtnUsers.classList.remove("hidden");
-        if (auditBtnUnits) auditBtnUnits.classList.remove("hidden");
+        if (sideBtnConfig) sideBtnConfig.classList.remove("hidden");
+        if (homeBtnConfig) homeBtnConfig.classList.remove("hidden");
       } else {
-        if (btnConfig) btnConfig.classList.add("hidden");
-        if (sideBtnConfig) sideBtnConfig.classList.add("hidden");
         if (sideBtnUsers) sideBtnUsers.classList.add("hidden");
-        if (auditBtnUnits) auditBtnUnits.classList.add("hidden");
+        if (sideBtnConfig) sideBtnConfig.classList.add("hidden");
+        if (homeBtnConfig) homeBtnConfig.classList.add("hidden");
       }
 
       if (mod === 'checklists') {
@@ -1051,12 +1043,36 @@
       }).then(() => input.value = "");
     }
 
-    // GERENCIAMENTO DE USUÁRIOS
+    // GERENCIAMENTO DE USUÁRIOS & UNIDADES (ADMIN)
     function toggleUsersModal() {
       if (currentUser.role !== 'admin') return alert("Acesso restrito a administradores.");
       const m = document.getElementById("users-modal");
       m.classList.toggle("hidden");
       if (!m.classList.contains("hidden")) {
+        renderUsersList();
+        renderPresetUnits();
+        switchAdminTab('units');
+      }
+    }
+
+    function switchAdminTab(tab) {
+      const uContent = document.getElementById("admin-content-units");
+      const uUsers = document.getElementById("admin-content-users");
+      const btnU = document.getElementById("admin-tab-units");
+      const btnUs = document.getElementById("admin-tab-users");
+
+      uContent.classList.add("hidden");
+      uUsers.classList.add("hidden");
+      btnU.className = "flex-1 py-2.5 border-b-2 border-transparent text-stone-500 transition";
+      btnUs.className = "flex-1 py-2.5 border-b-2 border-transparent text-stone-500 transition";
+
+      if (tab === 'units') {
+        uContent.classList.remove("hidden");
+        btnU.className = "flex-1 py-2.5 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition";
+        renderPresetUnits();
+      } else if (tab === 'users') {
+        uUsers.classList.remove("hidden");
+        btnUs.className = "flex-1 py-2.5 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition";
         renderUsersList();
         renderUserUnitsCheckboxes();
       }
@@ -1086,7 +1102,7 @@
       list.innerHTML = "";
       users.forEach((u, idx) => {
         const item = document.createElement("div");
-        item.className = "bg-white border p-3 rounded-xl text-xs space-y-1 shadow-sm";
+        item.className = "bg-stone-50 border p-2.5 rounded-xl text-xs space-y-1";
         let unitsText = u.units && u.units.length > 0 ? u.units.join(", ") : "Todas as Lojas";
         item.innerHTML = `
           <div class="flex justify-between items-center">
@@ -1137,25 +1153,19 @@
     }
 
     function switchConfigTab(tab) {
-      document.getElementById("tab-content-units").classList.add("hidden");
       document.getElementById("tab-content-models").classList.add("hidden");
       document.getElementById("tab-content-items").classList.add("hidden");
 
-      document.getElementById("tab-btn-units").className = "flex-1 min-w-[100px] py-3 border-b-2 border-transparent text-stone-500 transition";
       document.getElementById("tab-btn-models").className = "flex-1 min-w-[100px] py-3 border-b-2 border-transparent text-stone-500 transition";
       document.getElementById("tab-btn-items").className = "flex-1 min-w-[120px] py-3 border-b-2 border-transparent text-stone-500 transition";
 
-      if (tab === 'units') {
-        document.getElementById("tab-content-units").classList.remove("hidden");
-        document.getElementById("tab-btn-units").className = "flex-1 min-w-[100px] py-3 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition";
-        renderPresetUnits();
-      } else if (tab === 'models') {
+      if (tab === 'models') {
         document.getElementById("tab-content-models").classList.remove("hidden");
         document.getElementById("tab-btn-models").className = "flex-1 min-w-[100px] py-3 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition";
         renderModelsListInConfig();
       } else if (tab === 'items') {
         document.getElementById("tab-content-items").classList.remove("hidden");
-        document.getElementById("tab-btn-items").className = "flex-1 min-w-[100px] py-3 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition";
+        document.getElementById("tab-btn-items").className = "flex-1 min-w-[120px] py-3 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition";
         document.getElementById("config-active-model-name").innerText = getCurrentChecklist().name;
         renderModalItems();
       }
@@ -1285,12 +1295,10 @@
         document.getElementById("sidebar-btn-users").classList.remove("hidden");
         document.getElementById("sidebar-btn-config").classList.remove("hidden");
         document.getElementById("home-btn-config").classList.remove("hidden");
-        document.getElementById("audit-btn-units").classList.remove("hidden");
       } else {
         document.getElementById("sidebar-btn-users").classList.add("hidden");
         document.getElementById("sidebar-btn-config").classList.add("hidden");
         document.getElementById("home-btn-config").classList.add("hidden");
-        document.getElementById("audit-btn-units").classList.add("hidden");
       }
       
       openModulesScreen();
@@ -1510,7 +1518,7 @@
     function toggleConfigModal() {
       const modal = document.getElementById("config-modal");
       modal.classList.toggle("hidden");
-      if (!modal.classList.contains("hidden")) switchConfigTab('units');
+      if (!modal.classList.contains("hidden")) switchConfigTab('models');
     }
 
     initApp();
