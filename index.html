@@ -22,10 +22,10 @@
     .bg-cb-cream { background-color: var(--cb-cream); }
     #sidebar { transition: transform 0.3s ease-in-out; }
     @media (min-width: 768px) {
-      .app-main { max-width: 900px !important; margin: 0 auto; }
+      .app-main, .responsive-container { max-width: 900px !important; margin: 0 auto; }
     }
     @media (max-width: 767px) {
-      .app-main { max-width: 100% !important; padding-left: 0.75rem; padding-right: 0.75rem; }
+      .app-main, .responsive-container { max-width: 100% !important; padding-left: 0.75rem; padding-right: 0.75rem; }
       .action-card-row { flex-direction: column !important; align-items: stretch !important; gap: 0.5rem !important; }
       .action-card-controls { display: flex; justify-content: space-between; align-items: center; width: 100%; }
     }
@@ -154,7 +154,7 @@
 
   <div class="app-main p-4">
     <!-- MÓDULO 1: CHECKLISTS -->
-    <div id="module-checklists-container">
+    <div id="module-checklists-container" class="responsive-container">
       <main id="checklist-home-view" class="space-y-4">
         <div class="bg-white p-5 rounded-xl shadow-sm border border-stone-200 space-y-4">
           <h2 class="font-bold text-cb-bordo text-xs uppercase tracking-wider">Selecione o Checklist</h2>
@@ -266,7 +266,7 @@
     </div>
 
     <!-- MÓDULO 2: PLANOS DE AÇÃO & MANUTENÇÃO -->
-    <main id="module-actions-container" class="space-y-4 hidden">
+    <main id="module-actions-container" class="responsive-container space-y-4 hidden">
       <div class="bg-white p-4 rounded-xl shadow-sm border border-stone-200 space-y-3">
         <h2 class="font-bold text-cb-bordo text-xs uppercase tracking-wider">Agenda de Planos de Ação</h2>
         <p class="text-xs text-stone-500">Acompanhamento e chat com os responsáveis</p>
@@ -698,21 +698,21 @@
       });
     }
 
-    // 🔊 Função de Áudio Sintetizado (Garante execução instantânea sem depender de arquivos externos)
+    // 🔊 Função de Áudio Sintetizado (AudioContext) para tocar garantido instantaneamente
     function playAudioBeep() {
       try {
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         const osc = audioCtx.createOscillator();
         const gainNode = audioCtx.createGain();
         osc.type = "sine";
-        osc.frequency.setValueAtTime(800, audioCtx.currentTime);
-        gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+        gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
         osc.connect(gainNode);
         gainNode.connect(audioCtx.destination);
         osc.start();
         osc.stop(audioCtx.currentTime + 0.15);
       } catch (e) {
-        console.log("Áudio indisponível por restrição do navegador");
+        console.log("Áudio restrito pelo navegador");
       }
     }
 
@@ -1353,7 +1353,7 @@
       renderCentralizedActions();
     }
 
-    // 🔊 Notificação instantânea com som sintetizado (AudioContext) ao receber mensagem
+    // 🔊 Notificação instantânea com som sintetizado ao receber mensagem
     function loadChatMessages(chatId) {
       if (!isFirebaseReady) return;
       db.collection("chats").doc(chatId).collection("messages").orderBy("createdAt", "asc").onSnapshot(snapshot => {
