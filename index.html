@@ -767,8 +767,9 @@
       container.innerHTML = "";
       allChecklists.forEach(c => {
         const btn = document.createElement("button");
+        btn.type = "button";
         btn.onclick = () => startChecklistModel(c.id);
-        btn.className = "p-3.5 bg-stone-50 hover:bg-stone-100 border border-stone-200 rounded-xl transition shadow-sm text-left flex justify-between items-center group";
+        btn.className = "p-3.5 bg-stone-50 hover:bg-stone-100 border border-stone-200 rounded-xl transition shadow-sm text-left flex justify-between items-center group w-full";
         btn.innerHTML = `
           <div>
             <h3 class="font-bold text-cb-bordo text-xs uppercase tracking-wider">${c.name}</h3>
@@ -1006,9 +1007,11 @@
       if (!name) return alert("Nome vazio.");
       const newId = "checklist-" + Date.now();
       allChecklists.push({ id: newId, name: name, categories: [{ category: "1. Itens Gerais", items: [] }] });
+      activeChecklistId = newId;
       localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
+      localStorage.setItem("CB_LOCAL_ACTIVE_ID", activeChecklistId);
       syncConfigToCloud(); document.getElementById("new-checklist-name").value = "";
-      renderModelsListInConfig(); alert("Modelo criado com sucesso!");
+      renderModelsListInConfig(); switchConfigTab('items'); alert("Modelo criado com sucesso!");
     }
 
     function addNewCategory() {
