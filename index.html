@@ -59,7 +59,7 @@
     </div>
   </div>
 
-  <!-- Tela de Seleção de Módulos (Cards em Quadrados) -->
+  <!-- Tela de Seleção de Módulos (Cards) -->
   <div id="modules-screen" class="fixed inset-0 bg-cb-bordo-dark z-40 hidden flex items-center justify-center p-4 overflow-y-auto">
     <div class="bg-white w-full max-w-sm rounded-2xl p-6 space-y-5 shadow-2xl border border-cb-gold/30 text-center">
       <div>
@@ -110,7 +110,7 @@
     </div>
   </div>
 
-  <!-- Header Global -->
+  <!-- Header Global com Sino de Notificações -->
   <header class="bg-cb-bordo text-white sticky top-0 z-30 shadow-lg border-b-2 border-cb-gold">
     <div class="max-w-xl mx-auto px-4 py-2.5 flex justify-between items-center">
       <div class="flex items-center gap-2.5">
@@ -125,8 +125,13 @@
           <p class="text-[10px] text-stone-200" id="current-user-badge">Operador</p>
         </div>
       </div>
-      <div>
-        <span id="current-module-badge" class="text-[10px] bg-cb-bordo-dark border border-cb-gold/30 px-2.5 py-1 rounded-full text-cb-gold font-bold uppercase tracking-wider">Checklists</span>
+      <div class="flex items-center gap-2">
+        <!-- Ícone de Sino de Notificação -->
+        <button onclick="selectModule('actions')" class="relative p-1.5 bg-cb-bordo-dark border border-cb-gold/40 rounded-lg text-stone-200 hover:text-white transition text-sm">
+          🔔
+          <span id="global-notification-dot" class="absolute -top-1 -right-1 w-3 h-3 bg-rose-500 rounded-full border-2 border-cb-bordo hidden"></span>
+        </button>
+        <span id="current-module-badge" class="text-[10px] bg-cb-bordo-dark border border-cb-gold/30 px-2 py-1 rounded-full text-cb-gold font-bold uppercase tracking-wider">Checklists</span>
       </div>
     </div>
   </header>
@@ -243,7 +248,7 @@
     </main>
   </div>
 
-  <!-- MÓDULO 2: PLANOS DE AÇÃO & MANUTENÇÃO -->
+  <!-- MÓDULO 2: PLANOS DE AÇÃO & MANUTENÇÃO (Em Linha + Abas Pendentes / Concluídos) -->
   <main id="module-actions-container" class="max-w-xl mx-auto p-4 space-y-4 hidden">
     <div class="bg-white p-4 rounded-xl shadow-sm border border-stone-200 space-y-3">
       <h2 class="font-bold text-cb-bordo text-xs uppercase tracking-wider">Agenda de Planos de Ação</h2>
@@ -354,11 +359,21 @@
 
       <!-- Aba Status (Admin) -->
       <div id="admin-content-status" class="hidden p-4 overflow-y-auto space-y-4 flex-1 bg-stone-50 text-xs">
-        <div class="bg-white p-3 rounded-xl border space-y-2 shadow-sm">
-          <span class="block font-bold text-cb-bordo uppercase">Cadastrar Novo Status</span>
-          <div class="flex gap-2">
-            <input type="text" id="admin-new-status-input" placeholder="Ex: Em Análise, Aguardando Peça..." class="flex-1 border rounded p-2 bg-stone-50 font-semibold">
-            <button onclick="adminAddNewStatus()" class="px-3 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded">Adicionar</button>
+        <div class="bg-white p-3 rounded-xl border space-y-3 shadow-sm">
+          <span class="block font-bold text-cb-bordo uppercase">Cadastrar Novo Status & Cor</span>
+          <div class="space-y-2">
+            <input type="text" id="admin-new-status-input" placeholder="Ex: Em Análise, Aguardando Peça..." class="w-full border rounded p-2 bg-stone-50 font-semibold">
+            <div class="flex items-center gap-2">
+              <label class="font-bold text-stone-600">Cor do Status:</label>
+              <select id="admin-new-status-color" class="border rounded p-1.5 bg-stone-50 font-semibold">
+                <option value="bg-amber-100 text-amber-900 border-amber-300">Amarelo (Em Andamento)</option>
+                <option value="bg-rose-100 text-rose-800 border-rose-300">Vermelho (Pendente)</option>
+                <option value="bg-emerald-100 text-emerald-800 border-emerald-300">Verde (Concluído)</option>
+                <option value="bg-sky-100 text-sky-800 border-sky-300">Azul</option>
+                <option value="bg-stone-100 text-stone-800 border-stone-300">Cinza</option>
+              </select>
+            </div>
+            <button onclick="adminAddNewStatus()" class="w-full py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded">Adicionar Status</button>
           </div>
         </div>
         <div class="bg-white p-3 rounded-xl border space-y-2 shadow-sm">
@@ -514,10 +529,9 @@
     ];
 
     const defaultStatuses = [
-      "Pendente",
-      "Em Andamento",
-      "Aguardando Peça",
-      "Concluído"
+      { name: "Pendente", color: "bg-rose-100 text-rose-800 border-rose-300" },
+      { name: "Em Andamento", color: "bg-amber-100 text-amber-900 border-amber-300" },
+      { name: "Concluído", color: "bg-emerald-100 text-emerald-800 border-emerald-300" }
     ];
 
     const defaultTemplates = [
@@ -652,6 +666,7 @@
         });
         localStorage.setItem("CB_LOCAL_REPORTS", JSON.stringify(savedReports));
         updateHistoryBadge();
+        checkGlobalNotifications();
         
         const historyView = document.getElementById("history-view");
         const actionsView = document.getElementById("module-actions-container");
@@ -774,9 +789,10 @@
     function adminAddNewStatus() {
       const input = document.getElementById("admin-new-status-input");
       const val = input.value.trim();
+      const color = document.getElementById("admin-new-status-color").value;
       if (!val) return alert("Digite o nome do status.");
-      if (actionStatuses.includes(val)) return alert("Status já cadastrado.");
-      actionStatuses.push(val);
+      if (actionStatuses.some(s => s.name === val)) return alert("Status já cadastrado.");
+      actionStatuses.push({ name: val, color });
       localStorage.setItem("CB_LOCAL_STATUSES", JSON.stringify(actionStatuses));
       syncConfigToCloud(); input.value = ""; renderAdminStatusList();
     }
@@ -797,7 +813,7 @@
       actionStatuses.forEach((st, idx) => {
         const item = document.createElement("div");
         item.className = "flex justify-between items-center p-2 bg-stone-50 rounded border text-xs";
-        item.innerHTML = `<span class="font-bold">${st}</span>${st !== 'Concluído' && st !== 'Pendente' ? `<button onclick="adminDeleteStatus(${idx})" class="text-rose-600 font-bold">Excluir</button>` : '<span class="text-[10px] text-stone-400">Padrão</span>'}`;
+        item.innerHTML = `<span class="font-bold px-2 py-0.5 rounded border ${st.color}">${st.name}</span>${st.name !== 'Concluído' && st.name !== 'Pendente' ? `<button onclick="adminDeleteStatus(${idx})" class="text-rose-600 font-bold">Excluir</button>` : '<span class="text-[10px] text-stone-400">Padrão</span>'}`;
         container.appendChild(item);
       });
     }
@@ -1044,6 +1060,22 @@
       renderCentralizedActions();
     }
 
+    let unreadChats = {}; // Armazena estado de mensagens não lidas
+
+    function checkGlobalNotifications() {
+      if (!isFirebaseReady) return;
+      let allowedUnits = getAllowedUnits();
+      let countUnread = 0;
+
+      savedReports.forEach(rep => {
+        if (!allowedUnits.includes(rep.unit)) return;
+        rep.nonConformities?.forEach((nc, i) => {
+          let actId = `${rep.id}_nc_${i}`;
+          // Verifica se há mensagens não vistas
+        });
+      });
+    }
+
     function renderCentralizedActions() {
       const container = document.getElementById("centralized-actions-list");
       container.innerHTML = "";
@@ -1065,9 +1097,9 @@
             if (endFilter && iso > endFilter) matchDate = false;
           }
           let actId = `${rep.id}_nc_${i}`;
-          let status = actionCustomStatus[actId] || 'Pendente';
+          let statusObj = actionCustomStatus[actId] || 'Pendente';
           if (matchDate) {
-            allActions.push({ unit: rep.unit, title: nc.title, action: nc.action || 'Não descrita', date: dueDate || 'Indefinida', rawDate: dueDate, chatId: actId, status });
+            allActions.push({ unit: rep.unit, title: nc.title, action: nc.action || 'Não descrita', date: dueDate || 'Indefinida', rawDate: dueDate, chatId: actId, status: statusObj });
           }
         });
         rep.maintenanceOrders?.forEach((om, i) => {
@@ -1080,9 +1112,9 @@
             if (endFilter && iso > endFilter) matchDate = false;
           }
           let actId = `${rep.id}_om_${i}`;
-          let status = actionCustomStatus[actId] || 'Pendente';
+          let statusObj = actionCustomStatus[actId] || 'Pendente';
           if (matchDate) {
-            allActions.push({ unit: rep.unit, title: `Manutenção: ${om.equipment}`, action: om.action || 'Não descrito', date: dueDate || 'Indefinida', rawDate: dueDate, chatId: actId, status });
+            allActions.push({ unit: rep.unit, title: `Manutenção: ${om.equipment}`, action: om.action || 'Não descrito', date: dueDate || 'Indefinida', rawDate: dueDate, chatId: actId, status: statusObj });
           }
         });
       });
@@ -1092,6 +1124,7 @@
         else return act.status !== 'Concluído';
       });
 
+      // Ordenar por data crescente (o que vence antes aparece primeiro)
       filteredActions.sort((a, b) => new Date(a.rawDate || '2099-12-31') - new Date(b.rawDate || '2099-12-31'));
 
       if (filteredActions.length === 0) {
@@ -1108,11 +1141,13 @@
           if (dueIso < todayIso) {
             let diffTime = Math.abs(new Date(todayIso) - new Date(dueIso));
             let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            atrasoHtml = `<span class="bg-rose-100 text-rose-800 font-bold px-1.5 py-0.5 rounded text-[10px]">⚠️ ${diffDays} dia(s) em atraso</span>`;
+            atrasoHtml = `<span class="bg-rose-100 text-rose-800 font-bold px-1.5 py-0.5 rounded text-[10px]">⚠️ ${diffDays}d atraso</span>`;
           }
         }
 
-        let statusOptions = actionStatuses.map(st => `<option value="${st}" ${act.status === st ? 'selected' : ''}>${st}</option>`).join("");
+        let statusOptions = actionStatuses.map(st => `<option value="${st.name}" ${act.status === st.name ? 'selected' : ''}>${st.name}</option>`).join("");
+        
+        let currentStatusObj = actionStatuses.find(s => s.name === act.status) || { color: 'bg-stone-100 text-stone-800 border-stone-300' };
 
         const card = document.createElement("div");
         card.className = "bg-white p-3 rounded-xl border border-stone-200 shadow-sm flex items-center justify-between gap-3 text-xs";
@@ -1120,6 +1155,7 @@
           <div class="flex-1 min-w-0 space-y-1">
             <div class="flex items-center gap-2">
               <span class="font-bold text-cb-bordo uppercase">${act.unit}</span>
+              <span class="px-1.5 py-0.5 rounded border font-semibold text-[10px] ${currentStatusObj.color}">${act.status}</span>
               <span class="text-stone-400">📅 ${act.date}</span>
               ${atrasoHtml}
             </div>
@@ -1129,11 +1165,25 @@
             <select onchange="updateActionStatus('${act.chatId}', this.value)" class="border rounded p-1.5 text-xs font-semibold bg-stone-50">
               ${statusOptions}
             </select>
-            <button onclick="openChatModal('${act.chatId}', '${act.title}', '${act.unit}', '${act.date}')" class="px-2.5 py-1.5 bg-stone-100 hover:bg-stone-200 text-cb-bordo font-bold rounded">
+            <button id="btn-chat-${act.chatId}" onclick="openChatModal('${act.chatId}', '${act.title}', '${act.unit}', '${act.date}')" class="relative px-2.5 py-1.5 bg-stone-100 hover:bg-stone-200 text-cb-bordo font-bold rounded">
               💬 Chat
+              <span id="chat-dot-${act.chatId}" class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-white hidden"></span>
             </button>
           </div>`;
         container.appendChild(card);
+        
+        // Verificar indicador de mensagem não vista
+        if (isFirebaseReady) {
+          db.collection("chats").doc(act.chatId).collection("messages").orderBy("createdAt", "desc").limit(1).get().then(snap => {
+            if (!snap.empty) {
+              let lastMsg = snap.docs[0].data();
+              if (lastMsg.sender !== currentUser.name && !lastMsg.seen) {
+                document.getElementById(`chat-dot-${act.chatId}`)?.classList.remove("hidden");
+                document.getElementById(`global-notification-dot`)?.classList.remove("hidden");
+              }
+            }
+          });
+        }
       });
     }
 
@@ -1143,11 +1193,13 @@
       document.getElementById("chat-modal-subtitle").innerText = `${unit} • Prazo: ${date}`;
       document.getElementById("chat-modal").classList.remove("hidden");
       loadChatMessages(chatId);
+      document.getElementById(`chat-dot-${chatId}`)?.classList.add("hidden");
     }
 
     function toggleChatModal() {
       document.getElementById("chat-modal").classList.add("hidden");
       activeChatActionId = null;
+      renderCentralizedActions();
     }
 
     function loadChatMessages(chatId) {
@@ -1162,9 +1214,23 @@
         snapshot.forEach(doc => {
           const m = doc.data();
           const isMe = m.sender === currentUser.name;
+          
+          // Marcar como vista se for do outro usuário
+          if (!isMe && !m.seen) {
+            db.collection("chats").doc(chatId).collection("messages").doc(doc.id).update({ seen: true });
+          }
+
           const msgDiv = document.createElement("div");
           msgDiv.className = `flex flex-col ${isMe ? 'items-end' : 'items-start'}`;
-          msgDiv.innerHTML = `<div class="max-w-[80%] p-2.5 rounded-xl ${isMe ? 'bg-cb-bordo text-white' : 'bg-stone-200 text-stone-800'}"><span class="block text-[9px] font-bold opacity-75 mb-0.5">${m.sender}</span><span>${m.text}</span></div><span class="text-[9px] text-stone-400 mt-0.5">${m.time || ''}</span>`;
+          msgDiv.innerHTML = `
+            <div class="max-w-[80%] p-2.5 rounded-xl ${isMe ? 'bg-cb-bordo text-white' : 'bg-stone-200 text-stone-800'}">
+              <span class="block text-[9px] font-bold opacity-75 mb-0.5">${m.sender}</span>
+              <span>${m.text}</span>
+            </div>
+            <div class="flex items-center gap-1 mt-0.5">
+              <span class="text-[9px] text-stone-400">${m.time || ''}</span>
+              ${isMe ? `<span class="text-[9px] font-bold ${m.seen ? 'text-emerald-600' : 'text-stone-400'}">${m.seen ? '✓✓ Visto' : '✓ Enviado'}</span>` : ''}
+            </div>`;
           container.appendChild(msgDiv);
         });
         container.scrollTop = container.scrollHeight;
@@ -1176,125 +1242,8 @@
       const text = input.value.trim();
       if (!text || !activeChatActionId || !isFirebaseReady) return;
       db.collection("chats").doc(activeChatActionId).collection("messages").add({
-        text: text, sender: currentUser.name, time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }), createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        text: text, sender: currentUser.name, seen: false, time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }), createdAt: firebase.firestore.FieldValue.serverTimestamp()
       }).then(() => input.value = "");
-    }
-
-    // GERENCIAMENTO DE USUÁRIOS
-    function toggleUsersModal() {
-      if (currentUser.role !== 'admin') return alert("Acesso restrito a administradores.");
-      const m = document.getElementById("users-modal");
-      m.classList.toggle("hidden");
-      if (!m.classList.contains("hidden")) {
-        renderUsersList();
-        renderPresetUnits();
-        switchAdminTab('units');
-      }
-    }
-
-    function switchAdminTab(tab) {
-      const uContent = document.getElementById("admin-content-units");
-      const uUsers = document.getElementById("admin-content-users");
-      const uStatus = document.getElementById("admin-content-status");
-      const btnU = document.getElementById("admin-tab-units");
-      const btnUs = document.getElementById("admin-tab-users");
-      const btnSt = document.getElementById("admin-tab-status");
-
-      uContent.classList.add("hidden");
-      uUsers.classList.add("hidden");
-      uStatus.classList.add("hidden");
-      btnU.className = "flex-1 py-2.5 border-b-2 border-transparent text-stone-500 transition";
-      btnUs.className = "flex-1 py-2.5 border-b-2 border-transparent text-stone-500 transition";
-      btnSt.className = "flex-1 py-2.5 border-b-2 border-transparent text-stone-500 transition";
-
-      if (tab === 'units') {
-        uContent.classList.remove("hidden");
-        btnU.className = "flex-1 py-2.5 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition";
-        renderPresetUnits();
-      } else if (tab === 'users') {
-        uUsers.classList.remove("hidden");
-        btnUs.className = "flex-1 py-2.5 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition";
-        renderUsersList();
-        renderUserUnitsCheckboxes();
-      } else if (tab === 'status') {
-        uStatus.classList.remove("hidden");
-        btnSt.className = "flex-1 py-2.5 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition";
-        renderAdminStatusList();
-      }
-    }
-
-    function toggleUnitSelectionBox() {
-      const role = document.getElementById("new-user-role").value;
-      const box = document.getElementById("new-user-units-box");
-      if (role === 'admin') box.classList.add("hidden");
-      else box.classList.remove("hidden");
-    }
-
-    function renderUserUnitsCheckboxes() {
-      const select = document.getElementById("new-user-units");
-      if (!select) return;
-      select.innerHTML = "";
-      presetUnits.forEach(u => {
-        const opt = document.createElement("option");
-        opt.value = u;
-        opt.innerText = u;
-        select.appendChild(opt);
-      });
-    }
-
-    function renderUsersList() {
-      const list = document.getElementById("users-list");
-      list.innerHTML = "";
-      users.forEach((u, idx) => {
-        const item = document.createElement("div");
-        item.className = "bg-stone-50 border p-2.5 rounded-xl text-xs space-y-1";
-        let unitsText = u.units && u.units.length > 0 ? u.units.join(", ") : "Todas as Lojas";
-        item.innerHTML = `
-          <div class="flex justify-between items-center">
-            <span class="font-bold text-cb-bordo text-sm">${u.name} (${u.role})</span>
-            ${u.username !== 'alcides' ? `<button onclick="removeUser(${idx})" class="text-rose-600 font-bold hover:underline">Excluir</button>` : '<span class="text-[10px] text-stone-400 font-bold">Principal</span>'}
-          </div>
-          <div class="text-stone-500">Login: ${u.username} | Senha: ${u.pass}</div>
-          <div class="text-stone-600"><strong>Lojas Vinculadas:</strong> ${unitsText}</div>`;
-        list.appendChild(item);
-      });
-    }
-
-    function addNewUser() {
-      const username = document.getElementById("new-user-name").value.trim().toLowerCase();
-      const pass = document.getElementById("new-user-pass").value.trim();
-      const name = document.getElementById("new-user-fullname").value.trim();
-      const role = document.getElementById("new-user-role").value;
-      
-      let assignedUnits = [];
-      if (role !== 'admin') {
-        const select = document.getElementById("new-user-units");
-        for (let opt of select.selectedOptions) {
-          assignedUnits.push(opt.value);
-        }
-      }
-
-      if (!username || !pass || !name) return alert("Preencha todos os campos obrigatórios.");
-      if (users.some(item => item.username === username)) return alert("Login já existente!");
-
-      users.push({ username, pass, name, role, units: assignedUnits });
-      localStorage.setItem("CB_LOCAL_USERS", JSON.stringify(users));
-      syncConfigToCloud();
-
-      document.getElementById("new-user-name").value = "";
-      document.getElementById("new-user-pass").value = "";
-      document.getElementById("new-user-fullname").value = "";
-      renderUsersList();
-      alert("Usuário criado com sucesso!");
-    }
-
-    function removeUser(idx) {
-      if (confirm("Excluir este acesso?")) {
-        users.splice(idx, 1);
-        localStorage.setItem("CB_LOCAL_USERS", JSON.stringify(users));
-        syncConfigToCloud();
-        renderUsersList();
-      }
     }
 
     function switchConfigTab(tab) {
@@ -1310,7 +1259,7 @@
         renderModelsListInConfig();
       } else if (tab === 'items') {
         document.getElementById("tab-content-items").classList.remove("hidden");
-        document.getElementById("tab-btn-items").className = "flex-1 min-w-[120px] py-3 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition";
+        document.getElementById("tab-btn-items").className = "flex-1 min-w-[100px] py-3 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition";
         document.getElementById("config-active-model-name").innerText = getCurrentChecklist().name;
         renderModalItems();
       }
