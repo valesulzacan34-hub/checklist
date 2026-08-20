@@ -283,7 +283,6 @@
         <h2 class="font-bold text-cb-bordo text-xs uppercase tracking-wider">Agenda de Planos de Ação</h2>
         <p class="text-xs text-stone-500">Acompanhamento e chat com os responsáveis</p>
 
-        <!-- 📊 Cards de Contagem de Status -->
         <div class="grid grid-cols-3 gap-2 pt-1 text-center">
           <div class="bg-rose-50 border border-rose-200 p-2.5 rounded-xl shadow-sm">
             <span class="block text-[10px] font-bold text-rose-800 uppercase">Pendentes</span>
@@ -304,7 +303,6 @@
           <button id="actions-tab-completed" onclick="switchActionsTab('completed')" class="flex-1 py-2 border-b-2 border-transparent text-stone-400 transition">✅ Concluídos</button>
         </div>
 
-        <!-- Filtros Adicionais -->
         <div class="grid grid-cols-1 sm:grid-cols-6 gap-2 text-xs pt-1">
           <div>
             <label class="block font-bold text-stone-600 mb-1">Filtrar Loja:</label>
@@ -385,7 +383,7 @@
       <div id="technicians-list-container" class="space-y-3"></div>
     </main>
 
-    <!-- MÓDULO 4: AGENDA / CALENDÁRIO -->
+    <!-- MÓDULO 4: AGENDA / CALENDÁRIO ESTILO GOOGLE AGENDA -->
     <main id="module-agenda-container" class="responsive-container space-y-4 hidden">
       <div class="bg-white p-4 rounded-xl shadow-sm border border-stone-200 space-y-3">
         <div class="flex justify-between items-center flex-wrap gap-2">
@@ -398,21 +396,33 @@
           </button>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs pt-1">
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-2 text-xs pt-1 items-center">
           <div>
             <label class="block font-bold text-stone-600 mb-1">Filtrar Loja / Agenda:</label>
             <select id="filter-agenda-store" onchange="renderAgendaCalendar()" class="w-full border rounded p-2 bg-stone-50 font-semibold">
               <option value="GERAL">⭐ Eventos em Comum (Todas as Lojas)</option>
             </select>
           </div>
-          <div class="flex items-end">
-            <span class="text-[11px] text-stone-500">Planos de ação gerados em checklists entram automaticamente aqui.</span>
+          <div class="flex gap-1 sm:col-span-2 items-center pt-4">
+            <button onclick="changeCalendarView('month')" id="btn-view-month" class="px-3 py-1.5 bg-cb-bordo text-white font-bold rounded transition">Mês</button>
+            <button onclick="changeCalendarView('week')" id="btn-view-week" class="px-3 py-1.5 bg-stone-200 text-stone-700 font-bold rounded transition">Semana</button>
+            <button onclick="changeCalendarView('day')" id="btn-view-day" class="px-3 py-1.5 bg-stone-200 text-stone-700 font-bold rounded transition">Dia</button>
+          </div>
+          <div class="flex justify-end items-center gap-1 pt-4">
+            <button onclick="navigateCalendar(-1)" class="px-2.5 py-1.5 bg-stone-100 border rounded font-bold hover:bg-stone-200">◀</button>
+            <button onclick="navigateCalendar(0)" class="px-3 py-1.5 bg-stone-100 border rounded font-bold hover:bg-stone-200">Hoje</button>
+            <button onclick="navigateCalendar(1)" class="px-2.5 py-1.5 bg-stone-100 border rounded font-bold hover:bg-stone-200">▶</button>
           </div>
         </div>
       </div>
 
-      <!-- Container do Calendário / Lista de Eventos -->
-      <div id="agenda-events-container" class="space-y-3"></div>
+      <!-- Display do Período Atual -->
+      <div class="bg-cb-bordo text-cb-gold px-4 py-2 rounded-xl text-center font-bold text-sm uppercase tracking-wider shadow-sm" id="calendar-period-title">
+        Mês / Ano
+      </div>
+
+      <!-- Container do Calendário Interativo -->
+      <div id="calendar-grid-container" class="bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden"></div>
     </main>
   </div>
 
@@ -760,6 +770,10 @@
     let techniciansList = JSON.parse(localStorage.getItem("CB_LOCAL_TECHNICIANS")) || defaultTechnicians;
     let calendarEvents = JSON.parse(localStorage.getItem("CB_LOCAL_CALENDAR_EVENTS")) || [];
 
+    // Estado do Calendário
+    let currentCalendarDate = new Date();
+    let currentCalendarView = 'month'; // 'month', 'week', 'day'
+
     const defaultTemplates = [
       {
         id: "cb-supervisao",
@@ -901,9 +915,11 @@
         
         const historyView = document.getElementById("history-view");
         const actionsView = document.getElementById("module-actions-container");
+        const agendaView = document.getElementById("module-agenda-container");
 
         if (historyView && !historyView.classList.contains("hidden")) renderHistoryList();
         if (actionsView && !actionsView.classList.contains("hidden")) renderCentralizedActions();
+        if (agendaView && !agendaView.classList.contains("hidden")) renderAgendaCalendar();
         
         setupGlobalChatListeners();
       });
@@ -1724,25 +1740,48 @@
       });
     }
 
-    // 📅 Lógica da Agenda / Calendário
+    // 📅 Lógica do Calendário Interativo Estilo Google Agenda
+    function changeCalendarView(view) {
+      currentCalendarView = view;
+      document.getElementById("btn-view-month").className = `px-3 py-1.5 font-bold rounded transition ${view === 'month' ? 'bg-cb-bordo text-white' : 'bg-stone-200 text-stone-700'}`;
+      document.getElementById("btn-view-week").className = `px-3 py-1.5 font-bold rounded transition ${view === 'week' ? 'bg-cb-bordo text-white' : 'bg-stone-200 text-stone-700'}`;
+      document.getElementById("btn-view-day").className = `px-3 py-1.5 font-bold rounded transition ${view === 'day' ? 'bg-cb-bordo text-white' : 'bg-stone-200 text-stone-700'}`;
+      renderAgendaCalendar();
+    }
+
+    function navigateCalendar(dir) {
+      if (dir === 0) {
+        currentCalendarDate = new Date();
+      } else {
+        if (currentCalendarView === 'month') {
+          currentCalendarDate.setMonth(currentCalendarDate.getMonth() + dir);
+        } else if (currentCalendarView === 'week') {
+          currentCalendarDate.setDate(currentCalendarDate.getDate() + (dir * 7));
+        } else if (currentCalendarView === 'day') {
+          currentCalendarDate.setDate(currentCalendarDate.getDate() + dir);
+        }
+      }
+      renderAgendaCalendar();
+    }
+
     function renderAgendaCalendar() {
-      const container = document.getElementById("agenda-events-container");
-      if (!container) return;
-      container.innerHTML = "";
+      const gridContainer = document.getElementById("calendar-grid-container");
+      const titleEl = document.getElementById("calendar-period-title");
+      if (!gridContainer) return;
+      gridContainer.innerHTML = "";
 
       const storeSelection = document.getElementById("filter-agenda-store").value;
 
-      // Recolher planos de ação salvos para integrar automaticamente na agenda
-      let agendaItems = [...calendarEvents];
+      // Recolher eventos manuais e planos de ação integrados automaticamente
+      let allEvents = [...calendarEvents];
 
       savedReports.forEach(rep => {
         rep.nonConformities?.forEach((nc, i) => {
           if (nc.date && nc.date !== 'Não definida' && nc.date !== 'Indefinida') {
-            agendaItems.push({
+            allEvents.push({
               id: `rep_nc_${rep.id}_${i}`,
-              title: `Plano de Ação: ${nc.title}`,
-              date: nc.date.split('/').reverse().join('-'), // Converte para yyyy-mm-dd para ordenação
-              displayDate: nc.date,
+              title: `[Ação] ${nc.title}`,
+              date: nc.date.split('/').reverse().join('-'),
               store: rep.unit,
               scope: 'INDIVIDUAL',
               desc: nc.action || 'Não descrita',
@@ -1752,11 +1791,10 @@
         });
         rep.maintenanceOrders?.forEach((om, i) => {
           if (om.date && om.date !== 'Não definida' && om.date !== 'Indefinida') {
-            agendaItems.push({
+            allEvents.push({
               id: `rep_om_${rep.id}_${i}`,
-              title: `Manutenção: ${om.equipment}`,
+              title: `[Manutenção] ${om.equipment}`,
               date: om.date.split('/').reverse().join('-'),
-              displayDate: om.date,
               store: rep.unit,
               scope: 'INDIVIDUAL',
               desc: om.action || om.defect || 'Sem descrição',
@@ -1766,65 +1804,145 @@
         });
       });
 
-      // Filtrar por loja selecionada (GERAL mostra todos em comum + todos individuais, ou filtra por unidade)
-      let filteredEvents = agendaItems.filter(ev => {
-        if (storeSelection === 'GERAL') {
-          return ev.scope === 'GERAL';
-        } else {
-          return ev.scope === 'GERAL' || ev.store === storeSelection;
+      // Filtragem por loja selecionada
+      let filteredEvents = allEvents.filter(ev => {
+        if (storeSelection === 'GERAL') return ev.scope === 'GERAL';
+        return ev.scope === 'GERAL' || ev.store === storeSelection;
+      });
+
+      let year = currentCalendarDate.getFullYear();
+      let month = currentCalendarDate.getMonth();
+      let day = currentCalendarDate.getDate();
+
+      const monthNames = ["Janeiro", "Fevereiro", "Março", "Abri", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+
+      if (currentCalendarView === 'month') {
+        titleEl.innerText = `${monthNames[month]} de ${year}`;
+        
+        let firstDayIndex = new Date(year, month, 1).getDay();
+        let totalDays = new Date(year, month + 1, 0).getDate();
+
+        let table = document.createElement("div");
+        table.className = "grid grid-cols-7 text-xs text-center border-stone-200";
+
+        // Dias da semana
+        ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].forEach(d => {
+          let cell = document.createElement("div");
+          cell.className = "bg-cb-bordo text-cb-gold font-bold p-2 border-b";
+          cell.innerText = d;
+          table.appendChild(cell);
+        });
+
+        // Espaços vazios do mês anterior
+        for (let i = 0; i < firstDayIndex; i++) {
+          let emptyCell = document.createElement("div");
+          emptyCell.className = "bg-stone-50/50 p-2 border-b border-r min-h-[90px]";
+          table.appendChild(emptyCell);
         }
-      });
 
-      // Ordenar por data
-      filteredEvents.sort((a, b) => new Date(a.date) - new Date(b.date));
+        // Dias do mês
+        for (let d = 1; d <= totalDays; d++) {
+          let dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+          let dayEvents = filteredEvents.filter(e => e.date === dateStr);
 
-      if (filteredEvents.length === 0) {
-        container.innerHTML = `<div class="p-8 text-center bg-white rounded-xl border text-stone-400 text-xs">Nenhum evento ou compromisso agendado para esta seleção.</div>`;
-        return;
-      }
+          let cell = document.createElement("div");
+          cell.className = "bg-white p-1.5 border-b border-r min-h-[90px] flex flex-col justify-start text-left overflow-hidden";
+          
+          let todayStr = new Date().toISOString().split('T')[0];
+          let isToday = dateStr === todayStr;
 
-      filteredEvents.forEach(ev => {
-        let isAuto = ev.type === 'action' || ev.type === 'maintenance';
-        let canEdit = currentUser.role === 'admin' || (currentUser.role === 'gerente' && !isAuto);
+          let eventsHtml = dayEvents.map(ev => {
+            let isAuto = ev.type === 'action' || ev.type === 'maintenance';
+            let bgClass = isAuto ? 'bg-amber-100 text-amber-900 border-amber-300' : (ev.scope === 'GERAL' ? 'bg-purple-100 text-purple-900 border-purple-300' : 'bg-sky-100 text-sky-900 border-sky-300');
+            return `<div onclick="openEventDetail('${ev.id}')" class="px-1.5 py-0.5 rounded border text-[10px] font-semibold truncate cursor-pointer mb-0.5 ${bgClass}" title="${ev.title}">• ${ev.title}</div>`;
+          }).join("");
 
-        let card = document.createElement("div");
-        card.className = `p-3.5 rounded-xl border shadow-sm flex justify-between items-center text-xs bg-white ${isAuto ? 'border-amber-300 bg-amber-50/40' : 'border-stone-200'}`;
-        card.innerHTML = `
-          <div class="space-y-1">
-            <div class="flex items-center gap-2 flex-wrap">
-              <span class="font-bold text-sm text-cb-bordo uppercase">${ev.title}</span>
-              <span class="bg-cb-bordo text-cb-gold px-2 py-0.5 rounded font-bold text-[10px]">${ev.scope === 'GERAL' ? '⭐ Evento em Comum' : `Loja: ${ev.store}`}</span>
-              <span class="text-stone-500 font-medium">📅 ${ev.displayDate || ev.date.split('-').reverse().join('/')}</span>
+          cell.innerHTML = `
+            <div class="font-bold text-stone-700 mb-1 flex justify-between items-center">
+              <span class="${isToday ? 'bg-cb-bordo text-cb-gold px-1.5 py-0.5 rounded-full' : ''}">${d}</span>
+              ${currentUser.role === 'admin' || currentUser.role === 'gerente' ? `<button onclick="openEventModalForDate('${dateStr}')" class="text-stone-400 hover:text-cb-bordo text-[10px] font-bold">+</button>` : ''}
             </div>
-            <p class="text-stone-700">${ev.desc}</p>
-          </div>
-          <div class="flex items-center gap-2">
-            ${!isAuto && canEdit ? `<button onclick="deleteCalendarEvent('${ev.id}')" class="px-2.5 py-1 bg-rose-100 text-rose-800 font-bold rounded">Excluir</button>` : '<span class="text-[10px] text-stone-400 italic">Automático</span>'}
-          </div>`;
-        container.appendChild(card);
-      });
+            <div class="flex-1 overflow-y-auto space-y-0.5 max-h-[70px]">${eventsHtml}</div>`;
+          table.appendChild(cell);
+        }
+
+        gridContainer.appendChild(table);
+
+      } else if (currentCalendarView === 'week') {
+        let currDate = new Date(currentCalendarDate);
+        let firstDayOfWeek = new Date(currDate.setDate(currDate.getDate() - currDate.getDay()));
+        let lastDayOfWeek = new Date(firstDayOfWeek);
+        lastDayOfWeek.setDate(lastDayOfWeek.getDate() + 6);
+
+        titleEl.innerText = `Semana: ${firstDayOfWeek.toLocaleDateString('pt-BR')} a ${lastDayOfWeek.toLocaleDateString('pt-BR')}`;
+
+        let table = document.createElement("div");
+        table.className = "divide-y text-xs";
+
+        for (let i = 0; i < 7; i++) {
+          let loopDate = new Date(firstDayOfWeek);
+          loopDate.setDate(loopDate.getDate() + i);
+          let dateStr = loopDate.toISOString().split('T')[0];
+          let dayEvents = filteredEvents.filter(e => e.date === dateStr);
+
+          let row = document.createElement("div");
+          row.className = "p-3 flex flex-col sm:flex-row gap-2 justify-between items-start sm:items-center bg-white hover:bg-stone-50 transition";
+          
+          let eventsHtml = dayEvents.map(ev => `<span class="px-2 py-0.5 bg-amber-100 text-amber-900 border rounded font-semibold text-[11px]">${ev.title} (${ev.store})</span>`).join(" ");
+
+          row.innerHTML = `
+            <div class="font-bold text-cb-bordo w-36">${loopDate.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit' })}</div>
+            <div class="flex-1 flex gap-2 flex-wrap items-center">${eventsHtml || '<span class="text-stone-400 italic">Nenhum evento neste dia</span>'}</div>
+            ${currentUser.role === 'admin' || currentUser.role === 'gerente' ? `<button onclick="openEventModalForDate('${dateStr}')" class="px-2.5 py-1 bg-stone-100 border rounded font-bold">+ Adicionar</button>` : ''}`;
+          table.appendChild(row);
+        }
+        gridContainer.appendChild(table);
+
+      } else if (currentCalendarView === 'day') {
+        let dateStr = currentCalendarDate.toISOString().split('T')[0];
+        titleEl.innerText = `Dia: ${currentCalendarDate.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}` ;
+
+        let dayEvents = filteredEvents.filter(e => e.date === dateStr);
+        let listDiv = document.createElement("div");
+        listDiv.className = "p-4 space-y-3 text-xs";
+
+        if (dayEvents.length === 0) {
+          listDiv.innerHTML = `<div class="text-center text-stone-400 py-6">Nenhum compromisso ou evento agendado para hoje.</div>`;
+        } else {
+          dayEvents.forEach(ev => {
+            let item = document.createElement("div");
+            item.className = "p-3 bg-stone-50 border rounded-xl flex justify-between items-center";
+            item.innerHTML = `
+              <div class="space-y-1">
+                <span class="font-bold text-sm text-cb-bordo block">${ev.title}</span>
+                <span class="text-stone-600">${ev.desc}</span>
+                <span class="text-[10px] text-stone-400 block">Loja: ${ev.store}</span>
+              </div>
+              ${ev.type === 'manual' ? `<button onclick="deleteCalendarEvent('${ev.id}')" class="text-rose-600 font-bold">Excluir</button>` : ''}`;
+            listDiv.appendChild(item);
+          });
+        }
+        gridContainer.appendChild(listDiv);
+      }
     }
 
-    function openEventModal() {
+    function openEventModalForDate(dateStr) {
+      if (currentUser.role === 'operador') return alert("Acesso não autorizado.");
       document.getElementById("event-modal-title").innerText = "Novo Evento na Agenda";
       document.getElementById("event-edit-id").value = "";
       document.getElementById("event-title").value = "";
-      document.getElementById("event-date").value = "";
+      document.getElementById("event-date").value = dateStr;
       document.getElementById("event-desc").value = "";
-      document.getElementById("event-scope").value = "GERAL";
+      document.getElementById("event-scope").value = currentUser.role === 'admin' ? 'GERAL' : 'INDIVIDUAL';
       toggleEventStoreSelect();
       document.getElementById("event-modal").classList.remove("hidden");
     }
 
-    function toggleEventModal() {
-      document.getElementById("event-modal").classList.toggle("hidden");
-    }
-
-    function toggleEventStoreSelect() {
-      let scope = document.getElementById("event-scope").value;
-      let box = document.getElementById("event-store-box");
-      if (scope === 'INDIVIDUAL') box.classList.remove("hidden");
-      else box.classList.add("hidden");
+    function openEventDetail(id) {
+      let ev = calendarEvents.find(e => e.id === id);
+      if (ev) {
+        alert(`Evento: ${ev.title}\nData: ${ev.displayDate || ev.date}\nLoja: ${ev.store}\nDescrição: ${ev.desc}`);
+      }
     }
 
     function saveCalendarEvent() {
@@ -1849,110 +1967,6 @@
       toggleEventModal();
       renderAgendaCalendar();
       alert("Evento salvo com sucesso na agenda!");
-    }
-
-    function deleteCalendarEvent(id) {
-      if (confirm("Deseja excluir este evento da agenda?")) {
-        calendarEvents = calendarEvents.filter(e => e.id !== id);
-        localStorage.setItem("CB_LOCAL_CALENDAR_EVENTS", JSON.stringify(calendarEvents));
-        syncConfigToCloud();
-        renderAgendaCalendar();
-      }
-    }
-
-    // 🔧 Renderizar Lista de Técnicos e Prestadores de Serviço
-    function renderTechniciansList() {
-      const container = document.getElementById("technicians-list-container");
-      if (!container) return;
-      container.innerHTML = "";
-
-      const regionFilter = document.getElementById("filter-tech-region").value;
-      const serviceFilter = document.getElementById("filter-tech-service").value;
-
-      const serviceSelect = document.getElementById("filter-tech-service");
-      if (serviceSelect && serviceSelect.options.length <= 1) {
-        let uniqueServices = [...new Set(techniciansList.map(t => t.service))].sort();
-        uniqueServices.forEach(srv => {
-          let opt = document.createElement("option");
-          opt.value = srv;
-          opt.innerText = srv;
-          serviceSelect.appendChild(opt);
-        });
-        serviceSelect.value = serviceFilter;
-      }
-
-      let filtered = techniciansList.filter(t => {
-        let matchReg = !regionFilter || t.region.includes(regionFilter) || t.region === "Geral";
-        let matchSrv = !serviceFilter || t.service === serviceFilter;
-        return matchReg && matchSrv;
-      });
-
-      if (filtered.length === 0) {
-        container.innerHTML = `<div class="p-8 text-center bg-white rounded-xl border text-stone-400 text-xs">Nenhum técnico encontrado.</div>`;
-        return;
-      }
-
-      let groups = {};
-      filtered.forEach(t => {
-        let reg = t.region || "Geral";
-        if (!groups[reg]) groups[reg] = [];
-        groups[reg].push(t);
-      });
-
-      for (let reg in groups) {
-        let section = document.createElement("div");
-        section.className = "bg-white p-4 rounded-xl border shadow-sm space-y-3";
-        section.innerHTML = `<h3 class="font-bold text-cb-bordo text-xs uppercase tracking-wider border-b pb-1.5">📍 ${reg}</h3>`;
-
-        let listDiv = document.createElement("div");
-        listDiv.className = "grid grid-cols-1 sm:grid-cols-2 gap-2";
-
-        groups[reg].forEach(tech => {
-          let cleanPhone = tech.phone.replace(/\D/g, '');
-          let whatsAppUrl = `https://api.whatsapp.com/send?phone=55${cleanPhone}`;
-
-          let card = document.createElement("div");
-          card.className = "p-3 bg-stone-50 border rounded-xl flex justify-between items-center text-xs";
-          card.innerHTML = `
-            <div class="space-y-0.5">
-              <span class="font-bold text-stone-900 block text-sm">${tech.name}</span>
-              <span class="inline-block bg-amber-100 text-amber-900 font-semibold px-2 py-0.5 rounded text-[10px]">${tech.service}</span>
-              <span class="block text-stone-500 font-mono">📞 ${tech.phone}</span>
-            </div>
-            <a href="${whatsAppUrl}" target="_blank" class="px-3 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-lg transition flex items-center gap-1 shadow-sm shrink-0">
-              <span>💬 WhatsApp</span>
-            </a>`;
-          listDiv.appendChild(card);
-        });
-
-        section.appendChild(listDiv);
-        container.appendChild(section);
-      }
-    }
-
-    function toggleTechModal() {
-      if (currentUser.role !== 'admin') return alert("Acesso restrito a administradores.");
-      document.getElementById("tech-modal").classList.toggle("hidden");
-    }
-
-    function addNewTechnician() {
-      const name = document.getElementById("new-tech-name").value.trim();
-      const service = document.getElementById("new-tech-service").value.trim();
-      const region = document.getElementById("new-tech-region").value;
-      const phone = document.getElementById("new-tech-phone").value.trim();
-
-      if (!name || !service || !phone) return alert("Preencha todos os campos.");
-
-      techniciansList.push({ name, service, region, phone });
-      localStorage.setItem("CB_LOCAL_TECHNICIANS", JSON.stringify(techniciansList));
-      syncConfigToCloud();
-
-      document.getElementById("new-tech-name").value = "";
-      document.getElementById("new-tech-service").value = "";
-      document.getElementById("new-tech-phone").value = "";
-      toggleTechModal();
-      renderTechniciansList();
-      alert("Técnico cadastrado com sucesso!");
     }
 
     // 💬 Abrir Chat e mostrar Descrição Completa + Foto
