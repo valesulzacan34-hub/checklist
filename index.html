@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Sistema Integrado - Casa Bauducco</title>
+  
+  <link rel="icon" type="image/png" href="./logo.png">
+  
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
@@ -34,23 +37,20 @@
 </head>
 <body class="bg-cb-cream text-stone-800 antialiased pb-36 font-sans">
 
-  <!-- Status de Conexão em Tempo Real -->
   <div id="cloud-sync-status" class="bg-stone-900 text-[10px] text-stone-300 px-3 py-1 flex justify-between items-center z-50">
     <span id="sync-indicator">🟢 Sincronizado na Nuvem</span>
     <span id="sync-time" class="text-stone-400 font-mono">Conectando...</span>
   </div>
 
-  <!-- Modal de Visualização de Imagem (Lightbox) -->
   <div id="image-viewer-modal" class="fixed inset-0 z-[100] bg-black/90 hidden flex items-center justify-center p-4" onclick="this.classList.add('hidden')">
     <img id="viewer-img" class="max-w-full max-h-full object-contain rounded-lg">
     <span class="absolute top-4 right-4 text-white text-3xl font-bold cursor-pointer">✕</span>
   </div>
 
-  <!-- Tela de Login -->
   <div id="login-screen" class="fixed inset-0 bg-cb-bordo-dark z-50 flex items-center justify-center p-4">
     <div class="bg-white w-full max-w-sm rounded-2xl p-6 space-y-4 shadow-2xl border border-cb-gold/30">
       <div class="flex flex-col items-center justify-center">
-        <img id="login-logo-img" alt="Casa Bauducco" class="h-24 w-auto object-contain">
+        <img id="login-logo-img" src="./logo.png" alt="Casa Bauducco" class="h-24 w-auto object-contain">
         <p class="text-xs text-stone-500 font-medium mt-1">Acesso à Supervisão Operacional</p>
       </div>
 
@@ -73,11 +73,10 @@
     </div>
   </div>
 
-  <!-- Tela de Seleção de Módulos (Cards) -->
   <div id="modules-screen" class="fixed inset-0 bg-cb-bordo-dark z-40 hidden flex items-center justify-center p-4 overflow-y-auto">
     <div class="bg-white w-full max-w-sm rounded-2xl p-6 space-y-5 shadow-2xl border border-cb-gold/30 text-center">
       <div>
-        <img id="modules-logo-img" alt="Casa Bauducco" class="h-14 w-auto object-contain mx-auto mb-1">
+        <img id="modules-logo-img" src="./logo.png" alt="Casa Bauducco" class="h-14 w-auto object-contain mx-auto mb-1">
         <h2 class="text-xs font-bold text-cb-bordo uppercase tracking-wider">Painel Principal</h2>
         <p class="text-[11px] text-stone-500">Selecione o módulo que deseja acessar</p>
       </div>
@@ -90,7 +89,6 @@
     </div>
   </div>
 
-  <!-- MENU LATERAL RETRÁTIL (SIDEBAR) -->
   <div id="sidebar-backdrop" onclick="toggleSidebar()" class="fixed inset-0 bg-black/50 z-40 hidden transition-opacity"></div>
   <div id="sidebar" class="fixed top-0 left-0 bottom-0 w-64 bg-cb-bordo-dark text-white z-50 transform -translate-x-full shadow-2xl flex flex-col border-r border-cb-gold/30">
     <div class="p-4 border-b border-cb-gold/20 flex justify-between items-center bg-cb-bordo">
@@ -133,7 +131,6 @@
     </div>
   </div>
 
-  <!-- Header Global com Sino de Notificações -->
   <header class="bg-cb-bordo text-white sticky top-0 z-30 shadow-lg border-b-2 border-cb-gold">
     <div class="max-w-4xl mx-auto px-4 py-2.5 flex justify-between items-center">
       <div class="flex items-center gap-2.5">
@@ -141,7 +138,7 @@
           ☰
         </button>
         <div class="bg-white p-1 rounded-lg shadow-sm flex items-center justify-center">
-          <img id="header-logo-img" alt="Casa Bauducco" class="h-8 w-auto object-contain">
+          <img id="header-logo-img" src="./logo.png" alt="Casa Bauducco" class="h-8 w-auto object-contain">
         </div>
         <div>
           <h1 class="text-xs font-bold tracking-wider uppercase text-cb-gold" id="header-app-title">Casa Bauducco</h1>
@@ -428,7 +425,7 @@
     </main>
   </div>
 
-  <!-- Modal de Criação / Edição de Evento na Agenda -->
+  <!-- MODAIS DO SISTEMA -->
   <div id="event-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white w-full max-w-md rounded-2xl p-5 space-y-4 shadow-2xl border border-cb-gold/30 text-xs">
       <div class="flex justify-between items-center border-b pb-2">
@@ -491,7 +488,6 @@
     </div>
   </div>
 
-  <!-- Modal de Chat com Descrição Completa e Foto -->
   <div id="chat-modal" class="fixed inset-0 bg-black/70 z-50 hidden flex items-center justify-center p-2 sm:p-4">
     <div class="bg-white w-full max-w-lg h-[90vh] rounded-2xl flex flex-col shadow-2xl overflow-hidden border border-cb-gold/30">
       <div class="p-3.5 border-b border-stone-200 flex justify-between items-center bg-cb-bordo text-white">
@@ -518,7 +514,6 @@
     </div>
   </div>
 
-  <!-- Modal de Gerenciamento de Usuários e Unidades (Exclusivo Admin) -->
   <div id="users-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white w-full max-w-xl h-[90vh] rounded-2xl flex flex-col shadow-2xl overflow-hidden border border-cb-gold/30">
       <div class="p-4 border-b border-stone-200 flex justify-between items-center bg-cb-cream">
@@ -624,7 +619,6 @@
     </div>
   </div>
 
-  <!-- Modal de Configuração de Checklists -->
   <div id="config-modal" class="fixed inset-0 bg-black/70 z-50 hidden flex items-center justify-center p-2 sm:p-4">
     <div class="bg-white w-full max-w-2xl h-[92vh] rounded-2xl flex flex-col shadow-2xl overflow-hidden border border-cb-gold/30">
       
@@ -698,7 +692,6 @@
     </div>
   </div>
 
-  <!-- Modal de Edição de Pergunta Específica -->
   <div id="edit-question-modal" class="fixed inset-0 bg-black/60 z-[60] hidden flex items-center justify-center p-4">
     <div class="bg-white w-full max-w-md rounded-2xl p-5 space-y-4 shadow-2xl border text-xs">
       <div class="flex justify-between items-center border-b pb-2">
@@ -733,7 +726,6 @@
     </div>
   </div>
 
-  <!-- Barra Inferior de Ações -->
   <footer id="audit-footer" class="fixed bottom-0 left-0 right-0 bg-white border-t border-stone-200 p-3 z-30 shadow-lg hidden">
     <div class="max-w-xl mx-auto flex gap-2">
       <button onclick="resetChecklist()" class="w-1/4 py-3 rounded-lg border border-stone-300 text-stone-700 text-xs font-bold hover:bg-stone-50 transition">Limpar</button>
@@ -765,21 +757,108 @@
     }
 
     const DEFAULT_EMBEDDED_LOGO = "./logo.png";
-    let users = JSON.parse(localStorage.getItem("CB_LOCAL_USERS")) || defaultUsers;
-    let presetUnits = JSON.parse(localStorage.getItem("CB_LOCAL_UNITS")) || defaultUnits;
-    let actionStatuses = JSON.parse(localStorage.getItem("CB_LOCAL_STATUSES")) || defaultStatuses;
-    let actionPriorities = JSON.parse(localStorage.getItem("CB_LOCAL_PRIORITIES")) || defaultPriorities;
+    let users = JSON.parse(localStorage.getItem("CB_LOCAL_USERS")) || [
+      { username: "alcides", pass: "12345678", name: "Alcides Ramos", role: "admin", units: [] }
+    ];
+    let presetUnits = JSON.parse(localStorage.getItem("CB_LOCAL_UNITS")) || [
+      "CB Vale Sul Shopping", "CB Shopping CenterVale", "CB Shopping Oriente", "CB Shopping Aricanduva"
+    ];
+    let actionStatuses = JSON.parse(localStorage.getItem("CB_LOCAL_STATUSES")) || [
+      { name: "Pendente", color: "bg-rose-100 border-rose-300" },
+      { name: "Em Andamento", color: "bg-amber-100 border-amber-300" },
+      { name: "Concluído", color: "bg-emerald-100 border-emerald-300" }
+    ];
+    let actionPriorities = JSON.parse(localStorage.getItem("CB_LOCAL_PRIORITIES")) || [
+      { name: "Urgente", style: "bg-rose-600 text-white font-black" },
+      { name: "Importante", style: "bg-amber-500 text-white font-bold" },
+      { name: "Não Urgente", style: "bg-stone-200 text-stone-800 font-semibold" }
+    ];
     let actionCustomStatus = JSON.parse(localStorage.getItem("CB_LOCAL_CUSTOM_STATUS")) || {};
     let actionCustomPriority = JSON.parse(localStorage.getItem("CB_LOCAL_CUSTOM_PRIORITY")) || {};
     let currentUser = JSON.parse(sessionStorage.getItem("CB_LOCAL_LOGGED_USER")) || null;
+    
+    const defaultTemplates = [
+      {
+        id: "cb-supervisao",
+        name: "Casa Bauducco - Rota de Supervisão",
+        categories: [
+          {
+            category: "1. Estrutura, Salão & Visual",
+            items: [
+              { title: "Fachada da loja, luzes, letreiros, Leds", type: "boolean", requirePhoto: true },
+              { title: "Ambiente interno", type: "boolean", requirePhoto: true },
+              { title: "A comunicação visual está dentro do padrão?", type: "boolean", requirePhoto: true },
+              { title: "Mesas de atendimento", type: "boolean", requirePhoto: false },
+              { title: "Avaliar som ambiente", type: "boolean", requirePhoto: false },
+              { title: "Temperatura da Loja", type: "boolean", requirePhoto: false },
+              { title: "Todas áreas da loja estão sendo utilizadas para sua devida finalidade?", type: "boolean", requirePhoto: false },
+              { title: "Condição de móveis, utensílios e equipamentos", type: "boolean", requirePhoto: true }
+            ]
+          },
+          {
+            category: "2. Atendimento, Caixa & Equipe",
+            items: [
+              { title: "Avaliar apresentação dos colaboradores", type: "boolean", requirePhoto: true },
+              { title: "Escala de horários e Plano de posicionamento do dia está preenchido?", type: "boolean", requirePhoto: true },
+              { title: "Checar cumprimento da jornada do cliente durante o atendimento", type: "boolean", requirePhoto: false },
+              { title: "Verificar realização de venda sugestiva", type: "boolean", requirePhoto: false },
+              { title: "Conhecimentos gerais sobre marca e produtos?", type: "boolean", requirePhoto: false },
+              { title: "Formou fila maior que 3 clientes?", type: "boolean", requirePhoto: false },
+              { title: "Verificar organização da área do caixa", type: "boolean", requirePhoto: true },
+              { title: "PDV 1 e PDV 2 abertos?", type: "boolean", requirePhoto: true },
+              { title: "Tabela nutricional e Código de defesa do consumidor", type: "boolean", requirePhoto: false },
+              { title: "Cardápios disponíveis e em bom estado de conservação?", type: "boolean", requirePhoto: false }
+            ]
+          },
+          {
+            category: "3. Produtos, Exposição & Café",
+            items: [
+              { title: "Vitrine refrigerada com exposição adequada?", type: "boolean", requirePhoto: true },
+              { title: "Máquina de café e moinho regulados?", type: "boolean", requirePhoto: true },
+              { title: "Fatias dentro do padrão de peso e visual?", type: "boolean", requirePhoto: true },
+              { title: "Exposição do empório", type: "boolean", requirePhoto: true },
+              { title: "Insumos repostos de acordo com o movimento?", type: "boolean", requirePhoto: true }
+            ]
+          },
+          {
+            category: "4. Equipamentos, Limpeza & Segurança Alimentar",
+            items: [
+              { title: "Equipamentos operacionais em boas condições de uso e limpos?", type: "boolean", requirePhoto: true },
+              { title: "Inspecionar segurança de alimentos e boas práticas", type: "boolean", requirePhoto: true },
+              { title: "Tabela de validades impressa e disponível", type: "boolean", requirePhoto: true },
+              { title: "PAPs impressos e disponíveis", type: "boolean", requirePhoto: true },
+              { title: "Organização dos estoques", type: "boolean", requirePhoto: true }
+            ]
+          },
+          {
+            category: "5. Gestão, Controles & Administrativo",
+            items: [
+              { title: "Cadernos de controles estão sendo preenchidos?", type: "boolean", requirePhoto: false },
+              { title: "Loja está batendo a meta da semana?", type: "boolean", requirePhoto: false },
+              { title: "CAFs de reembolso foram abertos?", type: "boolean", requirePhoto: false },
+              { title: "Notas fiscais estão lançadas no GCOM?", type: "boolean", requirePhoto: false }
+            ]
+          },
+          {
+            category: "6. Ordens de Manutenção & Equipamentos",
+            items: [
+              { title: "Necessidade de Manutenção em Equipamentos do Salão ou Balcão?", type: "maintenance", requirePhoto: true },
+              { title: "Necessidade de Manutenção Predial / Hidráulica / Elétrica?", type: "maintenance", requirePhoto: false }
+            ]
+          }
+        ]
+      }
+    ];
+
     let allChecklists = JSON.parse(localStorage.getItem("CB_LOCAL_CHECKLISTS")) || defaultTemplates;
     let activeChecklistId = localStorage.getItem("CB_LOCAL_ACTIVE_ID") || allChecklists[0].id;
     let savedReports = JSON.parse(localStorage.getItem("CB_LOCAL_REPORTS")) || [];
-    let techniciansList = JSON.parse(localStorage.getItem("CB_LOCAL_TECHNICIANS")) || defaultTechnicians;
+    let techniciansList = JSON.parse(localStorage.getItem("CB_LOCAL_TECHNICIANS")) || [];
     let calendarEvents = JSON.parse(localStorage.getItem("CB_LOCAL_CALENDAR_EVENTS")) || [];
 
     let currentCalendarDate = new Date();
     let currentCalendarView = 'month';
+    let activeChatActionId = null;
     
     let attachedPhotos = JSON.parse(localStorage.getItem("CB_DRAFT_PHOTOS")) || {};
     let actionPlans = JSON.parse(localStorage.getItem("CB_DRAFT_PLANS")) || {};
@@ -957,8 +1036,6 @@
           listContainer.appendChild(item);
         });
       }
-      renderAdminStatusList();
-      renderAdminPrioritiesList();
     }
 
     function adminAddNewUnit() {
@@ -1687,490 +1764,534 @@
       });
     }
 
-    // 📅 Lógica do Calendário Interativo Avançado (Drag & Drop e Redimensionamento)
-    function changeCalendarView(view) {
-      currentCalendarView = view;
-      document.getElementById("btn-view-month").className = `px-3 py-1.5 font-bold rounded transition ${view === 'month' ? 'bg-cb-bordo text-white' : 'bg-stone-200 text-stone-700'}`;
-      document.getElementById("btn-view-week").className = `px-3 py-1.5 font-bold rounded transition ${view === 'week' ? 'bg-cb-bordo text-white' : 'bg-stone-200 text-stone-700'}`;
-      document.getElementById("btn-view-day").className = `px-3 py-1.5 font-bold rounded transition ${view === 'day' ? 'bg-cb-bordo text-white' : 'bg-stone-200 text-stone-700'}`;
-      renderAgendaCalendar();
-    }
-
-    function navigateCalendar(dir) {
-      if (dir === 0) {
-        currentCalendarDate = new Date();
-      } else {
-        if (currentCalendarView === 'month') {
-          currentCalendarDate.setMonth(currentCalendarDate.getMonth() + dir);
-        } else if (currentCalendarView === 'week') {
-          currentCalendarDate.setDate(currentCalendarDate.getDate() + (dir * 7));
-        } else if (currentCalendarView === 'day') {
-          currentCalendarDate.setDate(currentCalendarDate.getDate() + dir);
-        }
-      }
-      renderAgendaCalendar();
-    }
-
-    function renderAgendaCalendar() {
-      const gridContainer = document.getElementById("calendar-grid-container");
-      const titleEl = document.getElementById("calendar-period-title");
-      if (!gridContainer) return;
-      gridContainer.innerHTML = "";
-
-      let storeSelection = document.getElementById("filter-agenda-store").value;
-      if (currentUser.role === 'gerente' && currentUser.units && currentUser.units.length > 0) {
-        storeSelection = currentUser.units[0];
-      }
-
-      let allEvents = [...calendarEvents];
-
-      savedReports.forEach(rep => {
-        if (currentUser.role === 'gerente' && rep.unit !== storeSelection) return;
-        rep.nonConformities?.forEach((nc, i) => {
-          if (nc.date && nc.date !== 'Não definida' && nc.date !== 'Indefinida') {
-            allEvents.push({
-              id: `rep_nc_${rep.id}_${i}`,
-              title: `[Ação] ${nc.title}`,
-              date: nc.date.split('/').reverse().join('-'),
-              time: '09:00',
-              timeEnd: '10:00',
-              store: rep.unit,
-              scope: 'INDIVIDUAL',
-              desc: nc.action || 'Não descrita',
-              type: 'action'
-            });
-          }
-        });
-        rep.maintenanceOrders?.forEach((om, i) => {
-          if (om.date && om.date !== 'Não definida' && om.date !== 'Indefinida') {
-            allEvents.push({
-              id: `rep_om_${rep.id}_${i}`,
-              title: `[Manutenção] ${om.equipment}`,
-              date: om.date.split('/').reverse().join('-'),
-              time: '10:00',
-              timeEnd: '11:00',
-              store: rep.unit,
-              scope: 'INDIVIDUAL',
-              desc: om.action || om.defect || 'Sem descrição',
-              type: 'maintenance'
-            });
-          }
-        });
-      });
-
-      let filteredEvents = allEvents.filter(ev => {
-        if (storeSelection === 'GERAL') return ev.scope === 'GERAL';
-        return ev.scope === 'GERAL' || ev.store === storeSelection;
-      });
-
-      let year = currentCalendarDate.getFullYear();
-      let month = currentCalendarDate.getMonth();
-      const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
-
-      if (currentCalendarView === 'month') {
-        titleEl.innerText = `${monthNames[month]} de ${year}`;
-        let firstDayIndex = new Date(year, month, 1).getDay();
-        let totalDays = new Date(year, month + 1, 0).getDate();
-
-        let table = document.createElement("div");
-        table.className = "grid grid-cols-7 text-xs text-center border-stone-200";
-
-        ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].forEach(d => {
-          let cell = document.createElement("div");
-          cell.className = "bg-cb-bordo text-cb-gold font-bold p-2 border-b";
-          cell.innerText = d;
-          table.appendChild(cell);
-        });
-
-        for (let i = 0; i < firstDayIndex; i++) {
-          let emptyCell = document.createElement("div");
-          emptyCell.className = "bg-stone-50/50 p-2 border-b border-r min-h-[90px]";
-          table.appendChild(emptyCell);
-        }
-
-        for (let d = 1; d <= totalDays; d++) {
-          let dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-          let dayEvents = filteredEvents.filter(e => e.date === dateStr);
-
-          let cell = document.createElement("div");
-          cell.className = "bg-white p-1.5 border-b border-r min-h-[90px] flex flex-col justify-start text-left overflow-hidden cursor-pointer hover:bg-stone-50 relative";
-          cell.setAttribute('data-date', dateStr);
-          
-          cell.ondragover = (e) => e.preventDefault();
-          cell.ondrop = (e) => {
-            e.preventDefault();
-            let evId = e.dataTransfer.getData("text/plain");
-            moveEventToDate(evId, dateStr);
-          };
-
-          cell.onclick = (e) => {
-            if (e.target.tagName !== 'DIV' && e.target.tagName !== 'SPAN') return;
-            openEventModalForDate(dateStr);
-          };
-          
-          let todayStr = new Date().toISOString().split('T')[0];
-          let isToday = dateStr === todayStr;
-
-          let eventsHtml = dayEvents.map(ev => {
-            let isAuto = ev.type === 'action' || ev.type === 'maintenance';
-            let bgClass = isAuto ? 'bg-amber-100 text-amber-900 border-amber-300' : (ev.scope === 'GERAL' ? 'bg-purple-100 text-purple-900 border-purple-300' : 'bg-sky-100 text-sky-900 border-sky-300');
-            return `
-              <div draggable="true" 
-                   ondragstart="event.dataTransfer.setData('text/plain', '${ev.id}')"
-                   onclick="event.stopPropagation(); openEventDetail('${ev.id}')" 
-                   class="event-card px-1.5 py-0.5 rounded border text-[10px] font-semibold truncate cursor-pointer mb-0.5 ${bgClass} relative group" 
-                   title="${ev.title}">
-                • ${ev.time ? ev.time + ' ' : ''}${ev.title}
-                <div class="resize-handle opacity-0 group-hover:opacity-100 bg-black/20" onmousedown="initResize(event, '${ev.id}')" title="Redimensionar horário"></div>
-              </div>`;
-          }).join("");
-
-          cell.innerHTML = `
-            <div class="font-bold text-stone-700 mb-1 flex justify-between items-center pointer-events-none">
-              <span class="${isToday ? 'bg-cb-bordo text-cb-gold px-1.5 py-0.5 rounded-full' : ''}">${d}</span>
-            </div>
-            <div class="flex-1 overflow-y-auto space-y-0.5 max-h-[70px]">${eventsHtml}</div>`;
-          table.appendChild(cell);
-        }
-        gridContainer.appendChild(table);
-
-      } else if (currentCalendarView === 'week') {
-        let currDate = new Date(currentCalendarDate);
-        let firstDayOfWeek = new Date(currDate.setDate(currDate.getDate() - currDate.getDay()));
-        let lastDayOfWeek = new Date(firstDayOfWeek);
-        lastDayOfWeek.setDate(lastDayOfWeek.getDate() + 6);
-
-        titleEl.innerText = `Semana: ${firstDayOfWeek.toLocaleDateString('pt-BR')} a ${lastDayOfWeek.toLocaleDateString('pt-BR')}`;
-
-        let table = document.createElement("div");
-        table.className = "divide-y text-xs";
-
-        for (let i = 0; i < 7; i++) {
-          let loopDate = new Date(firstDayOfWeek);
-          loopDate.setDate(loopDate.getDate() + i);
-          let dateStr = loopDate.toISOString().split('T')[0];
-          let dayEvents = filteredEvents.filter(e => e.date === dateStr);
-
-          let row = document.createElement("div");
-          row.className = "p-3 flex flex-col sm:flex-row gap-2 justify-between items-start sm:items-center bg-white hover:bg-stone-50 transition cursor-pointer";
-          row.ondragover = (e) => e.preventDefault();
-          row.ondrop = (e) => {
-            e.preventDefault();
-            let evId = e.dataTransfer.getData("text/plain");
-            moveEventToDate(evId, dateStr);
-          };
-          row.onclick = () => openEventModalForDate(dateStr);
-          
-          let eventsHtml = dayEvents.map(ev => `
-            <span draggable="true" 
-                  ondragstart="event.dataTransfer.setData('text/plain', '${ev.id}')"
-                  onclick="event.stopPropagation(); openEventDetail('${ev.id}')" 
-                  class="event-card px-2.5 py-1 bg-amber-100 text-amber-900 border rounded font-semibold text-[11px] cursor-pointer hover:bg-amber-200">
-              ${ev.time ? ev.time + ' - ' : ''}${ev.title}
-            </span>`).join(" ");
-
-          row.innerHTML = `
-            <div class="font-bold text-cb-bordo w-36 pointer-events-none">${loopDate.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit' })}</div>
-            <div class="flex-1 flex gap-2 flex-wrap items-center">${eventsHtml || '<span class="text-stone-400 italic">Nenhum evento neste dia</span>'}</div>`;
-          table.appendChild(row);
-        }
-        gridContainer.appendChild(table);
-
-      } else if (currentCalendarView === 'day') {
-        let dateStr = currentCalendarDate.toISOString().split('T')[0];
-        titleEl.innerText = `Dia: ${currentCalendarDate.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}`;
-
-        let dayEvents = filteredEvents.filter(e => e.date === dateStr);
-        let listDiv = document.createElement("div");
-        listDiv.className = "p-4 space-y-3 text-xs";
-
-        if (dayEvents.length === 0) {
-          listDiv.innerHTML = `<div class="text-center text-stone-400 py-6">Nenhum compromisso ou evento agendado para hoje. <button onclick="openEventModalForDate('${dateStr}')" class="text-cb-bordo font-bold underline block mx-auto mt-1">+ Criar Evento</button></div>`;
-        } else {
-          dayEvents.forEach(ev => {
-            let item = document.createElement("div");
-            item.className = "p-3 bg-stone-50 border rounded-xl flex justify-between items-center";
-            item.innerHTML = `
-              <div class="space-y-1">
-                <span class="font-bold text-sm text-cb-bordo block">${ev.time ? '⏰ ' + ev.time + ' — ' : ''}${ev.title}</span>
-                <span class="text-stone-600">${ev.desc}</span>
-                <span class="text-[10px] text-stone-400 block">Loja: ${ev.store}</span>
-              </div>
-              <button onclick="openEventDetail('${ev.id}')" class="px-3 py-1.5 bg-cb-bordo text-white font-bold rounded">Detalhes / Editar</button>`;
-            listDiv.appendChild(item);
-          });
-        }
-        gridContainer.appendChild(listDiv);
+    function toggleConfigModal() {
+      const modal = document.getElementById("config-modal");
+      modal.classList.toggle("hidden");
+      if (!modal.classList.contains("hidden")) {
+        switchConfigTab('models');
       }
     }
 
-    function moveEventToDate(eventId, newDate) {
-      let ev = calendarEvents.find(e => e.id === eventId);
-      if (!ev) return;
-      if (ev.scope === 'GERAL' && currentUser.role !== 'admin') {
-        return alert("Apenas administradores podem alterar eventos em comum.");
-      }
-      if (currentUser.role === 'gerente' && ev.store !== currentUser.units?.[0]) {
-        return alert("Você só pode mover eventos da sua própria unidade.");
-      }
+    function switchConfigTab(tab) {
+      document.getElementById("tab-content-models").classList.add("hidden");
+      document.getElementById("tab-content-items").classList.add("hidden");
 
-      ev.date = newDate;
-      ev.displayDate = newDate.split('-').reverse().join('/');
-      localStorage.setItem("CB_LOCAL_CALENDAR_EVENTS", JSON.stringify(calendarEvents));
-      syncConfigToCloud();
-      renderAgendaCalendar();
-    }
+      document.getElementById("tab-btn-models").className = "flex-1 py-3 border-b-2 border-transparent text-stone-500 transition";
+      document.getElementById("tab-btn-items").className = "flex-1 py-3 border-b-2 border-transparent text-stone-500 transition";
 
-    function initResize(e, eventId) {
-      e.stopPropagation();
-      e.preventDefault();
-      let ev = calendarEvents.find(e => e.id === eventId);
-      if (!ev) return;
-
-      let startY = e.clientY;
-      function onMouseMove(moveEvent) {
-        let diff = moveEvent.clientY - startY;
-        if (Math.abs(diff) > 25) {
-          let [h, m] = (ev.timeEnd || '10:00').split(':').map(Number);
-          m += diff > 0 ? 30 : -30;
-          if (m >= 60) { h += 1; m = 0; }
-          if (m < 0) { h -= 1; m = 30; }
-          ev.timeEnd = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-          startY = moveEvent.clientY;
-          localStorage.setItem("CB_LOCAL_CALENDAR_EVENTS", JSON.stringify(calendarEvents));
-          syncConfigToCloud();
-          renderAgendaCalendar();
-        }
-      }
-
-      function onMouseUp() {
-        window.removeEventListener('mousemove', onMouseMove);
-        window.removeEventListener('mouseup', onMouseUp);
-      }
-
-      window.addEventListener('mousemove', onMouseMove);
-      window.addEventListener('mouseup', onMouseUp);
-    }
-
-    function processarAgendaIA() {
-      const texto = document.getElementById("ia-input").value;
-      if (!texto) return alert("Digite um comando para a IA.");
-
-      let novoEvento = { title: texto.split(/dia|às/i)[0].trim(), data: "", hora: "09:00", loja: "" };
-      
-      const dataMatch = texto.match(/\d{2}\/\d{2}(\/\d{4})?/);
-      if (dataMatch) {
-          let partes = dataMatch[0].split('/');
-          let ano = partes[2] || new Date().getFullYear();
-          novoEvento.data = `${ano}-${partes[1]}-${partes[0]}`;
-      }
-
-      presetUnits.forEach(u => {
-          if (texto.toLowerCase().includes(u.toLowerCase().split(' ').slice(1).join(' '))) novoEvento.loja = u;
-      });
-
-      document.getElementById("event-title").value = novoEvento.title;
-      document.getElementById("event-date").value = novoEvento.data || new Date().toISOString().split('T')[0];
-      document.getElementById("event-time-start").value = novoEvento.hora;
-      
-      if (novoEvento.loja) {
-          document.getElementById("event-scope").value = "INDIVIDUAL";
-          document.getElementById("event-store").value = novoEvento.loja;
-          toggleEventStoreSelect();
-      }
-
-      document.getElementById("event-modal").classList.remove("hidden");
-      document.getElementById("ia-input").value = "";
-    }
-
-    function openEventModalForDate(dateStr) {
-      if (currentUser.role === 'operador') return alert("Acesso não autorizado.");
-      document.getElementById("event-modal-title").innerText = "Novo Evento na Agenda";
-      document.getElementById("event-edit-id").value = "";
-      document.getElementById("event-title").value = "";
-      document.getElementById("event-date").value = dateStr;
-      document.getElementById("event-time-start").value = "09:00";
-      document.getElementById("event-time-end").value = "10:00";
-      document.getElementById("event-recurrence").value = "none";
-      document.getElementById("event-desc").value = "";
-      
-      let scopeSelect = document.getElementById("event-scope");
-      if (currentUser.role === 'gerente') {
-        scopeSelect.value = 'INDIVIDUAL';
-        scopeSelect.disabled = true;
-      } else {
-        scopeSelect.value = 'GERAL';
-        scopeSelect.disabled = false;
-      }
-      toggleEventStoreSelect();
-      document.getElementById("btn-delete-event").classList.add("hidden");
-      document.getElementById("event-modal").classList.remove("hidden");
-    }
-
-    function openEventDetail(id) {
-      let ev = calendarEvents.find(e => e.id === id);
-      if (!ev) return;
-
-      if (ev.scope === 'GERAL' && currentUser.role !== 'admin') {
-        return alert(`Evento em Comum da Rede: ${ev.title}\nData: ${ev.displayDate || ev.date}\n${ev.desc}\n\n(Apenas administradores podem editar este evento).`);
-      }
-      if (currentUser.role === 'gerente' && ev.store !== currentUser.units?.[0]) {
-        return alert("Você só pode editar eventos da sua própria unidade.");
-      }
-
-      document.getElementById("event-modal-title").innerText = "Editar Evento";
-      document.getElementById("event-edit-id").value = ev.id;
-      document.getElementById("event-title").value = ev.title;
-      document.getElementById("event-date").value = ev.date;
-      document.getElementById("event-scope").value = ev.scope;
-      document.getElementById("event-store").value = ev.store || '';
-      document.getElementById("event-time-start").value = ev.time || '09:00';
-      document.getElementById("event-time-end").value = ev.timeEnd || '10:00';
-      document.getElementById("event-recurrence").value = ev.recurrence || 'none';
-      document.getElementById("event-desc").value = ev.desc || '';
-      
-      toggleEventStoreSelect();
-      document.getElementById("btn-delete-event").classList.remove("hidden");
-      document.getElementById("event-modal").classList.remove("hidden");
-    }
-
-    function openEventModal() {
-      openEventModalForDate(new Date().toISOString().split('T')[0]);
-    }
-
-    function toggleEventModal() {
-      document.getElementById("event-modal").classList.toggle("hidden");
-    }
-
-    function toggleEventStoreSelect() {
-      let scope = document.getElementById("event-scope").value;
-      let box = document.getElementById("event-store-box");
-      if (scope === 'INDIVIDUAL') box.classList.remove("hidden");
-      else box.classList.add("hidden");
-    }
-
-    function saveCalendarEvent() {
-      let id = document.getElementById("event-edit-id").value || "ev_" + Date.now();
-      let title = document.getElementById("event-title").value.trim();
-      let date = document.getElementById("event-date").value;
-      let scope = document.getElementById("event-scope").value;
-      let store = scope === 'INDIVIDUAL' ? (currentUser.role === 'gerente' ? currentUser.units[0] : document.getElementById("event-store").value) : 'GERAL';
-      let time = document.getElementById("event-time-start").value;
-      let timeEnd = document.getElementById("event-time-end").value;
-      let recurrence = document.getElementById("event-recurrence").value;
-      let desc = document.getElementById("event-desc").value.trim();
-
-      if (!title || !date) return alert("Preencha o título e a data do evento.");
-      if (scope === 'GERAL' && currentUser.role !== 'admin') return alert("Apenas administradores podem criar ou editar eventos em comum para toda a rede.");
-
-      let existingIdx = calendarEvents.findIndex(e => e.id === id);
-      let evObj = { id, title, date, displayDate: date.split('-').reverse().join('/'), store, scope, time, timeEnd, recurrence, desc, type: 'manual' };
-
-      if (existingIdx >= 0) {
-        if (calendarEvents[existingIdx].scope === 'GERAL' && currentUser.role !== 'admin') {
-          return alert("Apenas administradores podem modificar eventos em comum.");
-        }
-        calendarEvents[existingIdx] = evObj;
-      } else {
-        calendarEvents.push(evObj);
-      }
-
-      localStorage.setItem("CB_LOCAL_CALENDAR_EVENTS", JSON.stringify(calendarEvents));
-      syncConfigToCloud();
-      toggleEventModal();
-      renderAgendaCalendar();
-      alert("Evento salvo com sucesso na agenda!");
-    }
-
-    function deleteCalendarEventFromModal() {
-      let id = document.getElementById("event-edit-id").value;
-      if (!id) return;
-      let ev = calendarEvents.find(e => e.id === id);
-      if (ev && ev.scope === 'GERAL' && currentUser.role !== 'admin') {
-        return alert("Apenas administradores podem excluir eventos em comum.");
-      }
-
-      if (confirm("Deseja realmente excluir este evento?")) {
-        calendarEvents = calendarEvents.filter(e => e.id !== id);
-        localStorage.setItem("CB_LOCAL_CALENDAR_EVENTS", JSON.stringify(calendarEvents));
-        syncConfigToCloud();
-        toggleEventModal();
-        renderAgendaCalendar();
+      if (tab === 'models') {
+        document.getElementById("tab-content-models").classList.remove("hidden");
+        document.getElementById("tab-btn-models").className = "flex-1 py-3 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition";
+        renderModelsListInConfig();
+      } else if (tab === 'items') {
+        document.getElementById("tab-content-items").classList.remove("hidden");
+        document.getElementById("tab-btn-items").className = "flex-1 py-3 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition";
+        document.getElementById("config-active-model-name").innerText = getCurrentChecklist().name;
+        renderModalItems();
       }
     }
 
-    function renderTechniciansList() {
-      const container = document.getElementById("technicians-list-container");
-      if (!container) return;
+    function renderModelsListInConfig() {
+      const container = document.getElementById("models-list-container");
       container.innerHTML = "";
+      allChecklists.forEach((c, idx) => {
+        const div = document.createElement("div");
+        div.className = "flex justify-between items-center p-2.5 bg-stone-50 rounded border text-xs";
+        div.innerHTML = `
+          <span class="font-bold">${c.name}</span>
+          <div class="flex gap-2">
+            <button onclick="editChecklistName(${idx})" class="text-blue-600 font-bold underline">Editar Nome</button>
+            <button onclick="activeChecklistId='${c.id}'; switchConfigTab('items');" class="text-cb-bordo font-bold underline">Seções/Perguntas</button>
+            ${allChecklists.length > 1 ? `<button onclick="deleteModel('${c.id}')" class="text-rose-600 font-bold">Excluir</button>` : ''}
+          </div>`;
+        container.appendChild(div);
+      });
+    }
 
-      const regionFilter = document.getElementById("filter-tech-region").value;
-      const serviceFilter = document.getElementById("filter-tech-service").value;
+    function editChecklistName(idx) {
+      const currentName = allChecklists[idx].name;
+      const newName = prompt("Editar nome do checklist:", currentName);
+      if (newName && newName.trim()) {
+        allChecklists[idx].name = newName.trim();
+        localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
+        syncConfigToCloud();
+        renderModelsListInConfig();
+        renderHomeChecklistSelect();
+        alert("Nome atualizado com sucesso!");
+      }
+    }
 
-      const serviceSelect = document.getElementById("filter-tech-service");
-      if (serviceSelect && serviceSelect.options.length <= 1) {
-        let uniqueServices = [...new Set(techniciansList.map(t => t.service))].sort();
-        uniqueServices.forEach(srv => {
-          let opt = document.createElement("option");
-          opt.value = srv;
-          opt.innerText = srv;
-          serviceSelect.appendChild(opt);
+    function renderModalItems() {
+      const container = document.getElementById("modal-item-list");
+      const catSelect = document.getElementById("new-item-category");
+      const current = getCurrentChecklist();
+      container.innerHTML = ""; catSelect.innerHTML = "";
+
+      current.categories.forEach((sec, sIdx) => {
+        const opt = document.createElement("option"); opt.value = sIdx; opt.innerText = sec.category; catSelect.appendChild(opt);
+        const secBox = document.createElement("div");
+        secBox.className = "border rounded-xl p-3 bg-white space-y-2 text-xs";
+        secBox.innerHTML = `<div class="flex justify-between items-center border-b pb-1"><span class="font-bold uppercase">${sec.category}</span><button onclick="editCategory(${sIdx})" class="underline font-bold">Editar Seção</button></div>`;
+        
+        sec.items.forEach((item, iIdx) => {
+          let typeLabel = item.type === 'maintenance' ? 'Manutenção' : item.type === 'stars' ? 'Estrelas' : item.type === 'text' ? 'Texto' : 'Sim/Não';
+          secBox.innerHTML += `
+            <div class="bg-stone-50 p-2.5 rounded border flex justify-between items-center gap-2">
+              <div class="space-y-0.5">
+                <span class="font-bold text-stone-900 block">${item.title}</span>
+                <span class="text-[10px] text-stone-500 font-medium">[Tipo: ${typeLabel}] • [Foto: ${item.requirePhoto ? 'Obrigatória' : 'Opcional'}]</span>
+              </div>
+              <div class="flex gap-2 shrink-0">
+                <button onclick="openEditQuestionModal(${sIdx}, ${iIdx})" class="text-blue-600 font-bold hover:underline">Configurar</button>
+                <button onclick="removeItem(${sIdx}, ${iIdx})" class="text-rose-600 font-bold hover:underline">Remover</button>
+              </div>
+            </div>`;
         });
-        serviceSelect.value = serviceFilter;
+        container.appendChild(secBox);
+      });
+    }
+
+    function openEditQuestionModal(sIdx, iIdx) {
+      const item = getCurrentChecklist().categories[sIdx].items[iIdx];
+      document.getElementById("edit-q-sec-idx").value = sIdx;
+      document.getElementById("edit-q-item-idx").value = iIdx;
+      document.getElementById("edit-q-title").value = item.title;
+      document.getElementById("edit-q-type").value = item.type || 'boolean';
+      document.getElementById("edit-q-photo").checked = !!item.requirePhoto;
+      document.getElementById("edit-question-modal").classList.remove("hidden");
+    }
+
+    function closeEditQuestionModal() {
+      document.getElementById("edit-question-modal").classList.add("hidden");
+    }
+
+    function saveEditedQuestion() {
+      const sIdx = parseInt(document.getElementById("edit-q-sec-idx").value);
+      const iIdx = parseInt(document.getElementById("edit-q-item-idx").value);
+      const title = document.getElementById("edit-q-title").value.trim();
+      const type = document.getElementById("edit-q-type").value;
+      const requirePhoto = document.getElementById("edit-q-photo").checked;
+
+      if (!title) return alert("O título não pode ser vazio.");
+
+      let item = getCurrentChecklist().categories[sIdx].items[iIdx];
+      item.title = title;
+      item.type = type;
+      item.requirePhoto = requirePhoto;
+
+      localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
+      syncConfigToCloud();
+      closeEditQuestionModal();
+      renderModalItems();
+      alert("Configuração da pergunta atualizada com sucesso!");
+    }
+
+    function editCategory(sIdx) {
+      const current = getCurrentChecklist();
+      const newName = prompt("Editar nome da seção:", current.categories[sIdx].category);
+      if (newName?.trim()) {
+        current.categories[sIdx].category = newName.trim();
+        localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
+        syncConfigToCloud(); renderModalItems();
+      }
+    }
+
+    function toggleUsersModal() {
+      if (currentUser.role !== 'admin') return alert("Acesso restrito a administradores.");
+      const m = document.getElementById("users-modal");
+      m.classList.toggle("hidden");
+      if (!m.classList.contains("hidden")) {
+        renderUsersList();
+        renderPresetUnits();
+        switchAdminTab('units');
+      }
+    }
+
+    function switchAdminTab(tab) {
+      const uContent = document.getElementById("admin-content-units");
+      const uUsers = document.getElementById("admin-content-users");
+      const uStatus = document.getElementById("admin-content-status");
+      const uPriorities = document.getElementById("admin-content-priorities");
+      const btnU = document.getElementById("admin-tab-units");
+      const btnUs = document.getElementById("admin-tab-users");
+      const btnSt = document.getElementById("admin-tab-status");
+      const btnPr = document.getElementById("admin-tab-priorities");
+
+      uContent.classList.add("hidden");
+      uUsers.classList.add("hidden");
+      uStatus.classList.add("hidden");
+      uPriorities.classList.add("hidden");
+      btnU.className = "flex-1 py-2.5 border-b-2 border-transparent text-stone-500 transition whitespace-nowrap";
+      btnUs.className = "flex-1 py-2.5 border-b-2 border-transparent text-stone-500 transition whitespace-nowrap";
+      btnSt.className = "flex-1 py-2.5 border-b-2 border-transparent text-stone-500 transition whitespace-nowrap";
+      btnPr.className = "flex-1 py-2.5 border-b-2 border-transparent text-stone-500 transition whitespace-nowrap";
+
+      if (tab === 'units') {
+        uContent.classList.remove("hidden");
+        btnU.className = "flex-1 py-2.5 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition whitespace-nowrap";
+        renderPresetUnits();
+      } else if (tab === 'users') {
+        uUsers.classList.remove("hidden");
+        btnUs.className = "flex-1 py-2.5 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition whitespace-nowrap";
+        renderUsersList();
+        renderUserUnitsCheckboxes();
+      } else if (tab === 'status') {
+        uStatus.classList.remove("hidden");
+        btnSt.className = "flex-1 py-2.5 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition whitespace-nowrap";
+      } else if (tab === 'priorities') {
+        uPriorities.classList.remove("hidden");
+        btnPr.className = "flex-1 py-2.5 border-b-2 border-cb-bordo text-cb-bordo bg-white font-bold transition whitespace-nowrap";
+      }
+    }
+
+    function toggleUnitSelectionBox() {
+      const role = document.getElementById("new-user-role").value;
+      const box = document.getElementById("new-user-units-box");
+      if (role === 'admin') box.classList.add("hidden");
+      else box.classList.remove("hidden");
+    }
+
+    function renderUserUnitsCheckboxes() {
+      const select = document.getElementById("new-user-units");
+      if (!select) return;
+      select.innerHTML = "";
+      presetUnits.forEach(u => {
+        const opt = document.createElement("option");
+        opt.value = u;
+        opt.innerText = u;
+        select.appendChild(opt);
+      });
+    }
+
+    function renderUsersList() {
+      const list = document.getElementById("users-list");
+      list.innerHTML = "";
+      users.forEach((u, idx) => {
+        const item = document.createElement("div");
+        item.className = "bg-stone-50 border p-2.5 rounded-xl text-xs space-y-1";
+        let unitsText = u.units && u.units.length > 0 ? u.units.join(", ") : "Todas as Lojas";
+        item.innerHTML = `
+          <div class="flex justify-between items-center">
+            <span class="font-bold text-cb-bordo text-sm">${u.name} (${u.role})</span>
+            ${u.username !== 'alcides' ? `<button onclick="removeUser(${idx})" class="text-rose-600 font-bold hover:underline">Excluir</button>` : '<span class="text-[10px] text-stone-400 font-bold">Principal</span>'}
+          </div>
+          <div class="text-stone-500">Login: ${u.username} | Senha: ${u.pass}</div>
+          <div class="text-stone-600"><strong>Lojas Vinculadas:</strong> ${unitsText}</div>`;
+        list.appendChild(item);
+      });
+    }
+
+    function addNewUser() {
+      const username = document.getElementById("new-user-name").value.trim().toLowerCase();
+      const pass = document.getElementById("new-user-pass").value.trim();
+      const name = document.getElementById("new-user-fullname").value.trim();
+      const role = document.getElementById("new-user-role").value;
+      
+      let assignedUnits = [];
+      if (role !== 'admin') {
+        const select = document.getElementById("new-user-units");
+        for (let opt of select.selectedOptions) {
+          assignedUnits.push(opt.value);
+        }
       }
 
-      let filtered = techniciansList.filter(t => {
-        let matchReg = !regionFilter || t.region.includes(regionFilter) || t.region === "Geral";
-        let matchSrv = !serviceFilter || t.service === serviceFilter;
-        return matchReg && matchSrv;
-      });
+      if (!username || !pass || !name) return alert("Preencha todos os campos obrigatórios.");
+      if (users.some(item => item.username === username)) return alert("Login já existente!");
 
-      if (filtered.length === 0) {
-        container.innerHTML = `<div class="p-8 text-center bg-white rounded-xl border text-stone-400 text-xs">Nenhum técnico encontrado.</div>`;
+      users.push({ username, pass, name, role, units: assignedUnits });
+      localStorage.setItem("CB_LOCAL_USERS", JSON.stringify(users));
+      syncConfigToCloud();
+
+      document.getElementById("new-user-name").value = "";
+      document.getElementById("new-user-pass").value = "";
+      document.getElementById("new-user-fullname").value = "";
+      renderUsersList();
+      alert("Usuário criado com sucesso!");
+    }
+
+    function removeUser(idx) {
+      if (confirm("Excluir este acesso?")) {
+        users.splice(idx, 1);
+        localStorage.setItem("CB_LOCAL_USERS", JSON.stringify(users));
+        syncConfigToCloud();
+        renderUsersList();
+      }
+    }
+
+    function deleteModel(id) {
+      if (confirm("Excluir este modelo de checklist?")) {
+        allChecklists = allChecklists.filter(c => c.id !== id);
+        localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
+        syncConfigToCloud();
+        renderModelsListInConfig();
+      }
+    }
+
+    function toggleNewCategoryInput() { document.getElementById("new-cat-box").classList.toggle("hidden"); }
+    function getCurrentChecklist() { return allChecklists.find(c => c.id === activeChecklistId) || allChecklists[0]; }
+
+    function createNewChecklistType() {
+      const name = document.getElementById("new-checklist-name").value.trim();
+      if (!name) return alert("Nome vazio.");
+      const newId = "checklist-" + Date.now();
+      allChecklists.push({ id: newId, name: name, categories: [{ category: "1. Itens Gerais", items: [] }] });
+      activeChecklistId = newId;
+      localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
+      localStorage.setItem("CB_LOCAL_ACTIVE_ID", activeChecklistId);
+      syncConfigToCloud(); document.getElementById("new-checklist-name").value = "";
+      renderModelsListInConfig(); switchConfigTab('items'); alert("Modelo criado com sucesso!");
+    }
+
+    function addNewCategory() {
+      const catText = document.getElementById("new-cat-text").value.trim();
+      if (!catText) return alert("Nome vazio.");
+      getCurrentChecklist().categories.push({ category: catText, items: [] });
+      localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
+      syncConfigToCloud(); document.getElementById("new-cat-text").value = "";
+      document.getElementById("new-cat-box").classList.add("hidden"); renderModalItems();
+    }
+
+    function addNewItem() {
+      const catIdx = document.getElementById("new-item-category").value;
+      const itemText = document.getElementById("new-item-text").value.trim();
+      if (!itemText) return alert("Digite o título da pergunta.");
+      getCurrentChecklist().categories[catIdx].items.push({ title: itemText, type: document.getElementById("new-item-type").value, requirePhoto: document.getElementById("new-item-req-photo").checked });
+      localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
+      syncConfigToCloud(); document.getElementById("new-item-text").value = ""; renderModalItems();
+    }
+
+    function removeItem(sIdx, iIdx) {
+      getCurrentChecklist().categories[sIdx].items.splice(iIdx, 1);
+      localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
+      syncConfigToCloud(); renderModalItems();
+    }
+
+    function restoreDefaultChecklist() {
+      if (confirm("Restaurar padrões?")) {
+        allChecklists = JSON.parse(JSON.stringify(defaultTemplates));
+        localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
+        syncConfigToCloud(); renderModelsListInConfig(); alert("Restaurado!");
+      }
+    }
+
+    function resetChecklist() {
+      if (confirm("Zerar respostas?")) {
+        clearDraft();
+        renderChecklist();
+      }
+    }
+
+    function initApp() {
+      updateLogos(); renderPresetUnits(); updateHistoryBadge(); setupCloudListeners();
+      
+      if (!currentUser) {
+        document.getElementById("login-screen").classList.remove("hidden");
+        document.getElementById("modules-screen").classList.add("hidden");
         return;
       }
+      
+      document.getElementById("login-screen").classList.add("hidden");
+      document.getElementById("sidebar-user-name").innerText = `${currentUser.name} (${currentUser.role})`;
+      document.getElementById("supervisor-name").value = currentUser.name;
+      
+      if (currentUser.role === "admin") {
+        document.getElementById("sidebar-btn-users").classList.remove("hidden");
+        document.getElementById("sidebar-btn-config").classList.remove("hidden");
+        document.getElementById("home-btn-config").classList.remove("hidden");
+      } else {
+        document.getElementById("sidebar-btn-users").classList.add("hidden");
+        document.getElementById("sidebar-btn-config").classList.add("hidden");
+        document.getElementById("home-btn-config").classList.add("hidden");
+      }
+      
+      openModulesScreen();
+    }
 
-      let groups = {};
-      filtered.forEach(t => {
-        let reg = t.region || "Geral";
-        if (!groups[reg]) groups[reg] = [];
-        groups[reg].push(t);
+    function handleEvaluationChange(itemKey, value) {
+      customAnswers[itemKey] = value;
+      const planBox = document.getElementById(`plan-box-${itemKey}`);
+      if (value === "nao-conforme") planBox?.classList.remove("hidden");
+      else planBox?.classList.add("hidden");
+      calculateScore();
+      saveDraft();
+    }
+
+    function handleMaintenanceChange(itemKey, value) {
+      customAnswers[itemKey] = value;
+      const omBox = document.getElementById(`maintenance-box-${itemKey}`);
+      if (value === "abrir") omBox?.classList.remove("hidden");
+      else omBox?.classList.add("hidden");
+      calculateScore();
+      saveDraft();
+    }
+
+    function updateMaintenanceOrder(itemKey, field, val) {
+      if (!maintenanceOrders[itemKey]) maintenanceOrders[itemKey] = { equipment: '', action: '', date: '' };
+      maintenanceOrders[itemKey][field] = val;
+      saveDraft();
+    }
+
+    function setStarRating(itemKey, stars) {
+      customAnswers[itemKey] = stars;
+      for (let i = 1; i <= 5; i++) {
+        const starBtn = document.getElementById(`star-${itemKey}-${i}`);
+        if (starBtn) starBtn.className = `text-xl ${i <= stars ? 'text-amber-400 scale-110' : 'text-stone-300'}`;
+      }
+      const label = document.getElementById(`star-label-${itemKey}`);
+      if (label) label.innerText = `${stars} de 5`;
+      calculateScore();
+      saveDraft();
+    }
+
+    function updateTextInput(itemKey, val) {
+      customAnswers[itemKey] = val;
+      saveDraft();
+    }
+
+    function updateActionPlan(itemKey, field, val) {
+      if (!actionPlans[itemKey]) actionPlans[itemKey] = { action: '', date: '' };
+      actionPlans[itemKey][field] = val;
+      saveDraft();
+    }
+
+    function calculateScore() {
+      let totalQuestionsEvaluated = 0, pointsEarned = 0;
+      getCurrentChecklist().categories.forEach((sec, sIdx) => {
+        sec.items.forEach((item, iIdx) => {
+          const itemKey = `${sIdx}-${iIdx}`;
+          const itemType = item.type || "boolean";
+          let ans = customAnswers[itemKey];
+          if (itemType === "boolean" && ans) {
+            pointsEarned += (ans === "conforme" ? 1.0 : 0.0); totalQuestionsEvaluated += 1.0;
+          } else if (itemType === "maintenance" && ans) {
+            pointsEarned += (ans === "regular" ? 1.0 : 0.0); totalQuestionsEvaluated += 1.0;
+          } else if (itemType === "stars" && ans) {
+            let rating = parseInt(ans) || 0;
+            if (rating > 0) { pointsEarned += (rating / 5); totalQuestionsEvaluated += 1.0; }
+          }
+        });
+      });
+      const score = totalQuestionsEvaluated > 0 ? Math.round((pointsEarned / totalQuestionsEvaluated) * 100) : 100;
+      document.getElementById("score-display").innerText = score + "%";
+      document.getElementById("evaluated-count-display").innerText = `${Math.round(totalQuestionsEvaluated)} item(ns) avaliado(s)`;
+      return { score, total: Math.round(totalQuestionsEvaluated) };
+    }
+
+    function renderChecklist() {
+      const container = document.getElementById("checklist-container");
+      const current = getCurrentChecklist();
+      container.innerHTML = "";
+
+      current.categories.forEach((sec, sIdx) => {
+        if (sec.items.length === 0) return;
+        const secEl = document.createElement("div");
+        secEl.className = "bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden";
+        
+        let itemsHtml = sec.items.map((item, iIdx) => {
+          const itemKey = `${sIdx}-${iIdx}`;
+          const itemType = item.type || "boolean";
+          const photoData = attachedPhotos[itemKey];
+          const planData = actionPlans[itemKey] || { action: '', date: '' };
+          const omData = maintenanceOrders[itemKey] || { equipment: '', action: '', date: '' };
+          const savedAnswer = customAnswers[itemKey];
+          let controlHtml = "";
+
+          if (itemType === "boolean") {
+            let isConf = savedAnswer === 'conforme' ? 'checked' : '';
+            let isNaoConf = savedAnswer === 'nao-conforme' ? 'checked' : '';
+            let isNa = savedAnswer === 'na' ? 'checked' : '';
+            let planHidden = savedAnswer === 'nao-conforme' ? '' : 'hidden';
+
+            controlHtml = `
+              <div class="flex gap-2 text-xs">
+                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="conforme" ${isConf} class="hidden peer" onchange="handleEvaluationChange('${itemKey}', 'conforme')"><div class="text-center py-2 rounded-md border peer-checked:bg-emerald-600 peer-checked:text-white font-bold">Sim</div></label>
+                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="nao-conforme" ${isNaoConf} class="hidden peer" onchange="handleEvaluationChange('${itemKey}', 'nao-conforme')"><div class="text-center py-2 rounded-md border peer-checked:bg-rose-700 peer-checked:text-white font-bold">Não</div></label>
+                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="na" ${isNa} class="hidden peer" onchange="handleEvaluationChange('${itemKey}', 'na')"><div class="text-center py-2 rounded-md border peer-checked:bg-stone-500 peer-checked:text-white font-bold">N/A</div></label>
+              </div>
+              <div id="plan-box-${itemKey}" class="${planHidden} p-3 bg-rose-50 border rounded-lg space-y-2 text-xs">
+                <span class="block font-bold text-rose-800 uppercase text-[10px]">⚠️ Plano de Ação</span>
+                <input type="text" value="${planData.action}" placeholder="Ação..." oninput="updateActionPlan('${itemKey}', 'action', this.value)" class="w-full border p-2 bg-white rounded">
+                <input type="date" value="${planData.date}" oninput="updateActionPlan('${itemKey}', 'date', this.value)" class="w-full border p-2 bg-white rounded">
+              </div>`;
+          } else if (itemType === "maintenance") {
+            let isAbrir = savedAnswer === 'abrir' ? 'checked' : '';
+            let isReg = savedAnswer === 'regular' ? 'checked' : '';
+            let isNa = savedAnswer === 'na' ? 'checked' : '';
+            let omHidden = savedAnswer === 'abrir' ? '' : 'hidden';
+
+            controlHtml = `
+              <div class="flex gap-2 text-xs">
+                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="abrir" ${isAbrir} class="hidden peer" onchange="handleMaintenanceChange('${itemKey}', 'abrir')"><div class="text-center py-2 rounded-md border peer-checked:bg-amber-600 peer-checked:text-white font-bold">Abrir</div></label>
+                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="regular" ${isReg} class="hidden peer" onchange="handleMaintenanceChange('${itemKey}', 'regular')"><div class="text-center py-2 rounded-md border peer-checked:bg-emerald-600 peer-checked:text-white font-bold">Regular / Ok</div></label>
+                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="na" ${isNa} class="hidden peer" onchange="handleMaintenanceChange('${itemKey}', 'na')"><div class="text-center py-2 rounded-md border peer-checked:bg-stone-500 peer-checked:text-white font-bold">N/A</div></label>
+              </div>
+              <div id="maintenance-box-${itemKey}" class="${omHidden} p-3 bg-amber-50 border rounded-lg space-y-2 text-xs">
+                <span class="block font-bold text-amber-900 uppercase text-[10px]">Abertura de Ordem de Manutenção</span>
+                <input type="text" value="${omData.equipment}" placeholder="Equipamento..." oninput="updateMaintenanceOrder('${itemKey}', 'equipment', this.value)" class="w-full border p-2 bg-white rounded">
+                <input type="text" value="${omData.action}" placeholder="Defeito..." oninput="updateMaintenanceOrder('${itemKey}', 'action', this.value)" class="w-full border p-2 bg-white rounded">
+                <input type="date" value="${omData.date}" oninput="updateMaintenanceOrder('${itemKey}', 'date', this.value)" class="w-full border p-2 bg-white rounded">
+              </div>`;
+          } else if (itemType === "stars") {
+            let currentStars = parseInt(savedAnswer) || 0;
+            let starsSpans = "";
+            for (let s = 1; s <= 5; s++) starsSpans += `<button type="button" id="star-${itemKey}-${s}" onclick="setStarRating('${itemKey}', ${s})" class="text-xl ${s <= currentStars ? 'text-amber-400' : 'text-stone-300'}">★</button>`;
+            controlHtml = `<div class="flex items-center justify-between bg-stone-50 p-2.5 rounded border"><div class="flex gap-2">${starsSpans}</div><span id="star-label-${itemKey}" class="text-xs font-bold">${currentStars ? currentStars + ' de 5' : 'Avalie'}</span></div>`;
+          } else if (itemType === "text") {
+            controlHtml = `<div><textarea rows="2" placeholder="Digite..." oninput="updateTextInput('${itemKey}', this.value)" class="w-full border p-2 text-xs bg-stone-50 rounded">${savedAnswer || ''}</textarea></div>`;
+          }
+
+          return `
+          <div class="p-3.5 border-t flex flex-col gap-2.5">
+            <div class="flex justify-between items-start gap-2"><span class="text-sm font-medium">${item.title}</span>${item.requirePhoto ? '<span class="text-[10px] bg-amber-50 text-amber-800 border px-1.5 rounded font-bold">Foto Obrigatória</span>' : ''}</div>
+            ${controlHtml}
+            <div class="flex items-center gap-2 pt-1">
+              <label class="cursor-pointer inline-flex items-center gap-1.5 text-xs font-semibold bg-cb-cream px-3 py-1.5 rounded border">
+                <span id="photo-label-${itemKey}">${photoData ? 'Alterar Foto' : 'Adicionar Foto'}</span>
+                <input type="file" accept="image/*" class="hidden" onchange="handlePhotoUpload(event, '${itemKey}')">
+              </label>
+              <span id="photo-status-${itemKey}" class="text-xs text-emerald-800 bg-emerald-50 px-2 py-1 rounded border font-medium ${photoData ? '' : 'hidden'}">✓ Foto Anexada</span>
+            </div>
+          </div>`;
+        }).join("");
+
+        secEl.innerHTML = `<div class="bg-cb-cream px-4 py-2.5 font-bold text-xs uppercase text-cb-bordo border-b"><span>${sec.category}</span></div><div>${itemsHtml}</div>`;
+        container.appendChild(secEl);
       });
 
-      for (let reg in groups) {
-        let section = document.createElement("div");
-        section.className = "bg-white p-4 rounded-xl border shadow-sm space-y-3";
-        section.innerHTML = `<h3 class="font-bold text-cb-bordo text-xs uppercase tracking-wider border-b pb-1.5">📍 ${reg}</h3>`;
+      calculateScore();
+    }
 
-        let listDiv = document.createElement("div");
-        listDiv.className = "grid grid-cols-1 sm:grid-cols-2 gap-2";
-
-        groups[reg].forEach(tech => {
-          let cleanPhone = tech.phone.replace(/\D/g, '');
-          let whatsAppUrl = `https://api.whatsapp.com/send?phone=55${cleanPhone}`;
-
-          let card = document.createElement("div");
-          card.className = "p-3 bg-stone-50 border rounded-xl flex justify-between items-center text-xs";
-          card.innerHTML = `
-            <div class="space-y-0.5">
-              <span class="font-bold text-stone-900 block text-sm">${tech.name}</span>
-              <span class="inline-block bg-amber-100 text-amber-900 font-semibold px-2 py-0.5 rounded text-[10px]">${tech.service}</span>
-              <span class="block text-stone-500 font-mono">📞 ${tech.phone}</span>
-            </div>
-            <a href="${whatsAppUrl}" target="_blank" class="px-3 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-lg transition flex items-center gap-1 shadow-sm shrink-0">
-              <span>💬 WhatsApp</span>
-            </a>`;
-          listDiv.appendChild(card);
-        });
-
-        section.appendChild(listDiv);
-        container.appendChild(section);
+    function handlePhotoUpload(event, key) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          attachedPhotos[key] = e.target.result;
+          saveDraft();
+          
+          const label = document.getElementById(`photo-label-${key}`);
+          const status = document.getElementById(`photo-status-${key}`);
+          if (label) label.innerText = 'Alterar Foto';
+          if (status) status.classList.remove('hidden');
+        };
+        reader.readAsDataURL(file);
       }
     }
 
-    function toggleTechModal() {
-      if (currentUser.role !== 'admin') return alert("Acesso restrito a administradores.");
-      document.getElementById("tech-modal").classList.toggle("hidden");
+    function validatePhotos() {
+      let missing = [];
+      const current = getCurrentChecklist();
+      current.categories.forEach((sec, sIdx) => {
+        sec.items.forEach((item, iIdx) => {
+          const key = `${sIdx}-${iIdx}`;
+          if (item.requirePhoto && !attachedPhotos[key]) {
+            const isNc = customAnswers[key] === 'nao-conforme';
+            const isOm = customAnswers[key] === 'abrir';
+            if (isNc || isOm) missing.push(item.title);
+          }
+        });
+      });
+      return missing;
     }
 
     function openChatModal(chatId, reportId, type, index) {
@@ -2299,6 +2420,97 @@
       db.collection("chats").doc(activeChatActionId).collection("messages").add({
         text: text, sender: currentUser.name, seen: false, time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }), createdAt: firebase.firestore.FieldValue.serverTimestamp()
       }).then(() => input.value = "");
+    }
+
+    function playAudioBeep() {
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+        gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        osc.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.15);
+      } catch (e) {
+        console.log("Áudio restrito pelo navegador");
+      }
+    }
+
+    function toggleTechModal() {
+      if (currentUser.role !== 'admin') return alert("Acesso restrito a administradores.");
+      document.getElementById("tech-modal").classList.toggle("hidden");
+    }
+
+    function renderTechniciansList() {
+      const container = document.getElementById("technicians-list-container");
+      if (!container) return;
+      container.innerHTML = "";
+
+      const regionFilter = document.getElementById("filter-tech-region").value;
+      const serviceFilter = document.getElementById("filter-tech-service").value;
+
+      const serviceSelect = document.getElementById("filter-tech-service");
+      if (serviceSelect && serviceSelect.options.length <= 1) {
+        let uniqueServices = [...new Set(techniciansList.map(t => t.service))].sort();
+        uniqueServices.forEach(srv => {
+          let opt = document.createElement("option");
+          opt.value = srv;
+          opt.innerText = srv;
+          serviceSelect.appendChild(opt);
+        });
+        serviceSelect.value = serviceFilter;
+      }
+
+      let filtered = techniciansList.filter(t => {
+        let matchReg = !regionFilter || t.region.includes(regionFilter) || t.region === "Geral";
+        let matchSrv = !serviceFilter || t.service === serviceFilter;
+        return matchReg && matchSrv;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = `<div class="p-8 text-center bg-white rounded-xl border text-stone-400 text-xs">Nenhum técnico encontrado.</div>`;
+        return;
+      }
+
+      let groups = {};
+      filtered.forEach(t => {
+        let reg = t.region || "Geral";
+        if (!groups[reg]) groups[reg] = [];
+        groups[reg].push(t);
+      });
+
+      for (let reg in groups) {
+        let section = document.createElement("div");
+        section.className = "bg-white p-4 rounded-xl border shadow-sm space-y-3";
+        section.innerHTML = `<h3 class="font-bold text-cb-bordo text-xs uppercase tracking-wider border-b pb-1.5">📍 ${reg}</h3>`;
+
+        let listDiv = document.createElement("div");
+        listDiv.className = "grid grid-cols-1 sm:grid-cols-2 gap-2";
+
+        groups[reg].forEach(tech => {
+          let cleanPhone = tech.phone.replace(/\D/g, '');
+          let whatsAppUrl = `https://api.whatsapp.com/send?phone=55${cleanPhone}`;
+
+          let card = document.createElement("div");
+          card.className = "p-3 bg-stone-50 border rounded-xl flex justify-between items-center text-xs";
+          card.innerHTML = `
+            <div class="space-y-0.5">
+              <span class="font-bold text-stone-900 block text-sm">${tech.name}</span>
+              <span class="inline-block bg-amber-100 text-amber-900 font-semibold px-2 py-0.5 rounded text-[10px]">${tech.service}</span>
+              <span class="block text-stone-500 font-mono">📞 ${tech.phone}</span>
+            </div>
+            <a href="${whatsAppUrl}" target="_blank" class="px-3 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-lg transition flex items-center gap-1 shadow-sm shrink-0">
+              <span>💬 WhatsApp</span>
+            </a>`;
+          listDiv.appendChild(card);
+        });
+
+        section.appendChild(listDiv);
+        container.appendChild(section);
+      }
     }
 
     initApp();
