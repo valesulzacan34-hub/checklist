@@ -781,7 +781,6 @@
     let currentCalendarDate = new Date();
     let currentCalendarView = 'month';
     
-    // Rascunho / Auto-Save para continuar de onde parou
     let attachedPhotos = JSON.parse(localStorage.getItem("CB_DRAFT_PHOTOS")) || {};
     let actionPlans = JSON.parse(localStorage.getItem("CB_DRAFT_PLANS")) || {};
     let customAnswers = JSON.parse(localStorage.getItem("CB_DRAFT_ANSWERS")) || {};
@@ -832,6 +831,7 @@
         });
         localStorage.setItem("CB_LOCAL_REPORTS", JSON.stringify(savedReports));
         updateHistoryBadge();
+        renderCentralizedActions();
       });
     }
 
@@ -1298,6 +1298,99 @@
         btnCompleted.className = "flex-1 py-2 border-b-2 border-cb-bordo text-cb-bordo transition";
       }
       renderCentralizedActions();
+    }
+
+    function renderCentralizedActions() {
+      const container = document.getElementById("centralized-actions-list");
+      if (!container) return;
+      container.innerHTML = "";
+      const allowedUnits = getAllowedUnits();
+
+      let allActions = [];
+      let counts = { pending: 0, progress: 0, completed: 0 };
+
+      savedReports.forEach(rep => {
+        if (!allowedUnits.includes(rep.unit)) return;
+        
+        rep.nonConformities?.forEach((nc, i) => {
+          let actId = `${rep.id}_nc_${i}`;
+          let statusObj = actionCustomStatus[actId] || 'Pendente';
+          let priorityObj = actionCustomPriority[actId] || 'Urgente';
+
+          let sLower = statusObj.toLowerCase();
+          if (sLower.includes('concluído')) counts.completed++;
+          else if (sLower.includes('andamento')) counts.progress++;
+          else counts.pending++;
+
+          allActions.push({ 
+            unit: rep.unit, 
+            title: nc.title, 
+            action: nc.action || 'Não descrita', 
+            date: nc.date || 'Indefinida', 
+            chatId: actId, 
+            status: statusObj,
+            priority: priorityObj,
+            fullReportId: rep.id,
+            type: 'nc',
+            index: i
+          });
+        });
+
+        rep.maintenanceOrders?.forEach((om, i) => {
+          let actId = `${rep.id}_om_${i}`;
+          let statusObj = actionCustomStatus[actId] || 'Pendente';
+          let priorityObj = actionCustomPriority[actId] || 'Urgente';
+
+          let sLower = statusObj.toLowerCase();
+          if (sLower.includes('concluído')) counts.completed++;
+          else if (sLower.includes('andamento')) counts.progress++;
+          else counts.pending++;
+
+          allActions.push({ 
+            unit: rep.unit, 
+            title: `Manutenção: ${om.equipment}`, 
+            action: om.action || 'Não descrito', 
+            date: om.date || 'Indefinida', 
+            chatId: actId, 
+            status: statusObj,
+            priority: priorityObj,
+            fullReportId: rep.id,
+            type: 'om',
+            index: i
+          });
+        });
+      });
+
+      document.getElementById("counter-pending").innerText = counts.pending;
+      document.getElementById("counter-progress").innerText = counts.progress;
+      document.getElementById("counter-completed").innerText = counts.completed;
+
+      let filteredActions = allActions.filter(act => {
+        let isDone = act.status.toLowerCase().includes('concluído');
+        return (currentActionsTab === 'completed') ? isDone : !isDone;
+      });
+
+      if (filteredActions.length === 0) {
+        container.innerHTML = `<div class="p-8 text-center bg-white rounded-xl border text-stone-400 text-xs">Nenhum plano de ação encontrado.</div>`;
+        return;
+      }
+
+      filteredActions.forEach(act => {
+        const card = document.createElement("div");
+        card.className = "p-4 rounded-xl border shadow-sm flex flex-col gap-2.5 text-xs bg-white";
+        card.innerHTML = `
+          <div class="flex items-center justify-between gap-2 flex-wrap">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="font-bold text-sm text-cb-bordo uppercase">${act.unit}</span>
+              <span class="text-stone-500 font-medium">📅 ${act.date}</span>
+            </div>
+            <span class="px-2.5 py-1 text-xs font-bold bg-stone-100 rounded">${act.status}</span>
+          </div>
+          <div class="text-stone-800 text-sm leading-relaxed pt-1 border-t border-stone-200/60">
+            <strong>${act.title}</strong> — <span class="text-stone-700">${act.action}</span>
+          </div>`;
+        container.appendChild(card);
+      });
     }
 
     function toggleConfigModal() {
