@@ -216,11 +216,11 @@
           <div class="space-y-3 text-sm">
             <div>
               <label class="block text-xs font-semibold text-stone-600 mb-1">Loja</label>
-              <select id="unit-selector" class="w-full border rounded-lg p-2.5 text-sm bg-stone-50 font-semibold text-stone-800"></select>
+              <select id="unit-selector" class="w-full border rounded-lg p-2.5 text-sm bg-stone-50 font-semibold text-stone-800" onchange="saveDraft()"></select>
             </div>
             <div>
               <label class="block text-xs font-semibold text-stone-600 mb-1">Supervisor</label>
-              <input type="text" id="supervisor-name" class="w-full border rounded-lg p-2.5 text-sm bg-stone-50">
+              <input type="text" id="supervisor-name" class="w-full border rounded-lg p-2.5 text-sm bg-stone-50" oninput="saveDraft()">
             </div>
           </div>
         </div>
@@ -229,7 +229,7 @@
 
         <div class="bg-white p-4 rounded-xl shadow-sm border border-stone-200 space-y-2">
           <h2 class="font-bold text-cb-bordo text-xs uppercase tracking-wider">Observações</h2>
-          <textarea id="notes" rows="3" placeholder="Comentários..." class="w-full border rounded-lg p-2.5 text-sm bg-stone-50"></textarea>
+          <textarea id="notes" rows="3" placeholder="Comentários..." class="w-full border rounded-lg p-2.5 text-sm bg-stone-50" oninput="saveDraft()"></textarea>
         </div>
       </main>
 
@@ -765,146 +765,6 @@
     }
 
     const DEFAULT_EMBEDDED_LOGO = "./logo.png";
-    const defaultUsers = [
-      { username: "alcides", pass: "12345678", name: "Alcides Ramos", role: "admin", units: [] }
-    ];
-
-    const defaultUnits = [
-      "CB Vale Sul Shopping",
-      "CB Shopping CenterVale",
-      "CB Shopping Oriente",
-      "CB Shopping Aricanduva"
-    ];
-
-    const defaultStatuses = [
-      { name: "Pendente", color: "bg-rose-100 border-rose-300" },
-      { name: "Em Andamento", color: "bg-amber-100 border-amber-300" },
-      { name: "Concluído", color: "bg-emerald-100 border-emerald-300" }
-    ];
-
-    const defaultPriorities = [
-      { name: "Urgente", style: "bg-rose-600 text-white font-black" },
-      { name: "Importante", style: "bg-amber-500 text-white font-bold" },
-      { name: "Não Urgente", style: "bg-stone-200 text-stone-800 font-semibold" }
-    ];
-
-    const defaultTechnicians = [
-      { name: "Wezley", service: "Ar condicionado", region: "São José dos Campos", phone: "12 974010864" },
-      { name: "Messias", service: "Ar condicionado", region: "São José dos Campos", phone: "12 98851-4713" },
-      { name: "Emerson", service: "Eletricista", region: "São José dos Campos", phone: "12 98813-9737" },
-      { name: "Thiago", service: "Eletricista", region: "São José dos Campos", phone: "12 98842-2803" },
-      { name: "Sullivan", service: "Encanador", region: "São José dos Campos", phone: "12 98853-0008" },
-      { name: "Lucas", service: "Encanador", region: "São José dos Campos", phone: "12 98863-4594" },
-      { name: "Pardal", service: "Serralheiro", region: "São José dos Campos", phone: "12 98815-4179" },
-      { name: "Adilson", service: "Serralheiro", region: "São José dos Campos", phone: "12 99103-2777" },
-      { name: "Evelton", service: "TI", region: "São José dos Campos", phone: "12 997020169" },
-      { name: "João", service: "Refrigeração", region: "São José dos Campos", phone: "12 98830-8424" },
-      { name: "Átila - Casa das Balanças", service: "Grill", region: "São José dos Campos", phone: "12 99177-2866" },
-      { name: "Anderson", service: "Ar condicionado", region: "Mogi", phone: "11 98691-5882" },
-      { name: "Manoel Torres", service: "Eletricista", region: "Mogi", phone: "11 95787-5810" },
-      { name: "JD", service: "Eletricista", region: "Mogi", phone: "11 96588-6557" },
-      { name: "Laerte", service: "Eletricista", region: "Mogi", phone: "11 94710-1959" },
-      { name: "Fernando", service: "Encanador", region: "Mogi", phone: "11 99760-1057" },
-      { name: "Cleiton", service: "Encanador", region: "Mogi", phone: "11 99573-5180" },
-      { name: "Alex - Hidromack", service: "Encanador", region: "Mogi", phone: "11 91560-2004" },
-      { name: "Neno", service: "Serralheiro", region: "Mogi", phone: "11 99955-9689" },
-      { name: "Maciel", service: "Serralheiro", region: "Mogi", phone: "11 97411-0336" },
-      { name: "Matbig- Portas automáticas", service: "Serralheiro", region: "Mogi", phone: "11 99705-3786" },
-      { name: "Fernando", service: "TI", region: "Mogi", phone: "11 98128-1011" },
-      { name: "Pedro", service: "Refrigeração", region: "Mogi", phone: "11 94230-1695" },
-      { name: "Thiago", service: "Forno Turbochef/Pratica", region: "São José dos Campos / Mogi", phone: "11 95285-8927" },
-      { name: "Sérgio", service: "Forno Turbochef/Pratica", region: "São José dos Campos / Mogi", phone: "11 99777-8031" },
-      { name: "Plantão", service: "La Spaziale", region: "São José dos Campos / Mogi", phone: "11 5181-5043" },
-      { name: "Cleber", service: "Máquina de louça", region: "São José dos Campos / Mogi", phone: "11 91724-1975" },
-      { name: "Jonatan", service: "La Spaziale (Tecnico por fora)", region: "São José dos Campos / Mogi", phone: "12 988929441" },
-      { name: "Fabio - Omni Blend", service: "Blender", region: "Geral", phone: "11 98315-2020" },
-      { name: "Armando", service: "Máquina de crema", region: "Geral", phone: "11 97420-7794" },
-      { name: "Waldir", service: "FAZ TUDO - MARIDO DE ALUGUEL", region: "Mogi", phone: "11 91609-6563" },
-      { name: "Ricardo", service: "Serralheiro", region: "São Paulo", phone: "11 96417-5813" },
-      { name: "Tino Ti Ark", service: "TI", region: "São Paulo", phone: "11 98462-1133" },
-      { name: "Wellington", service: "TI", region: "São Paulo", phone: "11 97193-6740" },
-      { name: "Pedro", service: "Refrigeração", region: "São Paulo", phone: "11 94230-1695" }
-    ];
-
-    let techniciansList = JSON.parse(localStorage.getItem("CB_LOCAL_TECHNICIANS")) || defaultTechnicians;
-    let calendarEvents = JSON.parse(localStorage.getItem("CB_LOCAL_CALENDAR_EVENTS")) || [];
-
-    let currentCalendarDate = new Date();
-    let currentCalendarView = 'month';
-
-    const defaultTemplates = [
-      {
-        id: "cb-supervisao",
-        name: "Casa Bauducco - Rota de Supervisão",
-        categories: [
-          {
-            category: "1. Estrutura, Salão & Visual",
-            items: [
-              { title: "Fachada da loja, luzes, letreiros, Leds", type: "boolean", requirePhoto: true },
-              { title: "Ambiente interno", type: "boolean", requirePhoto: true },
-              { title: "A comunicação visual está dentro do padrão?", type: "boolean", requirePhoto: true },
-              { title: "Mesas de atendimento", type: "boolean", requirePhoto: false },
-              { title: "Avaliar som ambiente", type: "boolean", requirePhoto: false },
-              { title: "Temperatura da Loja", type: "boolean", requirePhoto: false },
-              { title: "Todas áreas da loja estão sendo utilizadas para sua devida finalidade?", type: "boolean", requirePhoto: false },
-              { title: "Condição de móveis, utensílios e equipamentos", type: "boolean", requirePhoto: true }
-            ]
-          },
-          {
-            category: "2. Atendimento, Caixa & Equipe",
-            items: [
-              { title: "Avaliar apresentação dos colaboradores", type: "boolean", requirePhoto: true },
-              { title: "Escala de horários e Plano de posicionamento do dia está preenchido?", type: "boolean", requirePhoto: true },
-              { title: "Checar cumprimento da jornada do cliente durante o atendimento", type: "boolean", requirePhoto: false },
-              { title: "Verificar realização de venda sugestiva", type: "boolean", requirePhoto: false },
-              { title: "Conhecimentos gerais sobre marca e produtos?", type: "boolean", requirePhoto: false },
-              { title: "Formou fila maior que 3 clientes?", type: "boolean", requirePhoto: false },
-              { title: "Verificar organização da área do caixa", type: "boolean", requirePhoto: true },
-              { title: "PDV 1 e PDV 2 abertos?", type: "boolean", requirePhoto: true },
-              { title: "Tabela nutricional e Código de defesa do consumidor", type: "boolean", requirePhoto: false },
-              { title: "Cardápios disponíveis e em bom estado de conservação?", type: "boolean", requirePhoto: false }
-            ]
-          },
-          {
-            category: "3. Produtos, Exposição & Café",
-            items: [
-              { title: "Vitrine refrigerada com exposição adequada?", type: "boolean", requirePhoto: true },
-              { title: "Máquina de café e moinho regulados?", type: "boolean", requirePhoto: true },
-              { title: "Fatias dentro do padrão de peso e visual?", type: "boolean", requirePhoto: true },
-              { title: "Exposição do empório", type: "boolean", requirePhoto: true },
-              { title: "Insumos repostos de acordo com o movimento?", type: "boolean", requirePhoto: true }
-            ]
-          },
-          {
-            category: "4. Equipamentos, Limpeza & Segurança Alimentar",
-            items: [
-              { title: "Equipamentos operacionais em boas condições de uso e limpos?", type: "boolean", requirePhoto: true },
-              { title: "Inspecionar segurança de alimentos e boas práticas", type: "boolean", requirePhoto: true },
-              { title: "Tabela de validades impressa e disponível", type: "boolean", requirePhoto: true },
-              { title: "PAPs impressos e disponíveis", type: "boolean", requirePhoto: true },
-              { title: "Organização dos estoques", type: "boolean", requirePhoto: true }
-            ]
-          },
-          {
-            category: "5. Gestão, Controles & Administrativo",
-            items: [
-              { title: "Cadernos de controles estão sendo preenchidos?", type: "boolean", requirePhoto: false },
-              { title: "Loja está batendo a meta da semana?", type: "boolean", requirePhoto: false },
-              { title: "CAFs de reembolso foram abertos?", type: "boolean", requirePhoto: false },
-              { title: "Notas fiscais estão lançadas no GCOM?", type: "boolean", requirePhoto: false }
-            ]
-          },
-          {
-            category: "6. Ordens de Manutenção & Equipamentos",
-            items: [
-              { title: "Necessidade de Manutenção em Equipamentos do Salão ou Balcão?", type: "maintenance", requirePhoto: true },
-              { title: "Necessidade de Manutenção Predial / Hidráulica / Elétrica?", type: "maintenance", requirePhoto: false }
-            ]
-          }
-        ]
-      }
-    ];
-
     let users = JSON.parse(localStorage.getItem("CB_LOCAL_USERS")) || defaultUsers;
     let presetUnits = JSON.parse(localStorage.getItem("CB_LOCAL_UNITS")) || defaultUnits;
     let actionStatuses = JSON.parse(localStorage.getItem("CB_LOCAL_STATUSES")) || defaultStatuses;
@@ -915,11 +775,17 @@
     let allChecklists = JSON.parse(localStorage.getItem("CB_LOCAL_CHECKLISTS")) || defaultTemplates;
     let activeChecklistId = localStorage.getItem("CB_LOCAL_ACTIVE_ID") || allChecklists[0].id;
     let savedReports = JSON.parse(localStorage.getItem("CB_LOCAL_REPORTS")) || [];
+    let techniciansList = JSON.parse(localStorage.getItem("CB_LOCAL_TECHNICIANS")) || defaultTechnicians;
+    let calendarEvents = JSON.parse(localStorage.getItem("CB_LOCAL_CALENDAR_EVENTS")) || [];
+
+    let currentCalendarDate = new Date();
+    let currentCalendarView = 'month';
     
-    let attachedPhotos = {};
-    let actionPlans = {};
-    let customAnswers = {};
-    let maintenanceOrders = {};
+    // Rascunho / Auto-Save para continuar de onde parou
+    let attachedPhotos = JSON.parse(localStorage.getItem("CB_DRAFT_PHOTOS")) || {};
+    let actionPlans = JSON.parse(localStorage.getItem("CB_DRAFT_PLANS")) || {};
+    let customAnswers = JSON.parse(localStorage.getItem("CB_DRAFT_ANSWERS")) || {};
+    let maintenanceOrders = JSON.parse(localStorage.getItem("CB_DRAFT_MAINT")) || {};
 
     let currentActionsTab = 'pending';
 
@@ -983,6 +849,21 @@
         customPriority: actionCustomPriority,
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       }).catch(err => console.error(err));
+    }
+
+    function saveDraft() {
+      localStorage.setItem("CB_DRAFT_PHOTOS", JSON.stringify(attachedPhotos));
+      localStorage.setItem("CB_DRAFT_PLANS", JSON.stringify(actionPlans));
+      localStorage.setItem("CB_DRAFT_ANSWERS", JSON.stringify(customAnswers));
+      localStorage.setItem("CB_DRAFT_MAINT", JSON.stringify(maintenanceOrders));
+    }
+
+    function clearDraft() {
+      attachedPhotos = {}; actionPlans = {}; customAnswers = {}; maintenanceOrders = {};
+      localStorage.removeItem("CB_DRAFT_PHOTOS");
+      localStorage.removeItem("CB_DRAFT_PLANS");
+      localStorage.removeItem("CB_DRAFT_ANSWERS");
+      localStorage.removeItem("CB_DRAFT_MAINT");
     }
 
     function toggleSidebar() {
@@ -1232,12 +1113,9 @@
       const select = document.getElementById("home-checklist-select");
       if (!select || !select.value) return alert("Selecione um checklist.");
       activeChecklistId = select.value;
-      attachedPhotos = {};
-      actionPlans = {};
-      customAnswers = {};
-      maintenanceOrders = {};
       localStorage.setItem("CB_LOCAL_ACTIVE_ID", activeChecklistId);
       document.getElementById("active-model-title-badge").innerText = getCurrentChecklist().name;
+      
       renderChecklist();
       
       document.getElementById("checklist-home-view").classList.add("hidden");
@@ -1326,6 +1204,86 @@
     function reopenPDFFromHistoryByIndex(docId) {
       const rep = savedReports.find(r => r.id === docId);
       if (rep) openPrintWindow(rep.htmlContent);
+    }
+
+    function generatePDF() {
+      const missingPhotos = validatePhotos();
+      if (missingPhotos.length > 0) {
+        alert(`Atenção: As seguintes perguntas exigem foto obrigatória:\n\n- ${missingPhotos.join('\n- ')}`);
+        return;
+      }
+
+      const unit = document.getElementById("unit-selector").value;
+      const supervisor = document.getElementById("supervisor-name").value;
+      const notes = document.getElementById("notes").value;
+      const dateStr = new Date().toLocaleString('pt-BR');
+      const { score } = calculateScore();
+
+      let ncList = [];
+      let omList = [];
+
+      getCurrentChecklist().categories.forEach((sec, sIdx) => {
+        sec.items.forEach((item, iIdx) => {
+          const key = `${sIdx}-${iIdx}`;
+          if (customAnswers[key] === 'nao-conforme') {
+            const plan = actionPlans[key] || {};
+            ncList.push({ title: item.title, action: plan.action || 'Não descrita', date: plan.date || 'Não definida', photoUrl: attachedPhotos[key] || '' });
+          }
+          if (customAnswers[key] === 'abrir') {
+            const om = maintenanceOrders[key] || {};
+            omList.push({ equipment: om.equipment || item.title, action: om.action || 'Não descrito', date: om.date || 'Não definida', photoUrl: attachedPhotos[key] || '' });
+          }
+        });
+      });
+
+      let html = `
+        <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; max-width: 800px; margin: 0 auto;">
+          <h2 style="color: #4A0E17; border-bottom: 2px solid #D4AF37; padding-bottom: 8px;">Relatório de Supervisão - Casa Bauducco</h2>
+          <p><strong>Unidade:</strong> ${unit}</p>
+          <p><strong>Supervisor:</strong> ${supervisor}</p>
+          <p><strong>Data/Hora:</strong> ${dateStr}</p>
+          <p><strong>Conformidade Geral:</strong> <span style="font-size: 18px; font-weight: bold; color: ${score >= 90 ? 'green' : 'red'};">${score}%</span></p>
+          <hr style="margin: 15px 0; border: 0; border-top: 1px solid #ddd;">
+          <h3>Observações Gerais:</h3>
+          <p>${notes || 'Nenhuma observação informada.'}</p>
+          <h3>Planos de Ação (Não Conformidades):</h3>
+          <ul>${ncList.map(nc => `<li><strong>${nc.title}</strong>: ${nc.action} (Prazo: ${nc.date})</li>`).join('') || '<li>Nenhum</li>'}</ul>
+          <h3>Ordens de Manutenção:</h3>
+          <ul>${omList.map(om => `<li><strong>${om.equipment}</strong>: ${om.action} (Prazo: ${om.date})</li>`).join('') || '<li>Nenhuma</li>'}</ul>
+        </div>
+      `;
+
+      let newRep = { id: "rep_" + Date.now(), unit, supervisor, date: dateStr, score, notes, nonConformities: ncList, maintenanceOrders: omList, htmlContent: html };
+      saveReportToCloud(newRep);
+      clearDraft();
+      openPrintWindow(html);
+      alert("Relatório salvo com sucesso!");
+      switchChecklistTab('history');
+    }
+
+    function shareWhatsApp() {
+      const unit = document.getElementById("unit-selector").value;
+      const { score } = calculateScore();
+      const dateStr = new Date().toLocaleDateString('pt-BR');
+      let msg = `*Relatório de Supervisão - Casa Bauducco*%0A*Loja:* ${unit}%0A*Data:* ${dateStr}%0A*Conformidade:* ${score}%25%0A%0AConfira os detalhes no sistema.`;
+      window.open(`https://api.whatsapp.com/send?text=${msg}`, '_blank');
+    }
+
+    function openPrintWindow(html) {
+      const win = window.open('', '_blank');
+      win.document.write(`<html><head><title>Relatório PDF</title></head><body>${html}<script>window.print();<\/script></body></html>`);
+      win.document.close();
+    }
+
+    function saveReportToCloud(reportData) {
+      if (!isFirebaseReady) {
+        savedReports.unshift(reportData);
+        localStorage.setItem("CB_LOCAL_REPORTS", JSON.stringify(savedReports));
+        updateHistoryBadge();
+        return;
+      }
+      reportData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+      db.collection("reports").add(reportData).catch(err => console.error(err));
     }
 
     function switchActionsTab(tab) {
@@ -1654,7 +1612,8 @@
 
     function resetChecklist() {
       if (confirm("Zerar respostas?")) {
-        attachedPhotos = {}; actionPlans = {}; customAnswers = {}; maintenanceOrders = {}; renderChecklist();
+        clearDraft();
+        renderChecklist();
       }
     }
 
@@ -1690,6 +1649,7 @@
       if (value === "nao-conforme") planBox?.classList.remove("hidden");
       else planBox?.classList.add("hidden");
       calculateScore();
+      saveDraft();
     }
 
     function handleMaintenanceChange(itemKey, value) {
@@ -1698,11 +1658,13 @@
       if (value === "abrir") omBox?.classList.remove("hidden");
       else omBox?.classList.add("hidden");
       calculateScore();
+      saveDraft();
     }
 
     function updateMaintenanceOrder(itemKey, field, val) {
       if (!maintenanceOrders[itemKey]) maintenanceOrders[itemKey] = { equipment: '', action: '', date: '' };
       maintenanceOrders[itemKey][field] = val;
+      saveDraft();
     }
 
     function setStarRating(itemKey, stars) {
@@ -1714,12 +1676,18 @@
       const label = document.getElementById(`star-label-${itemKey}`);
       if (label) label.innerText = `${stars} de 5`;
       calculateScore();
+      saveDraft();
     }
 
-    function updateTextInput(itemKey, val) { customAnswers[itemKey] = val; }
+    function updateTextInput(itemKey, val) {
+      customAnswers[itemKey] = val;
+      saveDraft();
+    }
+
     function updateActionPlan(itemKey, field, val) {
       if (!actionPlans[itemKey]) actionPlans[itemKey] = { action: '', date: '' };
       actionPlans[itemKey][field] = val;
+      saveDraft();
     }
 
     function calculateScore() {
@@ -1745,7 +1713,6 @@
       return { score, total: Math.round(totalQuestionsEvaluated) };
     }
 
-    // Renderização do Checklist preservando estado (evita perda de dados ao responder)
     function renderChecklist() {
       const container = document.getElementById("checklist-container");
       const current = getCurrentChecklist();
@@ -1837,9 +1804,26 @@
         reader.onload = function(e) {
           attachedPhotos[key] = e.target.result;
           renderChecklist();
+          saveDraft();
         };
         reader.readAsDataURL(file);
       }
+    }
+
+    function validatePhotos() {
+      let missing = [];
+      const current = getCurrentChecklist();
+      current.categories.forEach((sec, sIdx) => {
+        sec.items.forEach((item, iIdx) => {
+          const key = `${sIdx}-${iIdx}`;
+          if (item.requirePhoto && !attachedPhotos[key]) {
+            const isNc = customAnswers[key] === 'nao-conforme';
+            const isOm = customAnswers[key] === 'abrir';
+            if (isNc || isOm) missing.push(item.title);
+          }
+        });
+      });
+      return missing;
     }
 
     initApp();
