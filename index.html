@@ -1592,7 +1592,7 @@
       localStorage.setItem("CB_LOCAL_ACTIVE_ID", activeChecklistId);
       document.getElementById("active-model-title-badge").innerText = getCurrentChecklist().name;
       
-      // Mantém rascunhos anteriores salvos, limpando apenas o estado ativo da nova auditoria atual
+      // Inicializa nova auditoria mantendo rascunhos salvos seguros se houver
       customAnswers = {};
       attachedPhotos = {};
       actionPlans = {};
@@ -2000,7 +2000,6 @@
         }
       });
 
-      // Inclui notificações automáticas de mensagens de chat não lidas
       for (let chatId in unreadChatMessages) {
         if (unreadChatMessages[chatId]) {
           notifs.push({
@@ -2368,7 +2367,6 @@
 
     function openChatModal(chatId, reportId, type, index, isManual = false) {
       activeChatActionId = chatId;
-      // Ao abrir o chat, removemos a notificação pendente do chat atual
       if (unreadChatMessages[chatId]) {
         delete unreadChatMessages[chatId];
         localStorage.setItem("CB_UNREAD_CHAT_MSGS", JSON.stringify(unreadChatMessages));
