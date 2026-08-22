@@ -105,7 +105,7 @@
       <button onclick="toggleSidebar()" class="text-stone-300 hover:text-white text-lg font-bold p-1">✕</button>
     </div>
 
-    <!-- Menu Lateral Simplificado (Apenas Módulos Principais) -->
+    <!-- Menu Lateral Limpo (Apenas Módulos Principais) -->
     <div class="p-3 space-y-1.5 flex-1 text-xs font-semibold overflow-y-auto">
       <button onclick="openModulesScreen(); toggleSidebar();" class="w-full text-left px-3 py-2.5 rounded-lg hover:bg-cb-bordo transition">
         🏠 Tela Inicial (Módulos)
@@ -193,6 +193,7 @@
             <span>📝 Checklists em Andamento (Rascunhos)</span>
             <span id="drafts-badge-count-main" class="bg-cb-gold text-cb-bordo-dark px-2 py-0.5 rounded-full text-[10px] font-black">0</span>
           </button>
+          <!-- Configuração apenas na Tela Inicial para Admin -->
           <button id="home-btn-config" onclick="toggleConfigModal()" class="hidden p-3.5 bg-white hover:bg-stone-50 border border-stone-200 rounded-xl shadow-sm transition text-left text-xs font-bold text-cb-bordo uppercase tracking-wider">
             ⚙️ Configurações Gerais dos Checklists
           </button>
@@ -298,21 +299,27 @@
             <h2 class="font-bold text-cb-bordo text-xs uppercase tracking-wider">Agenda de Planos de Ação</h2>
             <p class="text-xs text-stone-500">Acompanhamento e chat com os responsáveis</p>
           </div>
-          <button onclick="openNewActionModal()" class="px-3 py-2 bg-cb-bordo hover:bg-cb-bordo-dark text-white font-bold text-xs rounded-lg transition shadow-sm">
-            + Novo Plano de Ação
-          </button>
+          <div class="flex gap-2">
+            <button onclick="toggleTrashModal()" id="btn-trash-actions" class="hidden px-3 py-2 bg-stone-200 hover:bg-stone-300 text-stone-800 font-bold text-xs rounded-lg transition shadow-sm">
+              🗑️ Lixeira (<span id="trash-count">0</span>)
+            </button>
+            <button onclick="openNewActionModal()" class="px-3 py-2 bg-cb-bordo hover:bg-cb-bordo-dark text-white font-bold text-xs rounded-lg transition shadow-sm">
+              + Novo Plano de Ação
+            </button>
+          </div>
         </div>
 
+        <!-- Contadores Responsivos e Clicáveis -->
         <div class="grid grid-cols-3 gap-2 pt-1 text-center">
-          <div class="bg-rose-50 border border-rose-200 p-2.5 rounded-xl shadow-sm">
+          <div onclick="filterActionsByCounter('Pendente')" class="bg-rose-50 border border-rose-200 p-2.5 rounded-xl shadow-sm cursor-pointer hover:bg-rose-100 transition">
             <span class="block text-[10px] font-bold text-rose-800 uppercase">Pendentes</span>
             <span id="counter-pending" class="text-lg font-black text-rose-700">0</span>
           </div>
-          <div class="bg-amber-50 border border-amber-200 p-2.5 rounded-xl shadow-sm">
+          <div onclick="filterActionsByCounter('Em Andamento')" class="bg-amber-50 border border-amber-200 p-2.5 rounded-xl shadow-sm cursor-pointer hover:bg-amber-100 transition">
             <span class="block text-[10px] font-bold text-amber-900 uppercase">Em Andamento</span>
             <span id="counter-progress" class="text-lg font-black text-amber-700">0</span>
           </div>
-          <div class="bg-emerald-50 border border-emerald-200 p-2.5 rounded-xl shadow-sm">
+          <div onclick="filterActionsByCounter('Concluído')" class="bg-emerald-50 border border-emerald-200 p-2.5 rounded-xl shadow-sm cursor-pointer hover:bg-emerald-100 transition">
             <span class="block text-[10px] font-bold text-emerald-800 uppercase">Concluídos</span>
             <span id="counter-completed" class="text-lg font-black text-emerald-700">0</span>
           </div>
@@ -454,6 +461,17 @@
   </div>
 
   <!-- MODAIS DO SISTEMA -->
+  <!-- Modal da Lixeira de Planos de Ação -->
+  <div id="trash-actions-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-lg h-[80vh] rounded-2xl flex flex-col shadow-2xl overflow-hidden border border-cb-gold/30 text-xs">
+      <div class="p-4 border-b border-stone-200 flex justify-between items-center bg-cb-bordo text-white">
+        <h3 class="font-bold text-sm uppercase text-cb-gold">🗑️ Lixeira de Planos de Ação Excluídos</h3>
+        <button onclick="toggleTrashModal()" class="font-bold text-stone-300 hover:text-white text-base">✕</button>
+      </div>
+      <div id="trash-actions-list" class="p-4 overflow-y-auto space-y-2.5 flex-1 bg-stone-50"></div>
+    </div>
+  </div>
+
   <!-- Modal de Novo Plano de Ação Manual -->
   <div id="new-action-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white w-full max-w-md rounded-2xl p-5 space-y-4 shadow-2xl border border-cb-gold/30 text-xs">
@@ -887,6 +905,7 @@
     let actionCustomPriority = JSON.parse(localStorage.getItem("CB_LOCAL_CUSTOM_PRIORITY")) || {};
     let currentUser = JSON.parse(sessionStorage.getItem("CB_LOCAL_LOGGED_USER")) || null;
     let manualActionsList = JSON.parse(localStorage.getItem("CB_LOCAL_MANUAL_ACTIONS")) || [];
+    let trashActionsList = JSON.parse(localStorage.getItem("CB_LOCAL_TRASH_ACTIONS")) || [];
     let readNotifications = JSON.parse(localStorage.getItem("CB_READ_NOTIFICATIONS")) || {};
     
     // PRÉ-CARGA DOS PLANOS DE AÇÃO DA UNIDADE CENTERVALE (20/08/2026)
@@ -1037,6 +1056,7 @@
           if (data.customStatus) { actionCustomStatus = data.customStatus; localStorage.setItem("CB_LOCAL_CUSTOM_STATUS", JSON.stringify(actionCustomStatus)); }
           if (data.customPriority) { actionCustomPriority = data.customPriority; localStorage.setItem("CB_LOCAL_CUSTOM_PRIORITY", JSON.stringify(actionCustomPriority)); }
           if (data.manualActions) { manualActionsList = data.manualActions; localStorage.setItem("CB_LOCAL_MANUAL_ACTIONS", JSON.stringify(manualActionsList)); }
+          if (data.trashActions) { trashActionsList = data.trashActions; localStorage.setItem("CB_LOCAL_TRASH_ACTIONS", JSON.stringify(trashActionsList)); }
 
           renderPresetUnits();
           renderHomeChecklistSelect();
@@ -1073,6 +1093,7 @@
         customStatus: actionCustomStatus,
         customPriority: actionCustomPriority,
         manualActions: manualActionsList,
+        trashActions: trashActionsList,
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       }).catch(err => console.error(err));
     }
@@ -1156,32 +1177,46 @@
     function executeUndo() {
       if (!lastDeletedItem) return;
       if (lastDeletedItem.type === 'report') {
-        saveReportToCloud(lastDeletedItem.data);
+        if (!savedReports.some(r => r.id === lastDeletedItem.data.id)) {
+          saveReportToCloud(lastDeletedItem.data);
+        }
       } else if (lastDeletedItem.type === 'event') {
-        calendarEvents.push(lastDeletedItem.data);
-        localStorage.setItem("CB_LOCAL_CALENDAR_EVENTS", JSON.stringify(calendarEvents));
-        syncConfigToCloud();
-        renderAgendaCalendar();
+        if (!calendarEvents.some(e => e.id === lastDeletedItem.data.id)) {
+          calendarEvents.push(lastDeletedItem.data);
+          localStorage.setItem("CB_LOCAL_CALENDAR_EVENTS", JSON.stringify(calendarEvents));
+          syncConfigToCloud();
+          renderAgendaCalendar();
+        }
       } else if (lastDeletedItem.type === 'tech') {
-        techniciansList.push(lastDeletedItem.data);
-        localStorage.setItem("CB_LOCAL_TECHNICIANS", JSON.stringify(techniciansList));
-        syncConfigToCloud();
-        renderTechniciansList();
+        if (!techniciansList.some(t => t.name === lastDeletedItem.data.name && t.phone === lastDeletedItem.data.phone)) {
+          techniciansList.push(lastDeletedItem.data);
+          localStorage.setItem("CB_LOCAL_TECHNICIANS", JSON.stringify(techniciansList));
+          syncConfigToCloud();
+          renderTechniciansList();
+        }
       } else if (lastDeletedItem.type === 'manualAction') {
-        manualActionsList.push(lastDeletedItem.data);
-        localStorage.setItem("CB_LOCAL_MANUAL_ACTIONS", JSON.stringify(manualActionsList));
-        syncConfigToCloud();
-        renderCentralizedActions();
-      } else if (lastDeletedItem.type === 'actionPlan') {
-        if (lastDeletedItem.isManual) {
+        if (!manualActionsList.some(a => a.id === lastDeletedItem.data.id)) {
           manualActionsList.push(lastDeletedItem.data);
           localStorage.setItem("CB_LOCAL_MANUAL_ACTIONS", JSON.stringify(manualActionsList));
           syncConfigToCloud();
+          renderCentralizedActions();
+        }
+      } else if (lastDeletedItem.type === 'actionPlan') {
+        if (lastDeletedItem.isManual) {
+          if (!manualActionsList.some(a => a.id === lastDeletedItem.data.id)) {
+            manualActionsList.push(lastDeletedItem.data);
+            localStorage.setItem("CB_LOCAL_MANUAL_ACTIONS", JSON.stringify(manualActionsList));
+            syncConfigToCloud();
+          }
         } else {
           const rep = savedReports.find(r => r.id === lastDeletedItem.reportId);
           if (rep) {
-            if (lastDeletedItem.actionType === 'nc') rep.nonConformities.push(lastDeletedItem.data);
-            if (lastDeletedItem.actionType === 'om') rep.maintenanceOrders.push(lastDeletedItem.data);
+            if (lastDeletedItem.actionType === 'nc' && !rep.nonConformities.some(nc => nc.title === lastDeletedItem.data.title)) {
+              rep.nonConformities.push(lastDeletedItem.data);
+            }
+            if (lastDeletedItem.actionType === 'om' && !rep.maintenanceOrders.some(om => om.equipment === lastDeletedItem.data.equipment)) {
+              rep.maintenanceOrders.push(lastDeletedItem.data);
+            }
             localStorage.setItem("CB_LOCAL_REPORTS", JSON.stringify(savedReports));
           }
         }
@@ -1251,7 +1286,7 @@
       if (filterActionStore) {
         const currentFilterAct = filterActionStore.value;
         filterActionStore.innerHTML = `<option value="">Todas as Lojas</option>`;
-        allowedUnits.forEach(u => {
+        presetUnits.forEach(u => {
           const opt = document.createElement("option"); opt.value = u; opt.innerText = u; filterActionStore.appendChild(opt);
         });
         filterActionStore.value = currentFilterAct;
@@ -1454,12 +1489,15 @@
       const badgeMod = document.getElementById("current-module-badge");
 
       const sideBtnUsers = document.getElementById("sidebar-btn-users");
-      const sideBtnConfig = document.getElementById("sidebar-btn-config");
 
       if (currentUser.role === 'admin') {
         if (sideBtnUsers) sideBtnUsers.classList.remove("hidden");
+        const homeBtnConfig = document.getElementById("home-btn-config");
+        if (homeBtnConfig) homeBtnConfig.classList.remove("hidden");
       } else {
         if (sideBtnUsers) sideBtnUsers.classList.add("hidden");
+        const homeBtnConfig = document.getElementById("home-btn-config");
+        if (homeBtnConfig) homeBtnConfig.classList.add("hidden");
       }
 
       checklistsMod.classList.add("hidden");
@@ -1738,6 +1776,19 @@
       renderCentralizedActions();
     }
 
+    function filterActionsByCounter(statusName) {
+      const statusSelect = document.getElementById("filter-status");
+      if (statusSelect) {
+        statusSelect.value = statusName;
+      }
+      if (statusName === 'Concluído') {
+        switchActionsTab('completed');
+      } else {
+        switchActionsTab('pending');
+      }
+      renderCentralizedActions();
+    }
+
     function toggleNewActionModal() {
       document.getElementById("new-action-modal").classList.toggle("hidden");
     }
@@ -1800,7 +1851,7 @@
         return alert("Acesso restrito: Apenas administradores podem excluir planos de ação.");
       }
 
-      if (confirm("Deseja realmente excluir este plano de ação?")) {
+      if (confirm("Deseja realmente mover este plano de ação para a lixeira?")) {
         let deletedData = null;
         if (isManual) {
           let idx = manualActionsList.findIndex(a => a.id === chatId);
@@ -1808,16 +1859,15 @@
             deletedData = manualActionsList[idx];
             manualActionsList.splice(idx, 1);
             localStorage.setItem("CB_LOCAL_MANUAL_ACTIONS", JSON.stringify(manualActionsList));
-            syncConfigToCloud();
           }
         } else {
           let rep = savedReports.find(r => r.id === fullReportId);
           if (rep) {
             if (type === 'nc' && rep.nonConformities) {
-              deletedData = rep.nonConformities[index];
+              deletedData = { ...rep.nonConformities[index], fullReportId, type, index };
               rep.nonConformities.splice(index, 1);
             } else if (type === 'om' && rep.maintenanceOrders) {
-              deletedData = rep.maintenanceOrders[index];
+              deletedData = { ...rep.maintenanceOrders[index], fullReportId, type, index };
               rep.maintenanceOrders.splice(index, 1);
             }
             localStorage.setItem("CB_LOCAL_REPORTS", JSON.stringify(savedReports));
@@ -1829,9 +1879,74 @@
             }
           }
         }
+        if (deletedData) {
+          trashActionsList.push({ ...deletedData, deletedAt: new Date().toLocaleDateString('pt-BR') });
+          localStorage.setItem("CB_LOCAL_TRASH_ACTIONS", JSON.stringify(trashActionsList));
+        }
+        syncConfigToCloud();
         renderCentralizedActions();
-        triggerUndoToast("Plano de Ação", "actionPlan", { data: deletedData, reportId: fullReportId, actionType: type, isManual });
+        renderTrashActionsList();
+        alert("Plano de ação enviado para a lixeira.");
       }
+    }
+
+    function toggleTrashModal() {
+      const modal = document.getElementById("trash-actions-modal");
+      modal.classList.toggle("hidden");
+      if (!modal.classList.contains("hidden")) {
+        renderTrashActionsList();
+      }
+    }
+
+    function renderTrashActionsList() {
+      const container = document.getElementById("trash-actions-list");
+      const countEl = document.getElementById("trash-count");
+      if (!container) return;
+      container.innerHTML = "";
+      if (countEl) countEl.innerText = trashActionsList.length;
+
+      if (trashActionsList.length === 0) {
+        container.innerHTML = `<div class="p-6 text-center text-stone-400 text-xs">A lixeira está vazia.</div>`;
+        return;
+      }
+
+      trashActionsList.forEach((item, idx) => {
+        const div = document.createElement("div");
+        div.className = "p-3 bg-white border rounded-xl flex justify-between items-center shadow-sm text-xs";
+        div.innerHTML = `
+          <div>
+            <span class="font-bold text-cb-bordo block">${item.unit || 'Loja'} — ${item.title || item.equipment || 'Ação'}</span>
+            <span class="text-stone-500">${item.action || item.defect || ''}</span>
+          </div>
+          <button onclick="restoreActionFromTrash(${idx})" class="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded shadow-sm">Restaurar</button>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function restoreActionFromTrash(idx) {
+      let item = trashActionsList.splice(idx, 1)[0];
+      if (!item) return;
+
+      if (item.isManual || item.id) {
+        if (!manualActionsList.some(a => a.id === item.id)) {
+          manualActionsList.push(item);
+          localStorage.setItem("CB_LOCAL_MANUAL_ACTIONS", JSON.stringify(manualActionsList));
+        }
+      } else if (item.fullReportId) {
+        let rep = savedReports.find(r => r.id === item.fullReportId);
+        if (rep) {
+          if (item.type === 'nc') rep.nonConformities.push(item);
+          if (item.type === 'om') rep.maintenanceOrders.push(item);
+          localStorage.setItem("CB_LOCAL_REPORTS", JSON.stringify(savedReports));
+        }
+      }
+
+      localStorage.setItem("CB_LOCAL_TRASH_ACTIONS", JSON.stringify(trashActionsList));
+      syncConfigToCloud();
+      renderCentralizedActions();
+      renderTrashActionsList();
+      alert("Plano de ação restaurado com sucesso!");
     }
 
     function getActiveNotifications() {
@@ -2026,6 +2141,12 @@
 
     function renderCentralizedActions() {
       const container = document.getElementById("centralized-actions-list");
+      const trashBtn = document.getElementById("btn-trash-actions");
+      if (trashBtn && currentUser?.role === 'admin') {
+        trashBtn.classList.remove("hidden");
+        document.getElementById("trash-count").innerText = trashActionsList.length;
+      }
+
       if (!container) return;
       container.innerHTML = "";
       const startFilter = document.getElementById("action-date-start").value;
