@@ -1011,16 +1011,13 @@
     let techniciansList = JSON.parse(localStorage.getItem("CB_LOCAL_TECHNICIANS")) || [
       { name: "Luiz Parahyba (Seguro)", service: "Sinistros e Emergências", region: "Geral", phone: "(12) 99121-5466" }
     ];
-
-    // --- RESTAURADO: Variáveis de estado global que sumiram ---
-    let calendarEvents = JSON.parse(localStorage.getItem("CB_LOCAL_CALENDAR_EVENTS")) || [];
-    let currentCalendarDate = new Date();
-    let currentCalendarView = 'month';
-    let activeChatActionId = null;
-    let lastDeletedItem = null;
-    // ------------------------------------------------------------
     
     let savedReports = JSON.parse(localStorage.getItem("CB_LOCAL_REPORTS")) || [];
+    savedReports = savedReports.filter(r => !r.unit || !r.unit.toLowerCase().includes("vale sul"));
+    localStorage.setItem("CB_LOCAL_REPORTS", JSON.stringify(savedReports));
+    
+    manualActionsList = manualActionsList.filter(a => !a.unit || !a.unit.toLowerCase().includes("vale sul"));
+    localStorage.setItem("CB_LOCAL_MANUAL_ACTIONS", JSON.stringify(manualActionsList));
 
     const centervalePresetActions = [
       { id: "cv_pre_1", unit: "CB Shopping CenterVale", title: "Fachada da loja, luzes, letreiros, Leds", action: "Solicitar manutenção de led do teto do salão (Falar com Thiago ou Emerson)", date: "28/08/2026", rawDate: "2026-08-28", type: "nc" },
@@ -1170,7 +1167,9 @@
         savedReports = [];
         snapshot.forEach(doc => {
           let rep = { id: doc.id, ...doc.data() };
-          savedReports.push(rep);
+          if (rep.unit && !rep.unit.toLowerCase().includes("vale sul")) {
+            savedReports.push(rep);
+          }
         });
         localStorage.setItem("CB_LOCAL_REPORTS", JSON.stringify(savedReports));
         updateHistoryBadge();
@@ -1759,8 +1758,8 @@
         let matchStore = !storeFilter || rep.unit === storeFilter;
         let matchDate = true;
         if (rep.date) {
-          let parts = rep.date.split(',')[0].trim().split('/');
-          let repIso = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+          let parts = rep.date.split(',')[0].split('/');
+          let repIso = `${parts[2]}-${parts[1]}-${parts[0]}`;
           if (startFilter && repIso < startFilter) matchDate = false;
           if (endFilter && repIso > endFilter) matchDate = false;
         }
