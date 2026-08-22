@@ -113,6 +113,10 @@
         <span>📂 Relatórios Salvos</span>
         <span id="history-badge-count" class="bg-cb-gold text-cb-bordo-dark px-1.5 py-0.2 rounded-full text-[10px] font-black">0</span>
       </button>
+      <button onclick="switchChecklistTab('drafts'); toggleSidebar();" class="w-full text-left px-3 py-2.5 rounded-lg hover:bg-cb-bordo transition flex justify-between items-center">
+        <span>📝 Checklists em Andamento</span>
+        <span id="drafts-badge-count" class="bg-cb-gold text-cb-bordo-dark px-1.5 py-0.2 rounded-full text-[10px] font-black">0</span>
+      </button>
       <button onclick="selectModule('actions'); toggleSidebar();" class="w-full text-left px-3 py-2.5 rounded-lg hover:bg-cb-bordo transition flex items-center gap-1.5">
         <span>📋 Planos de Ação</span>
       </button>
@@ -159,8 +163,11 @@
         
         <div id="notification-dropdown" class="hidden absolute right-0 top-11 w-72 bg-white text-stone-800 rounded-xl shadow-2xl border border-stone-200 z-50 overflow-hidden">
           <div class="bg-cb-bordo text-white px-3 py-2 text-xs font-bold flex justify-between items-center">
-            <span>Notificações Não Lidas</span>
-            <span class="text-[10px] bg-cb-gold text-cb-bordo-dark px-1.5 py-0.5 rounded-full font-bold" id="notif-count-badge">0</span>
+            <div class="flex items-center gap-2">
+              <span>Notificações</span>
+              <span class="text-[10px] bg-cb-gold text-cb-bordo-dark px-1.5 py-0.2 rounded-full font-bold" id="notif-count-badge">0</span>
+            </div>
+            <button onclick="clearAllNotifications(event)" class="text-[10px] text-amber-200 hover:underline font-semibold">Limpar Tudo</button>
           </div>
           <div id="notification-list" class="max-h-64 overflow-y-auto divide-y divide-stone-100 text-xs"></div>
         </div>
@@ -188,6 +195,10 @@
           <button onclick="switchChecklistTab('history')" class="p-3.5 bg-white hover:bg-stone-50 border border-stone-200 rounded-xl shadow-sm transition flex justify-between items-center text-xs font-bold text-cb-bordo uppercase tracking-wider">
             <span>📂 Relatórios Salvos</span>
             <span id="history-badge-count-main" class="bg-cb-gold text-cb-bordo-dark px-2 py-0.5 rounded-full text-[10px] font-black">0</span>
+          </button>
+          <button onclick="switchChecklistTab('drafts')" class="p-3.5 bg-white hover:bg-stone-50 border border-stone-200 rounded-xl shadow-sm transition flex justify-between items-center text-xs font-bold text-cb-bordo uppercase tracking-wider">
+            <span>📝 Checklists em Andamento (Rascunhos)</span>
+            <span id="drafts-badge-count-main" class="bg-cb-gold text-cb-bordo-dark px-2 py-0.5 rounded-full text-[10px] font-black">0</span>
           </button>
           <button id="home-btn-config" onclick="toggleConfigModal()" class="hidden p-3.5 bg-white hover:bg-stone-50 border border-stone-200 rounded-xl shadow-sm transition text-left text-xs font-bold text-cb-bordo uppercase tracking-wider">
             ⚙️ Configurações Gerais dos Checklists
@@ -273,6 +284,16 @@
         </div>
 
         <div id="history-list-container" class="space-y-2"></div>
+      </main>
+
+      <main id="drafts-view" class="space-y-4 hidden">
+        <div class="flex items-center justify-between bg-white p-3 rounded-xl shadow-sm border">
+          <button onclick="switchChecklistTab('home')" class="text-xs font-bold text-cb-bordo hover:underline">
+            ← Voltar ao Início
+          </button>
+          <span class="text-xs font-bold text-stone-700">Checklists em Andamento</span>
+        </div>
+        <div id="drafts-list-container" class="space-y-2"></div>
       </main>
     </div>
 
@@ -1041,6 +1062,7 @@
       localStorage.setItem("CB_DRAFT_PLANS", JSON.stringify(actionPlans));
       localStorage.setItem("CB_DRAFT_ANSWERS", JSON.stringify(customAnswers));
       localStorage.setItem("CB_DRAFT_MAINT", JSON.stringify(maintenanceOrders));
+      updateDraftsBadge();
     }
 
     function clearDraft() {
@@ -1049,6 +1071,58 @@
       localStorage.removeItem("CB_DRAFT_PLANS");
       localStorage.removeItem("CB_DRAFT_ANSWERS");
       localStorage.removeItem("CB_DRAFT_MAINT");
+      updateDraftsBadge();
+    }
+
+    function hasActiveDraft() {
+      return Object.keys(customAnswers).length > 0 || Object.keys(attachedPhotos).length > 0 || Object.keys(actionPlans).length > 0;
+    }
+
+    function updateDraftsBadge() {
+      const hasDraft = hasActiveDraft() ? 1 : 0;
+      const b1 = document.getElementById("drafts-badge-count");
+      const b2 = document.getElementById("drafts-badge-count-main");
+      if (b1) b1.innerText = hasDraft;
+      if (b2) b2.innerText = hasDraft;
+    }
+
+    function renderDraftsList() {
+      const container = document.getElementById("drafts-list-container");
+      if (!container) return;
+      container.innerHTML = "";
+
+      if (!hasActiveDraft()) {
+        container.innerHTML = `<div class="p-8 text-center bg-white rounded-xl border text-stone-400 text-xs">Nenhum checklist em andamento no momento.</div>`;
+        return;
+      }
+
+      const itemCard = document.createElement("div");
+      itemCard.className = "bg-white rounded-xl border border-stone-200 shadow-sm p-4 flex justify-between items-center text-xs";
+      itemCard.innerHTML = `
+        <div>
+          <span class="font-black text-cb-bordo text-sm block">Rascunho Ativo (${getCurrentChecklist().name})</span>
+          <span class="text-stone-500">Preenchimento salvo em andamento...</span>
+        </div>
+        <div class="flex gap-2">
+          <button onclick="resumeDraft()" class="px-3 py-1.5 bg-cb-bordo text-white font-bold rounded-lg">Retomar</button>
+          <button onclick="discardDraft()" class="px-2.5 py-1.5 text-rose-600 font-bold">Cancelar / Descartar</button>
+        </div>
+      `;
+      container.appendChild(itemCard);
+    }
+
+    function resumeDraft() {
+      document.getElementById("active-model-title-badge").innerText = getCurrentChecklist().name;
+      renderChecklist();
+      switchChecklistTab('audit');
+    }
+
+    function discardDraft() {
+      if (confirm("Deseja realmente cancelar e descartar este checklist em andamento?")) {
+        clearDraft();
+        renderDraftsList();
+        switchChecklistTab('home');
+      }
     }
 
     function triggerUndoToast(desc, type, data) {
@@ -1077,6 +1151,21 @@
         manualActionsList.push(lastDeletedItem.data);
         localStorage.setItem("CB_LOCAL_MANUAL_ACTIONS", JSON.stringify(manualActionsList));
         syncConfigToCloud();
+        renderCentralizedActions();
+      } else if (lastDeletedItem.type === 'actionPlan') {
+        if (lastDeletedItem.isManual) {
+          manualActionsList.push(lastDeletedItem.data);
+          localStorage.setItem("CB_LOCAL_MANUAL_ACTIONS", JSON.stringify(manualActionsList));
+          syncConfigToCloud();
+        } else {
+          // Restaurar Não Conformidade ou Manutenção de relatório salvo
+          const rep = savedReports.find(r => r.id === lastDeletedItem.reportId);
+          if (rep) {
+            if (lastDeletedItem.actionType === 'nc') rep.nonConformities.push(lastDeletedItem.data);
+            if (lastDeletedItem.actionType === 'om') rep.maintenanceOrders.push(lastDeletedItem.data);
+            localStorage.setItem("CB_LOCAL_REPORTS", JSON.stringify(savedReports));
+          }
+        }
         renderCentralizedActions();
       }
       document.getElementById("undo-toast").classList.add("hidden");
@@ -1397,22 +1486,28 @@
       const homeView = document.getElementById("checklist-home-view");
       const auditView = document.getElementById("audit-view");
       const historyView = document.getElementById("history-view");
+      const draftsView = document.getElementById("drafts-view");
       const footer = document.getElementById("audit-footer");
 
       homeView.classList.add("hidden");
       auditView.classList.add("hidden");
       historyView.classList.add("hidden");
+      draftsView.classList.add("hidden");
       footer.classList.add("hidden");
 
       if (tab === 'home') {
         homeView.classList.remove("hidden");
         renderHomeChecklistSelect();
+        updateDraftsBadge();
       } else if (tab === 'audit') {
         auditView.classList.remove("hidden");
         footer.classList.remove("hidden");
       } else if (tab === 'history') {
         historyView.classList.remove("hidden");
         renderHistoryList();
+      } else if (tab === 'drafts') {
+        draftsView.classList.remove("hidden");
+        renderDraftsList();
       }
     }
 
@@ -1426,6 +1521,7 @@
         opt.innerText = c.name;
         select.appendChild(opt);
       });
+      updateDraftsBadge();
     }
 
     function startSelectedChecklist() {
@@ -1449,6 +1545,7 @@
       if (b1) b1.innerText = count;
       if (b2) b2.innerText = count;
       updateNotificationBadgeCount();
+      updateDraftsBadge();
     }
 
     function renderHistoryList() {
@@ -1684,6 +1781,45 @@
       renderCentralizedActions();
     }
 
+    function deleteActionPlan(chatId, fullReportId, type, index, isManual) {
+      if (currentUser?.role !== 'admin') {
+        return alert("Acesso restrito: Apenas administradores podem excluir planos de ação.");
+      }
+
+      if (confirm("Deseja realmente excluir este plano de ação?")) {
+        let deletedData = null;
+        if (isManual) {
+          let idx = manualActionsList.findIndex(a => a.id === chatId);
+          if (idx >= 0) {
+            deletedData = manualActionsList[idx];
+            manualActionsList.splice(idx, 1);
+            localStorage.setItem("CB_LOCAL_MANUAL_ACTIONS", JSON.stringify(manualActionsList));
+            syncConfigToCloud();
+          }
+        } else {
+          let rep = savedReports.find(r => r.id === fullReportId);
+          if (rep) {
+            if (type === 'nc' && rep.nonConformities) {
+              deletedData = rep.nonConformities[index];
+              rep.nonConformities.splice(index, 1);
+            } else if (type === 'om' && rep.maintenanceOrders) {
+              deletedData = rep.maintenanceOrders[index];
+              rep.maintenanceOrders.splice(index, 1);
+            }
+            localStorage.setItem("CB_LOCAL_REPORTS", JSON.stringify(savedReports));
+            if (isFirebaseReady) {
+              db.collection("reports").doc(fullReportId).update({
+                nonConformities: rep.nonConformities || [],
+                maintenanceOrders: rep.maintenanceOrders || []
+              });
+            }
+          }
+        }
+        renderCentralizedActions();
+        triggerUndoToast("Plano de Ação", "actionPlan", { data: deletedData, reportId: fullReportId, actionType: type, isManual });
+      }
+    }
+
     function getActiveNotifications() {
       let allowedUnits = getAllowedUnits();
       let notifs = [];
@@ -1823,6 +1959,18 @@
       }
     }
 
+    function clearAllNotifications(event) {
+      event.stopPropagation();
+      let unreadList = getActiveNotifications();
+      unreadList.forEach(item => {
+        readNotifications[item.id] = true;
+      });
+      localStorage.setItem("CB_READ_NOTIFICATIONS", JSON.stringify(readNotifications));
+      updateNotificationBadgeCount();
+      document.getElementById("notification-dropdown").classList.add("hidden");
+      alert("Todas as notificações foram limpas!");
+    }
+
     window.onclick = function(event) {
       if (!event.target.closest('#notification-dropdown') && !event.target.closest('button[onclick*="toggleNotificationDropdown"]')) {
         document.getElementById("notification-dropdown")?.classList.add("hidden");
@@ -1923,7 +2071,7 @@
             allActions.push({ 
               unit: rep.unit, title: nc.title, action: nc.action || 'Não descrita', 
               date: dueDate || 'Indefinida', rawDate: dueDate, chatId: actId, 
-              status: statusObj, priority: priorityObj, fullReportId: rep.id, type: 'nc', index: i
+              status: statusObj, priority: priorityObj, fullReportId: rep.id, type: 'nc', index: i, isManual: false
             });
           }
         });
@@ -1952,7 +2100,7 @@
             allActions.push({ 
               unit: rep.unit, title: `Manutenção: ${om.equipment}`, action: om.action || 'Não descrito', 
               date: dueDate || 'Indefinida', rawDate: dueDate, chatId: actId, 
-              status: statusObj, priority: priorityObj, fullReportId: rep.id, type: 'om', index: i
+              status: statusObj, priority: priorityObj, fullReportId: rep.id, type: 'om', index: i, isManual: false
             });
           }
         });
@@ -2034,6 +2182,10 @@
         let priorityOptions = actionPriorities.map(pr => `<option value="${pr.name}" ${act.priority === pr.name ? 'selected' : ''}>${pr.name}</option>`).join("");
         let currentPriorityObj = actionPriorities.find(p => p.name === act.priority) || { style: 'bg-stone-200 text-stone-800 font-semibold' };
 
+        let adminDeleteBtn = currentUser?.role === 'admin' ? `
+          <button onclick="deleteActionPlan('${act.chatId}', '${act.fullReportId}', '${act.type}', ${act.index}, ${act.isManual})" class="text-rose-600 hover:text-rose-800 p-1 font-bold" title="Excluir Plano de Ação">🗑️</button>
+        ` : '';
+
         const card = document.createElement("div");
         card.className = `p-4 rounded-xl border shadow-sm flex flex-col gap-2.5 text-xs ${currentStatusObj.color}`;
         card.innerHTML = `
@@ -2054,6 +2206,7 @@
                 💬 Chat & Detalhes
                 <span id="chat-dot-${act.chatId}" class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-white hidden"></span>
               </button>
+              ${adminDeleteBtn}
             </div>
           </div>
           <div class="text-stone-800 text-sm leading-relaxed pt-1 border-t border-stone-200/60">
