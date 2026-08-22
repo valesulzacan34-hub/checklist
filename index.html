@@ -907,6 +907,7 @@
     let manualActionsList = JSON.parse(localStorage.getItem("CB_LOCAL_MANUAL_ACTIONS")) || [];
     let trashActionsList = JSON.parse(localStorage.getItem("CB_LOCAL_TRASH_ACTIONS")) || [];
     let readNotifications = JSON.parse(localStorage.getItem("CB_READ_NOTIFICATIONS")) || {};
+    let unreadChatMessages = JSON.parse(localStorage.getItem("CB_UNREAD_CHAT_MSGS")) || {};
     
     const centervalePresetActions = [
       { id: "cv_pre_1", unit: "CB Shopping CenterVale", title: "Fachada da loja, luzes, letreiros, Leds", action: "Solicitar manutenção de led do teto do salão (Falar com Thiago ou Emerson)", date: "28/08/2026", rawDate: "2026-08-28", type: "nc" },
@@ -1074,6 +1075,7 @@
         });
         localStorage.setItem("CB_LOCAL_REPORTS", JSON.stringify(savedReports));
         updateHistoryBadge();
+        renderHistoryList();
         renderCentralizedActions();
         renderAgendaCalendar();
         listenToAllChats();
@@ -1230,6 +1232,7 @@
       }
       document.getElementById("undo-toast").classList.add("hidden");
       lastDeletedItem = null;
+      renderHistoryList();
       alert("Ação desfeita com sucesso!");
     }
 
@@ -1589,6 +1592,14 @@
       localStorage.setItem("CB_LOCAL_ACTIVE_ID", activeChecklistId);
       document.getElementById("active-model-title-badge").innerText = getCurrentChecklist().name;
       
+      // Mantém rascunhos anteriores salvos, limpando apenas o estado ativo da nova auditoria atual
+      customAnswers = {};
+      attachedPhotos = {};
+      actionPlans = {};
+      maintenanceOrders = {};
+      draftStartTime = new Date().toLocaleString('pt-BR');
+      saveDraft();
+
       renderChecklist();
       
       document.getElementById("checklist-home-view").classList.add("hidden");
@@ -1608,7 +1619,10 @@
 
     function renderHistoryList() {
       const container = document.getElementById("history-list-container");
-      container.innerHTML = ""; updateHistoryBadge();
+      if (!container) return;
+      container.innerHTML = ""; 
+      updateHistoryBadge();
+      
       const storeFilter = document.getElementById("filter-store").value;
       const startFilter = document.getElementById("filter-date-start").value;
       const endFilter = document.getElementById("filter-date-end").value;
@@ -1762,10 +1776,13 @@
         localStorage.setItem("CB_LOCAL_REPORTS", JSON.stringify(savedReports));
         updateHistoryBadge();
         updateNotificationBadgeCount();
+        renderHistoryList();
         return;
       }
       reportData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-      db.collection("reports").add(reportData).catch(err => console.error(err));
+      db.collection("reports").add(reportData).then(() => {
+        renderHistoryList();
+      }).catch(err => console.error(err));
     }
 
     function switchActionsTab(tab) {
@@ -1981,64 +1998,25 @@
             targetId: rep.id
           });
         }
-
-        rep.nonConformities?.forEach((nc, i) => {
-          let actId = `${rep.id}_nc_${i}`;
-          let notifId = `notif_act_${actId}`;
-          if (!readNotifications[notifId]) {
-            notifs.push({
-              id: notifId,
-              unit: rep.unit,
-              title: `Não Conformidade: ${nc.title}`,
-              desc: `Prazo: ${nc.date || 'Indefinido'}`,
-              type: 'action',
-              chatId: actId,
-              reportId: rep.id,
-              actionType: 'nc',
-              index: i,
-              isManual: false
-            });
-          }
-        });
-
-        rep.maintenanceOrders?.forEach((om, i) => {
-          let actId = `${rep.id}_om_${i}`;
-          let notifId = `notif_om_${actId}`;
-          if (!readNotifications[notifId]) {
-            notifs.push({
-              id: notifId,
-              unit: rep.unit,
-              title: `Manutenção: ${om.equipment}`,
-              desc: `Prazo: ${om.date || 'Indefinido'}`,
-              type: 'action',
-              chatId: actId,
-              reportId: rep.id,
-              actionType: 'om',
-              index: i,
-              isManual: false
-            });
-          }
-        });
       });
 
-      manualActionsList.forEach((act, i) => {
-        if (!allowedUnits.includes(act.unit)) return;
-        let notifId = `notif_manual_${act.id}`;
-        if (!readNotifications[notifId]) {
+      // Inclui notificações automáticas de mensagens de chat não lidas
+      for (let chatId in unreadChatMessages) {
+        if (unreadChatMessages[chatId]) {
           notifs.push({
-            id: notifId,
-            unit: act.unit,
-            title: `Plano de Ação: ${act.title}`,
-            desc: `Prazo: ${act.date}`,
-            type: 'action',
-            chatId: act.id,
-            reportId: null,
-            actionType: act.type || 'avulso',
-            index: i,
-            isManual: true
+            id: `notif_chat_${chatId}`,
+            unit: unreadChatMessages[chatId].unit || 'Loja',
+            title: `Nova mensagem em: ${unreadChatMessages[chatId].title || 'Plano de Ação'}`,
+            desc: `Enviada por ${unreadChatMessages[chatId].sender || 'Usuário'}`,
+            type: 'chat_msg',
+            chatId: chatId,
+            reportId: unreadChatMessages[chatId].reportId || null,
+            actionType: unreadChatMessages[chatId].actionType || 'nc',
+            index: unreadChatMessages[chatId].index || 0,
+            isManual: unreadChatMessages[chatId].isManual || false
           });
         }
-      });
+      }
 
       return notifs;
     }
@@ -2079,8 +2057,13 @@
           const div = document.createElement("div");
           div.className = "p-2.5 hover:bg-stone-50 cursor-pointer transition space-y-0.5";
           div.onclick = () => {
-            readNotifications[item.id] = true;
-            localStorage.setItem("CB_READ_NOTIFICATIONS", JSON.stringify(readNotifications));
+            if (item.type === 'chat_msg') {
+              delete unreadChatMessages[item.chatId];
+              localStorage.setItem("CB_UNREAD_CHAT_MSGS", JSON.stringify(unreadChatMessages));
+            } else {
+              readNotifications[item.id] = true;
+              localStorage.setItem("CB_READ_NOTIFICATIONS", JSON.stringify(readNotifications));
+            }
             updateNotificationBadgeCount();
             dropdown.classList.add("hidden");
 
@@ -2106,9 +2089,14 @@
       event.stopPropagation();
       let unreadList = getActiveNotifications();
       unreadList.forEach(item => {
-        readNotifications[item.id] = true;
+        if (item.type === 'chat_msg') {
+          delete unreadChatMessages[item.chatId];
+        } else {
+          readNotifications[item.id] = true;
+        }
       });
       localStorage.setItem("CB_READ_NOTIFICATIONS", JSON.stringify(readNotifications));
+      localStorage.setItem("CB_UNREAD_CHAT_MSGS", JSON.stringify(unreadChatMessages));
       updateNotificationBadgeCount();
       document.getElementById("notification-dropdown").classList.add("hidden");
       alert("Todas as notificações foram limpas!");
@@ -2123,31 +2111,42 @@
     function listenToAllChats() {
       if (!isFirebaseReady) return;
       let allowedUnits = getAllowedUnits();
-      let allChatIds = [];
+      let allChatMeta = [];
 
       savedReports.forEach(rep => {
         if (!allowedUnits.includes(rep.unit)) return;
-        rep.nonConformities?.forEach((nc, i) => allChatIds.push(`${rep.id}_nc_${i}`));
-        rep.maintenanceOrders?.forEach((om, i) => allChatIds.push(`${rep.id}_om_${i}`));
+        rep.nonConformities?.forEach((nc, i) => allChatMeta.push({ chatId: `${rep.id}_nc_${i}`, unit: rep.unit, title: nc.title, reportId: rep.id, actionType: 'nc', index: i, isManual: false }));
+        rep.maintenanceOrders?.forEach((om, i) => allChatMeta.push({ chatId: `${rep.id}_om_${i}`, unit: rep.unit, title: om.equipment, reportId: rep.id, actionType: 'om', index: i, isManual: false }));
       });
 
       manualActionsList.forEach(act => {
-        if (allowedUnits.includes(act.unit)) allChatIds.push(act.id);
+        if (allowedUnits.includes(act.unit)) allChatMeta.push({ chatId: act.id, unit: act.unit, title: act.title, reportId: null, actionType: act.type || 'avulso', index: 0, isManual: true });
       });
 
-      allChatIds.forEach(chatId => {
-        db.collection("chats").doc(chatId).collection("messages")
+      allChatMeta.forEach(meta => {
+        db.collection("chats").doc(meta.chatId).collection("messages")
           .onSnapshot(snapshot => {
             let hasUnread = false;
+            let lastSender = '';
             snapshot.forEach(doc => {
               let m = doc.data();
-              if (m.sender !== currentUser?.name && !m.seen) hasUnread = true;
+              if (m.sender !== currentUser?.name && !m.seen) {
+                hasUnread = true;
+                lastSender = m.sender;
+              }
             });
-            const dot = document.getElementById(`chat-dot-${chatId}`);
+            const dot = document.getElementById(`chat-dot-${meta.chatId}`);
             if (dot) {
               if (hasUnread) dot.classList.remove("hidden");
               else dot.classList.add("hidden");
             }
+
+            if (hasUnread) {
+              unreadChatMessages[meta.chatId] = { unit: meta.unit, title: meta.title, sender: lastSender, reportId: meta.reportId, actionType: meta.actionType, index: meta.index, isManual: meta.isManual };
+            } else {
+              delete unreadChatMessages[meta.chatId];
+            }
+            localStorage.setItem("CB_UNREAD_CHAT_MSGS", JSON.stringify(unreadChatMessages));
             updateNotificationBadgeCount();
           });
       });
@@ -2369,6 +2368,13 @@
 
     function openChatModal(chatId, reportId, type, index, isManual = false) {
       activeChatActionId = chatId;
+      // Ao abrir o chat, removemos a notificação pendente do chat atual
+      if (unreadChatMessages[chatId]) {
+        delete unreadChatMessages[chatId];
+        localStorage.setItem("CB_UNREAD_CHAT_MSGS", JSON.stringify(unreadChatMessages));
+        updateNotificationBadgeCount();
+      }
+
       const detailsContainer = document.getElementById("chat-action-details");
       detailsContainer.innerHTML = "";
 
@@ -3429,218 +3435,6 @@
         clearDraft();
         renderChecklist();
       }
-    }
-
-    function initApp() {
-      updateLogos(); renderPresetUnits(); updateHistoryBadge(); setupCloudListeners();
-      
-      if (!currentUser) {
-        document.getElementById("login-screen").classList.remove("hidden");
-        document.getElementById("modules-screen").classList.add("hidden");
-        return;
-      }
-      
-      document.getElementById("login-screen").classList.add("hidden");
-      document.getElementById("sidebar-user-name").innerText = `${currentUser.name} (${currentUser.role})`;
-      document.getElementById("supervisor-name").value = currentUser.name;
-      
-      if (currentUser.role === "admin") {
-        document.getElementById("sidebar-btn-users").classList.remove("hidden");
-        document.getElementById("home-btn-config").classList.remove("hidden");
-      } else {
-        document.getElementById("sidebar-btn-users").classList.add("hidden");
-        document.getElementById("home-btn-config").classList.add("hidden");
-      }
-      
-      renderAgendaCalendar();
-      openModulesScreen();
-    }
-
-    function handleEvaluationChange(itemKey, value) {
-      customAnswers[itemKey] = value;
-      const planBox = document.getElementById(`plan-box-${itemKey}`);
-      if (value === "nao-conforme") planBox?.classList.remove("hidden");
-      else planBox?.classList.add("hidden");
-      calculateScore();
-      saveDraft();
-    }
-
-    function handleMaintenanceChange(itemKey, value) {
-      customAnswers[itemKey] = value;
-      const omBox = document.getElementById(`maintenance-box-${itemKey}`);
-      if (value === "abrir") omBox?.classList.remove("hidden");
-      else omBox?.classList.add("hidden");
-      calculateScore();
-      saveDraft();
-    }
-
-    function updateMaintenanceOrder(itemKey, field, val) {
-      if (!maintenanceOrders[itemKey]) maintenanceOrders[itemKey] = { equipment: '', action: '', date: '' };
-      maintenanceOrders[itemKey][field] = val;
-      saveDraft();
-    }
-
-    function setStarRating(itemKey, stars) {
-      customAnswers[itemKey] = stars;
-      for (let i = 1; i <= 5; i++) {
-        const starBtn = document.getElementById(`star-${itemKey}-${i}`);
-        if (starBtn) starBtn.className = `text-xl ${i <= stars ? 'text-amber-400 scale-110' : 'text-stone-300'}`;
-      }
-      const label = document.getElementById(`star-label-${itemKey}`);
-      if (label) label.innerText = `${stars} de 5`;
-      calculateScore();
-      saveDraft();
-    }
-
-    function updateTextInput(itemKey, val) {
-      customAnswers[itemKey] = val;
-      saveDraft();
-    }
-
-    function updateActionPlan(itemKey, field, val) {
-      if (!actionPlans[itemKey]) actionPlans[itemKey] = { action: '', date: '' };
-      actionPlans[itemKey][field] = val;
-      saveDraft();
-    }
-
-    function calculateScore() {
-      let totalQuestionsEvaluated = 0, pointsEarned = 0;
-      getCurrentChecklist().categories.forEach((sec, sIdx) => {
-        sec.items.forEach((item, iIdx) => {
-          const itemKey = `${sIdx}-${iIdx}`;
-          const itemType = item.type || "boolean";
-          let ans = customAnswers[itemKey];
-          if (itemType === "boolean" && ans) {
-            pointsEarned += (ans === "conforme" ? 1.0 : 0.0); totalQuestionsEvaluated += 1.0;
-          } else if (itemType === "maintenance" && ans) {
-            pointsEarned += (ans === "regular" ? 1.0 : 0.0); totalQuestionsEvaluated += 1.0;
-          } else if (itemType === "stars" && ans) {
-            let rating = parseInt(ans) || 0;
-            if (rating > 0) { pointsEarned += (rating / 5); totalQuestionsEvaluated += 1.0; }
-          }
-        });
-      });
-      const score = totalQuestionsEvaluated > 0 ? Math.round((pointsEarned / totalQuestionsEvaluated) * 100) : 100;
-      document.getElementById("score-display").innerText = score + "%";
-      document.getElementById("evaluated-count-display").innerText = `${Math.round(totalQuestionsEvaluated)} item(ns) avaliado(s)`;
-      return { score, total: Math.round(totalQuestionsEvaluated) };
-    }
-
-    function renderChecklist() {
-      const container = document.getElementById("checklist-container");
-      const current = getCurrentChecklist();
-      container.innerHTML = "";
-
-      current.categories.forEach((sec, sIdx) => {
-        if (sec.items.length === 0) return;
-        const secEl = document.createElement("div");
-        secEl.className = "bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden";
-        
-        let itemsHtml = sec.items.map((item, iIdx) => {
-          const itemKey = `${sIdx}-${iIdx}`;
-          const itemType = item.type || "boolean";
-          const photoData = attachedPhotos[itemKey];
-          const planData = actionPlans[itemKey] || { action: '', date: '' };
-          const omData = maintenanceOrders[itemKey] || { equipment: '', action: '', date: '' };
-          const savedAnswer = customAnswers[itemKey];
-          let controlHtml = "";
-
-          if (itemType === "boolean") {
-            let isConf = savedAnswer === 'conforme' ? 'checked' : '';
-            let isNaoConf = savedAnswer === 'nao-conforme' ? 'checked' : '';
-            let isNa = savedAnswer === 'na' ? 'checked' : '';
-            let planHidden = savedAnswer === 'nao-conforme' ? '' : 'hidden';
-
-            controlHtml = `
-              <div class="flex gap-2 text-xs">
-                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="conforme" ${isConf} class="hidden peer" onchange="handleEvaluationChange('${itemKey}', 'conforme')"><div class="text-center py-2 rounded-md border peer-checked:bg-emerald-600 peer-checked:text-white font-bold">Sim</div></label>
-                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="nao-conforme" ${isNaoConf} class="hidden peer" onchange="handleEvaluationChange('${itemKey}', 'nao-conforme')"><div class="text-center py-2 rounded-md border peer-checked:bg-rose-700 peer-checked:text-white font-bold">Não</div></label>
-                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="na" ${isNa} class="hidden peer" onchange="handleEvaluationChange('${itemKey}', 'na')"><div class="text-center py-2 rounded-md border peer-checked:bg-stone-500 peer-checked:text-white font-bold">N/A</div></label>
-              </div>
-              <div id="plan-box-${itemKey}" class="${planHidden} p-3 bg-rose-50 border rounded-lg space-y-2 text-xs">
-                <span class="block font-bold text-rose-800 uppercase text-[10px]">⚠️ Plano de Ação</span>
-                <input type="text" value="${planData.action}" placeholder="Ação..." oninput="updateActionPlan('${itemKey}', 'action', this.value)" class="w-full border p-2 bg-white rounded">
-                <input type="date" value="${planData.date}" oninput="updateActionPlan('${itemKey}', 'date', this.value)" class="w-full border p-2 bg-white rounded">
-              </div>`;
-          } else if (itemType === "maintenance") {
-            let isAbrir = savedAnswer === 'abrir' ? 'checked' : '';
-            let isReg = savedAnswer === 'regular' ? 'checked' : '';
-            let isNa = savedAnswer === 'na' ? 'checked' : '';
-            let omHidden = savedAnswer === 'abrir' ? '' : 'hidden';
-
-            controlHtml = `
-              <div class="flex gap-2 text-xs">
-                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="abrir" ${isAbrir} class="hidden peer" onchange="handleMaintenanceChange('${itemKey}', 'abrir')"><div class="text-center py-2 rounded-md border peer-checked:bg-amber-600 peer-checked:text-white font-bold">Abrir</div></label>
-                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="regular" ${isReg} class="hidden peer" onchange="handleMaintenanceChange('${itemKey}', 'regular')"><div class="text-center py-2 rounded-md border peer-checked:bg-emerald-600 peer-checked:text-white font-bold">Regular / Ok</div></label>
-                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="na" ${isNa} class="hidden peer" onchange="handleMaintenanceChange('${itemKey}', 'na')"><div class="text-center py-2 rounded-md border peer-checked:bg-stone-500 peer-checked:text-white font-bold">N/A</div></label>
-              </div>
-              <div id="maintenance-box-${itemKey}" class="${omHidden} p-3 bg-amber-50 border rounded-lg space-y-2 text-xs">
-                <span class="block font-bold text-amber-900 uppercase text-[10px]">Abertura de Ordem de Manutenção</span>
-                <input type="text" value="${omData.equipment}" placeholder="Equipamento..." oninput="updateMaintenanceOrder('${itemKey}', 'equipment', this.value)" class="w-full border p-2 bg-white rounded">
-                <input type="text" value="${omData.action}" placeholder="Defeito..." oninput="updateMaintenanceOrder('${itemKey}', 'action', this.value)" class="w-full border p-2 bg-white rounded">
-                <input type="date" value="${omData.date}" oninput="updateMaintenanceOrder('${itemKey}', 'date', this.value)" class="w-full border p-2 bg-white rounded">
-              </div>`;
-          } else if (itemType === "stars") {
-            let currentStars = parseInt(savedAnswer) || 0;
-            let starsSpans = "";
-            for (let s = 1; s <= 5; s++) starsSpans += `<button type="button" id="star-${itemKey}-${s}" onclick="setStarRating('${itemKey}', ${s})" class="text-xl ${s <= currentStars ? 'text-amber-400' : 'text-stone-300'}">★</button>`;
-            controlHtml = `<div class="flex items-center justify-between bg-stone-50 p-2.5 rounded border"><div class="flex gap-2">${starsSpans}</div><span id="star-label-${itemKey}" class="text-xs font-bold">${currentStars ? currentStars + ' de 5' : 'Avalie'}</span></div>`;
-          } else if (itemType === "text") {
-            controlHtml = `<div><textarea rows="2" placeholder="Digite..." oninput="updateTextInput('${itemKey}', this.value)" class="w-full border p-2 text-xs bg-stone-50 rounded">${savedAnswer || ''}</textarea></div>`;
-          }
-
-          return `
-          <div class="p-3.5 border-t flex flex-col gap-2.5">
-            <div class="flex justify-between items-start gap-2"><span class="text-sm font-medium">${item.title}</span>${item.requirePhoto ? '<span class="text-[10px] bg-amber-50 text-amber-800 border px-1.5 rounded font-bold">Foto Obrigatória</span>' : ''}</div>
-            ${controlHtml}
-            <div class="flex items-center gap-2 pt-1">
-              <label class="cursor-pointer inline-flex items-center gap-1.5 text-xs font-semibold bg-cb-cream px-3 py-1.5 rounded border">
-                <span id="photo-label-${itemKey}">${photoData ? 'Alterar Foto' : 'Adicionar Foto'}</span>
-                <input type="file" accept="image/*" class="hidden" onchange="handlePhotoUpload(event, '${itemKey}')">
-              </label>
-              <span id="photo-status-${itemKey}" class="text-xs text-emerald-800 bg-emerald-50 px-2 py-1 rounded border font-medium ${photoData ? '' : 'hidden'}">✓ Foto Anexada</span>
-            </div>
-          </div>`;
-        }).join("");
-
-        secEl.innerHTML = `<div class="bg-cb-cream px-4 py-2.5 font-bold text-xs uppercase text-cb-bordo border-b"><span>${sec.category}</span></div><div>${itemsHtml}</div>`;
-        container.appendChild(secEl);
-      });
-
-      calculateScore();
-    }
-
-    function handlePhotoUpload(event, key) {
-      const file = event.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          attachedPhotos[key] = e.target.result;
-          saveDraft();
-          
-          const label = document.getElementById(`photo-label-${key}`);
-          const status = document.getElementById(`photo-status-${key}`);
-          if (label) label.innerText = 'Alterar Foto';
-          if (status) status.classList.remove('hidden');
-        };
-        reader.readAsDataURL(file);
-      }
-    }
-
-    function validatePhotos() {
-      let missing = [];
-      const current = getCurrentChecklist();
-      current.categories.forEach((sec, sIdx) => {
-        sec.items.forEach((item, iIdx) => {
-          const key = `${sIdx}-${iIdx}`;
-          if (item.requirePhoto && !attachedPhotos[key]) {
-            const isNc = customAnswers[key] === 'nao-conforme';
-            const isOm = customAnswers[key] === 'abrir';
-            if (isNc || isOm) missing.push(item.title);
-          }
-        });
-      });
-      return missing;
     }
 
     initApp();
