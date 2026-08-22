@@ -159,7 +159,7 @@
         
         <div id="notification-dropdown" class="hidden absolute right-0 top-11 w-72 bg-white text-stone-800 rounded-xl shadow-2xl border border-stone-200 z-50 overflow-hidden">
           <div class="bg-cb-bordo text-white px-3 py-2 text-xs font-bold flex justify-between items-center">
-            <span>Notificações Pendentes</span>
+            <span>Notificações Não Lidas</span>
             <span class="text-[10px] bg-cb-gold text-cb-bordo-dark px-1.5 py-0.5 rounded-full font-bold" id="notif-count-badge">0</span>
           </div>
           <div id="notification-list" class="max-h-64 overflow-y-auto divide-y divide-stone-100 text-xs"></div>
@@ -439,6 +439,7 @@
     </main>
   </div>
 
+  <!-- MODAIS DO SISTEMA -->
   <!-- Modal de Novo Plano de Ação Manual -->
   <div id="new-action-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white w-full max-w-md rounded-2xl p-5 space-y-4 shadow-2xl border border-cb-gold/30 text-xs">
@@ -872,6 +873,7 @@
     let actionCustomPriority = JSON.parse(localStorage.getItem("CB_LOCAL_CUSTOM_PRIORITY")) || {};
     let currentUser = JSON.parse(sessionStorage.getItem("CB_LOCAL_LOGGED_USER")) || null;
     let manualActionsList = JSON.parse(localStorage.getItem("CB_LOCAL_MANUAL_ACTIONS")) || [];
+    let readNotifications = JSON.parse(localStorage.getItem("CB_READ_NOTIFICATIONS")) || {};
     
     const defaultTemplates = [
       {
@@ -957,7 +959,7 @@
     let currentCalendarDate = new Date();
     let currentCalendarView = 'month';
     let activeChatActionId = null;
-    let lastDeletedItem = null; // Suporte a Desfazer / Undo
+    let lastDeletedItem = null;
     
     let attachedPhotos = JSON.parse(localStorage.getItem("CB_DRAFT_PHOTOS")) || {};
     let actionPlans = JSON.parse(localStorage.getItem("CB_DRAFT_PLANS")) || {};
@@ -1679,29 +1681,90 @@
       renderCentralizedActions();
     }
 
-    function updateNotificationBadgeCount() {
-      let unreadCount = 0;
+    // 🔔 Sistema de Notificações com Dismiss ao Clicar
+    function getActiveNotifications() {
       let allowedUnits = getAllowedUnits();
+      let notifs = [];
 
       savedReports.forEach(rep => {
         if (!allowedUnits.includes(rep.unit)) return;
+        
+        let repNotifId = `notif_rep_${rep.id}`;
+        if (!readNotifications[repNotifId]) {
+          notifs.push({
+            id: repNotifId,
+            unit: rep.unit,
+            title: `Novo Relatório de Supervisão (${rep.score}%)`,
+            desc: `Realizado por ${rep.supervisor} em ${rep.date}`,
+            type: 'report',
+            targetId: rep.id
+          });
+        }
+
         rep.nonConformities?.forEach((nc, i) => {
           let actId = `${rep.id}_nc_${i}`;
-          let status = actionCustomStatus[actId] || 'Pendente';
-          if (!status.toLowerCase().includes('concluído')) unreadCount++;
+          let notifId = `notif_act_${actId}`;
+          if (!readNotifications[notifId]) {
+            notifs.push({
+              id: notifId,
+              unit: rep.unit,
+              title: `Não Conformidade: ${nc.title}`,
+              desc: `Prazo: ${nc.date || 'Indefinido'}`,
+              type: 'action',
+              chatId: actId,
+              reportId: rep.id,
+              actionType: 'nc',
+              index: i,
+              isManual: false
+            });
+          }
         });
+
         rep.maintenanceOrders?.forEach((om, i) => {
           let actId = `${rep.id}_om_${i}`;
-          let status = actionCustomStatus[actId] || 'Pendente';
-          if (!status.toLowerCase().includes('concluído')) unreadCount++;
+          let notifId = `notif_om_${actId}`;
+          if (!readNotifications[notifId]) {
+            notifs.push({
+              id: notifId,
+              unit: rep.unit,
+              title: `Manutenção: ${om.equipment}`,
+              desc: `Prazo: ${om.date || 'Indefinido'}`,
+              type: 'action',
+              chatId: actId,
+              reportId: rep.id,
+              actionType: 'om',
+              index: i,
+              isManual: false
+            });
+          }
         });
       });
 
-      manualActionsList.forEach(act => {
+      manualActionsList.forEach((act, i) => {
         if (!allowedUnits.includes(act.unit)) return;
-        let status = actionCustomStatus[act.id] || 'Pendente';
-        if (!status.toLowerCase().includes('concluído')) unreadCount++;
+        let notifId = `notif_manual_${act.id}`;
+        if (!readNotifications[notifId]) {
+          notifs.push({
+            id: notifId,
+            unit: act.unit,
+            title: `Plano de Ação: ${act.title}`,
+            desc: `Prazo: ${act.date}`,
+            type: 'action',
+            chatId: act.id,
+            reportId: null,
+            actionType: act.type || 'avulso',
+            index: i,
+            isManual: true
+          });
+        }
       });
+
+      return notifs;
+    }
+
+    function updateNotificationBadgeCount() {
+      let unreadList = getActiveNotifications();
+      let unreadCount = unreadList.length;
 
       const badge = document.getElementById("global-notification-dot");
       if (badge) {
@@ -1723,39 +1786,11 @@
       dropdown.classList.toggle("hidden");
       if (!dropdown.classList.contains("hidden")) {
         listContainer.innerHTML = "";
-        let unreadList = [];
-        let allowedUnits = getAllowedUnits();
-
-        savedReports.forEach(rep => {
-          if (!allowedUnits.includes(rep.unit)) return;
-          rep.nonConformities?.forEach((nc, i) => {
-            let actId = `${rep.id}_nc_${i}`;
-            let status = actionCustomStatus[actId] || 'Pendente';
-            if (!status.toLowerCase().includes('concluído')) {
-              unreadList.push({ unit: rep.unit, title: nc.title, date: nc.date || 'Indefinido', chatId: actId, reportId: rep.id, type: 'nc', index: i });
-            }
-          });
-          rep.maintenanceOrders?.forEach((om, i) => {
-            let actId = `${rep.id}_om_${i}`;
-            let status = actionCustomStatus[actId] || 'Pendente';
-            if (!status.toLowerCase().includes('concluído')) {
-              unreadList.push({ unit: rep.unit, title: `Manutenção: ${om.equipment}`, date: om.date || 'Indefinido', chatId: actId, reportId: rep.id, type: 'om', index: i });
-            }
-          });
-        });
-
-        manualActionsList.forEach(act => {
-          if (!allowedUnits.includes(act.unit)) return;
-          let status = actionCustomStatus[act.id] || 'Pendente';
-          if (!status.toLowerCase().includes('concluído')) {
-            unreadList.push({ unit: act.unit, title: act.title, date: act.date, chatId: act.id, reportId: null, type: act.type, index: 0, isManual: true });
-          }
-        });
-
+        let unreadList = getActiveNotifications();
         countBadge.innerText = unreadList.length;
 
         if (unreadList.length === 0) {
-          listContainer.innerHTML = `<div class="p-4 text-center text-stone-400 text-xs">Nenhum plano pendente.</div>`;
+          listContainer.innerHTML = `<div class="p-4 text-center text-stone-400 text-xs">Nenhuma notificação nova.</div>`;
           return;
         }
 
@@ -1763,14 +1798,24 @@
           const div = document.createElement("div");
           div.className = "p-2.5 hover:bg-stone-50 cursor-pointer transition space-y-0.5";
           div.onclick = () => {
+            // Marca notificação como lida para ela sumir da lista
+            readNotifications[item.id] = true;
+            localStorage.setItem("CB_READ_NOTIFICATIONS", JSON.stringify(readNotifications));
+            updateNotificationBadgeCount();
             dropdown.classList.add("hidden");
-            selectModule('actions');
-            openChatModal(item.chatId, item.reportId, item.type, item.index, item.isManual);
+
+            if (item.type === 'report') {
+              selectModule('checklists');
+              switchChecklistTab('history');
+            } else {
+              selectModule('actions');
+              openChatModal(item.chatId, item.reportId, item.actionType, item.index, item.isManual);
+            }
           };
           div.innerHTML = `
             <div class="font-bold text-cb-bordo uppercase text-[11px]">${item.unit}</div>
-            <div class="text-stone-700 truncate">${item.title}</div>
-            <div class="text-[10px] text-stone-400">📅 Prazo: ${item.date}</div>
+            <div class="text-stone-700 font-semibold truncate">${item.title}</div>
+            <div class="text-[10px] text-stone-400">${item.desc}</div>
           `;
           listContainer.appendChild(div);
         });
@@ -2167,438 +2212,6 @@
       }
     }
 
-    // 📅 Agenda & Calendário
-    function changeCalendarView(view) {
-      currentCalendarView = view;
-      document.getElementById("btn-view-month").className = `px-3 py-1.5 font-bold rounded transition ${view === 'month' ? 'bg-cb-bordo text-white' : 'bg-stone-200 text-stone-700'}`;
-      document.getElementById("btn-view-week").className = `px-3 py-1.5 font-bold rounded transition ${view === 'week' ? 'bg-cb-bordo text-white' : 'bg-stone-200 text-stone-700'}`;
-      document.getElementById("btn-view-day").className = `px-3 py-1.5 font-bold rounded transition ${view === 'day' ? 'bg-cb-bordo text-white' : 'bg-stone-200 text-stone-700'}`;
-      renderAgendaCalendar();
-    }
-
-    function navigateCalendar(dir) {
-      if (dir === 0) {
-        currentCalendarDate = new Date();
-      } else {
-        if (currentCalendarView === 'month') {
-          currentCalendarDate.setMonth(currentCalendarDate.getMonth() + dir);
-        } else if (currentCalendarView === 'week') {
-          currentCalendarDate.setDate(currentCalendarDate.getDate() + (dir * 7));
-        } else if (currentCalendarView === 'day') {
-          currentCalendarDate.setDate(currentCalendarDate.getDate() + dir);
-        }
-      }
-      renderAgendaCalendar();
-    }
-
-    function renderAgendaCalendar() {
-      const gridContainer = document.getElementById("calendar-grid-container");
-      const titleEl = document.getElementById("calendar-period-title");
-      if (!gridContainer) return;
-      gridContainer.innerHTML = "";
-
-      let storeSelection = document.getElementById("filter-agenda-store").value;
-      if (currentUser.role === 'gerente' && currentUser.units && currentUser.units.length > 0) {
-        storeSelection = currentUser.units[0];
-      }
-
-      let allEvents = [...calendarEvents];
-
-      savedReports.forEach(rep => {
-        if (currentUser.role === 'gerente' && rep.unit !== storeSelection) return;
-        rep.nonConformities?.forEach((nc, i) => {
-          if (nc.date && nc.date !== 'Não definida' && nc.date !== 'Indefinida') {
-            allEvents.push({
-              id: `rep_nc_${rep.id}_${i}`,
-              title: `[Ação] ${nc.title}`,
-              date: nc.date.split('/').reverse().join('-'),
-              time: '09:00',
-              timeEnd: '10:00',
-              store: rep.unit,
-              scope: 'INDIVIDUAL',
-              desc: nc.action || 'Não descrita',
-              type: 'action'
-            });
-          }
-        });
-        rep.maintenanceOrders?.forEach((om, i) => {
-          if (om.date && om.date !== 'Não definida' && om.date !== 'Indefinida') {
-            allEvents.push({
-              id: `rep_om_${rep.id}_${i}`,
-              title: `[Manutenção] ${om.equipment}`,
-              date: om.date.split('/').reverse().join('-'),
-              time: '10:00',
-              timeEnd: '11:00',
-              store: rep.unit,
-              scope: 'INDIVIDUAL',
-              desc: om.action || om.defect || 'Sem descrição',
-              type: 'maintenance'
-            });
-          }
-        });
-      });
-
-      manualActionsList.forEach((act, i) => {
-        if (currentUser.role === 'gerente' && act.unit !== storeSelection) return;
-        if (act.rawDate) {
-          allEvents.push({
-            id: `act_manual_${act.id}`,
-            title: `[Plano] ${act.title}`,
-            date: act.rawDate,
-            time: '14:00',
-            timeEnd: '15:00',
-            store: act.unit,
-            scope: 'INDIVIDUAL',
-            desc: act.action,
-            type: 'action'
-          });
-        }
-      });
-
-      let filteredEvents = allEvents.filter(ev => {
-        if (storeSelection === 'GERAL') return ev.scope === 'GERAL';
-        return ev.scope === 'GERAL' || ev.store === storeSelection;
-      });
-
-      let year = currentCalendarDate.getFullYear();
-      let month = currentCalendarDate.getMonth();
-      const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
-
-      if (currentCalendarView === 'month') {
-        titleEl.innerText = `${monthNames[month]} de ${year}`;
-        let firstDayIndex = new Date(year, month, 1).getDay();
-        let totalDays = new Date(year, month + 1, 0).getDate();
-
-        let table = document.createElement("div");
-        table.className = "grid grid-cols-7 text-xs text-center border-stone-200";
-
-        ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].forEach(d => {
-          let cell = document.createElement("div");
-          cell.className = "bg-cb-bordo text-cb-gold font-bold p-2 border-b";
-          cell.innerText = d;
-          table.appendChild(cell);
-        });
-
-        for (let i = 0; i < firstDayIndex; i++) {
-          let emptyCell = document.createElement("div");
-          emptyCell.className = "bg-stone-50/50 p-2 border-b border-r min-h-[90px]";
-          table.appendChild(emptyCell);
-        }
-
-        for (let d = 1; d <= totalDays; d++) {
-          let dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-          let dayEvents = filteredEvents.filter(e => e.date === dateStr);
-
-          let cell = document.createElement("div");
-          cell.className = "bg-white p-1.5 border-b border-r min-h-[90px] flex flex-col justify-start text-left overflow-hidden cursor-pointer hover:bg-stone-50 relative";
-          cell.setAttribute('data-date', dateStr);
-          
-          cell.ondragover = (e) => e.preventDefault();
-          cell.ondrop = (e) => {
-            e.preventDefault();
-            let evId = e.dataTransfer.getData("text/plain");
-            moveEventToDate(evId, dateStr);
-          };
-
-          cell.onclick = (e) => {
-            if (e.target.tagName !== 'DIV' && e.target.tagName !== 'SPAN') return;
-            openEventModalForDate(dateStr);
-          };
-          
-          let todayStr = new Date().toISOString().split('T')[0];
-          let isToday = dateStr === todayStr;
-
-          let eventsHtml = dayEvents.map(ev => {
-            let isAuto = ev.type === 'action' || ev.type === 'maintenance';
-            let bgClass = isAuto ? 'bg-amber-100 text-amber-900 border-amber-300' : (ev.scope === 'GERAL' ? 'bg-purple-100 text-purple-900 border-purple-300' : 'bg-sky-100 text-sky-900 border-sky-300');
-            return `
-              <div draggable="true" 
-                   ondragstart="event.dataTransfer.setData('text/plain', '${ev.id}')"
-                   onclick="event.stopPropagation(); openEventDetail('${ev.id}')" 
-                   class="event-card px-1.5 py-0.5 rounded border text-[10px] font-semibold truncate cursor-pointer mb-0.5 ${bgClass} relative group" 
-                   title="${ev.title}">
-                • ${ev.time ? ev.time + ' ' : ''}${ev.title}
-                <div class="resize-handle opacity-0 group-hover:opacity-100 bg-black/20" onmousedown="initResize(event, '${ev.id}')" title="Redimensionar horário"></div>
-              </div>`;
-          }).join("");
-
-          cell.innerHTML = `
-            <div class="font-bold text-stone-700 mb-1 flex justify-between items-center pointer-events-none">
-              <span class="${isToday ? 'bg-cb-bordo text-cb-gold px-1.5 py-0.5 rounded-full' : ''}">${d}</span>
-            </div>
-            <div class="flex-1 overflow-y-auto space-y-0.5 max-h-[70px]">${eventsHtml}</div>`;
-          table.appendChild(cell);
-        }
-        gridContainer.appendChild(table);
-
-      } else if (currentCalendarView === 'week') {
-        let currDate = new Date(currentCalendarDate);
-        let firstDayOfWeek = new Date(currDate.setDate(currDate.getDate() - currDate.getDay()));
-        let lastDayOfWeek = new Date(firstDayOfWeek);
-        lastDayOfWeek.setDate(lastDayOfWeek.getDate() + 6);
-
-        titleEl.innerText = `Semana: ${firstDayOfWeek.toLocaleDateString('pt-BR')} a ${lastDayOfWeek.toLocaleDateString('pt-BR')}`;
-
-        let table = document.createElement("div");
-        table.className = "divide-y text-xs";
-
-        for (let i = 0; i < 7; i++) {
-          let loopDate = new Date(firstDayOfWeek);
-          loopDate.setDate(loopDate.getDate() + i);
-          let dateStr = loopDate.toISOString().split('T')[0];
-          let dayEvents = filteredEvents.filter(e => e.date === dateStr);
-
-          let row = document.createElement("div");
-          row.className = "p-3 flex flex-col sm:flex-row gap-2 justify-between items-start sm:items-center bg-white hover:bg-stone-50 transition cursor-pointer";
-          row.ondragover = (e) => e.preventDefault();
-          row.ondrop = (e) => {
-            e.preventDefault();
-            let evId = e.dataTransfer.getData("text/plain");
-            moveEventToDate(evId, dateStr);
-          };
-          row.onclick = () => openEventModalForDate(dateStr);
-          
-          let eventsHtml = dayEvents.map(ev => `
-            <span draggable="true" 
-                  ondragstart="event.dataTransfer.setData('text/plain', '${ev.id}')"
-                  onclick="event.stopPropagation(); openEventDetail('${ev.id}')" 
-                  class="event-card px-2.5 py-1 bg-amber-100 text-amber-900 border rounded font-semibold text-[11px] cursor-pointer hover:bg-amber-200">
-              ${ev.time ? ev.time + ' - ' : ''}${ev.title}
-            </span>`).join(" ");
-
-          row.innerHTML = `
-            <div class="font-bold text-cb-bordo w-36 pointer-events-none">${loopDate.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit' })}</div>
-            <div class="flex-1 flex gap-2 flex-wrap items-center">${eventsHtml || '<span class="text-stone-400 italic">Nenhum evento neste dia</span>'}</div>`;
-          table.appendChild(row);
-        }
-        gridContainer.appendChild(table);
-
-      } else if (currentCalendarView === 'day') {
-        let dateStr = currentCalendarDate.toISOString().split('T')[0];
-        titleEl.innerText = `Dia: ${currentCalendarDate.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}`;
-
-        let dayEvents = filteredEvents.filter(e => e.date === dateStr);
-        let listDiv = document.createElement("div");
-        listDiv.className = "p-4 space-y-3 text-xs";
-
-        if (dayEvents.length === 0) {
-          listDiv.innerHTML = `<div class="text-center text-stone-400 py-6">Nenhum compromisso ou evento agendado para hoje. <button onclick="openEventModalForDate('${dateStr}')" class="text-cb-bordo font-bold underline block mx-auto mt-1">+ Criar Evento</button></div>`;
-        } else {
-          dayEvents.forEach(ev => {
-            let item = document.createElement("div");
-            item.className = "p-3 bg-stone-50 border rounded-xl flex justify-between items-center";
-            item.innerHTML = `
-              <div class="space-y-1">
-                <span class="font-bold text-sm text-cb-bordo block">${ev.time ? '⏰ ' + ev.time + ' — ' : ''}${ev.title}</span>
-                <span class="text-stone-600">${ev.desc}</span>
-                <span class="text-[10px] text-stone-400 block">Loja: ${ev.store}</span>
-              </div>
-              <button onclick="openEventDetail('${ev.id}')" class="px-3 py-1.5 bg-cb-bordo text-white font-bold rounded">Detalhes / Editar</button>`;
-            listDiv.appendChild(item);
-          });
-        }
-        gridContainer.appendChild(listDiv);
-      }
-    }
-
-    function moveEventToDate(eventId, newDate) {
-      let ev = calendarEvents.find(e => e.id === eventId);
-      if (!ev) return;
-      if (ev.scope === 'GERAL' && currentUser.role !== 'admin') {
-        return alert("Apenas administradores podem alterar eventos em comum.");
-      }
-      if (currentUser.role === 'gerente' && ev.store !== currentUser.units?.[0]) {
-        return alert("Você só pode mover eventos da sua própria unidade.");
-      }
-
-      ev.date = newDate;
-      ev.displayDate = newDate.split('-').reverse().join('/');
-      localStorage.setItem("CB_LOCAL_CALENDAR_EVENTS", JSON.stringify(calendarEvents));
-      syncConfigToCloud();
-      renderAgendaCalendar();
-    }
-
-    function initResize(e, eventId) {
-      e.stopPropagation();
-      e.preventDefault();
-      let ev = calendarEvents.find(e => e.id === eventId);
-      if (!ev) return;
-
-      let startY = e.clientY;
-      function onMouseMove(moveEvent) {
-        let diff = moveEvent.clientY - startY;
-        if (Math.abs(diff) > 25) {
-          let [h, m] = (ev.timeEnd || '10:00').split(':').map(Number);
-          m += diff > 0 ? 30 : -30;
-          if (m >= 60) { h += 1; m = 0; }
-          if (m < 0) { h -= 1; m = 30; }
-          ev.timeEnd = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-          startY = moveEvent.clientY;
-          localStorage.setItem("CB_LOCAL_CALENDAR_EVENTS", JSON.stringify(calendarEvents));
-          syncConfigToCloud();
-          renderAgendaCalendar();
-        }
-      }
-
-      function onMouseUp() {
-        window.removeEventListener('mousemove', onMouseMove);
-        window.removeEventListener('mouseup', onMouseUp);
-      }
-
-      window.addEventListener('mousemove', onMouseMove);
-      window.addEventListener('mouseup', onMouseUp);
-    }
-
-    function processarAgendaIA() {
-      const texto = document.getElementById("ia-input").value;
-      if (!texto) return alert("Digite um comando para a IA.");
-
-      let novoEvento = { title: texto.split(/dia|às/i)[0].trim(), data: "", hora: "09:00", loja: "" };
-      
-      const dataMatch = texto.match(/\d{2}\/\d{2}(\/\d{4})?/);
-      if (dataMatch) {
-          let partes = dataMatch[0].split('/');
-          let ano = partes[2] || new Date().getFullYear();
-          novoEvento.data = `${ano}-${partes[1]}-${partes[0]}`;
-      }
-
-      presetUnits.forEach(u => {
-          if (texto.toLowerCase().includes(u.toLowerCase().split(' ').slice(1).join(' '))) novoEvento.loja = u;
-      });
-
-      document.getElementById("event-title").value = novoEvento.title;
-      document.getElementById("event-date").value = novoEvento.data || new Date().toISOString().split('T')[0];
-      document.getElementById("event-time-start").value = novoEvento.hora;
-      
-      if (novoEvento.loja) {
-          document.getElementById("event-scope").value = "INDIVIDUAL";
-          document.getElementById("event-store").value = novoEvento.loja;
-          toggleEventStoreSelect();
-      }
-
-      document.getElementById("event-modal").classList.remove("hidden");
-      document.getElementById("ia-input").value = "";
-    }
-
-    function openEventModalForDate(dateStr) {
-      if (currentUser.role === 'operador') return alert("Acesso não autorizado.");
-      document.getElementById("event-modal-title").innerText = "Novo Evento na Agenda";
-      document.getElementById("event-edit-id").value = "";
-      document.getElementById("event-title").value = "";
-      document.getElementById("event-date").value = dateStr;
-      document.getElementById("event-time-start").value = "09:00";
-      document.getElementById("event-time-end").value = "10:00";
-      document.getElementById("event-recurrence").value = "none";
-      document.getElementById("event-desc").value = "";
-      
-      let scopeSelect = document.getElementById("event-scope");
-      if (currentUser.role === 'gerente') {
-        scopeSelect.value = 'INDIVIDUAL';
-        scopeSelect.disabled = true;
-      } else {
-        scopeSelect.value = 'GERAL';
-        scopeSelect.disabled = false;
-      }
-      toggleEventStoreSelect();
-      document.getElementById("btn-delete-event").classList.add("hidden");
-      document.getElementById("event-modal").classList.remove("hidden");
-    }
-
-    function openEventDetail(id) {
-      let ev = calendarEvents.find(e => e.id === id);
-      if (!ev) return;
-
-      if (ev.scope === 'GERAL' && currentUser.role !== 'admin') {
-        return alert(`Evento em Comum da Rede: ${ev.title}\nData: ${ev.displayDate || ev.date}\n${ev.desc}\n\n(Apenas administradores podem editar este evento).`);
-      }
-      if (currentUser.role === 'gerente' && ev.store !== currentUser.units?.[0]) {
-        return alert("Você só pode editar eventos da sua própria unidade.");
-      }
-
-      document.getElementById("event-modal-title").innerText = "Editar Evento";
-      document.getElementById("event-edit-id").value = ev.id;
-      document.getElementById("event-title").value = ev.title;
-      document.getElementById("event-date").value = ev.date;
-      document.getElementById("event-scope").value = ev.scope;
-      document.getElementById("event-store").value = ev.store || '';
-      document.getElementById("event-time-start").value = ev.time || '09:00';
-      document.getElementById("event-time-end").value = ev.timeEnd || '10:00';
-      document.getElementById("event-recurrence").value = ev.recurrence || 'none';
-      document.getElementById("event-desc").value = ev.desc || '';
-      
-      toggleEventStoreSelect();
-      document.getElementById("btn-delete-event").classList.remove("hidden");
-      document.getElementById("event-modal").classList.remove("hidden");
-    }
-
-    function openEventModal() {
-      openEventModalForDate(new Date().toISOString().split('T')[0]);
-    }
-
-    function toggleEventModal() {
-      document.getElementById("event-modal").classList.toggle("hidden");
-    }
-
-    function toggleEventStoreSelect() {
-      let scope = document.getElementById("event-scope").value;
-      let box = document.getElementById("event-store-box");
-      if (scope === 'INDIVIDUAL') box.classList.remove("hidden");
-      else box.classList.add("hidden");
-    }
-
-    function saveCalendarEvent() {
-      let id = document.getElementById("event-edit-id").value || "ev_" + Date.now();
-      let title = document.getElementById("event-title").value.trim();
-      let date = document.getElementById("event-date").value;
-      let scope = document.getElementById("event-scope").value;
-      let store = scope === 'INDIVIDUAL' ? (currentUser.role === 'gerente' ? currentUser.units[0] : document.getElementById("event-store").value) : 'GERAL';
-      let time = document.getElementById("event-time-start").value;
-      let timeEnd = document.getElementById("event-time-end").value;
-      let recurrence = document.getElementById("event-recurrence").value;
-      let desc = document.getElementById("event-desc").value.trim();
-
-      if (!title || !date) return alert("Preencha o título e a data do evento.");
-      if (scope === 'GERAL' && currentUser.role !== 'admin') return alert("Apenas administradores podem criar ou editar eventos em comum para toda a rede.");
-
-      let existingIdx = calendarEvents.findIndex(e => e.id === id);
-      let evObj = { id, title, date, displayDate: date.split('-').reverse().join('/'), store, scope, time, timeEnd, recurrence, desc, type: 'manual' };
-
-      if (existingIdx >= 0) {
-        if (calendarEvents[existingIdx].scope === 'GERAL' && currentUser.role !== 'admin') {
-          return alert("Apenas administradores podem modificar eventos em comum.");
-        }
-        calendarEvents[existingIdx] = evObj;
-      } else {
-        calendarEvents.push(evObj);
-      }
-
-      localStorage.setItem("CB_LOCAL_CALENDAR_EVENTS", JSON.stringify(calendarEvents));
-      syncConfigToCloud();
-      toggleEventModal();
-      renderAgendaCalendar();
-      alert("Evento salvo com sucesso na agenda!");
-    }
-
-    function deleteCalendarEventFromModal() {
-      let id = document.getElementById("event-edit-id").value;
-      if (!id) return;
-      let ev = calendarEvents.find(e => e.id === id);
-      if (ev && ev.scope === 'GERAL' && currentUser.role !== 'admin') {
-        return alert("Apenas administradores podem excluir eventos em comum.");
-      }
-
-      if (confirm("Deseja realmente excluir este evento?")) {
-        const itemToDelete = { ...ev };
-        calendarEvents = calendarEvents.filter(e => e.id !== id);
-        localStorage.setItem("CB_LOCAL_CALENDAR_EVENTS", JSON.stringify(calendarEvents));
-        syncConfigToCloud();
-        toggleEventModal();
-        renderAgendaCalendar();
-        triggerUndoToast("Evento da Agenda", "event", itemToDelete);
-      }
-    }
-
-    // 🔧 Técnicos & Prestadores de Serviço
     function toggleTechModal() {
       document.getElementById("tech-modal").classList.toggle("hidden");
     }
@@ -2738,7 +2351,6 @@
       }
     }
 
-    // Configurações Gerais de Checklists
     function toggleConfigModal() {
       const modal = document.getElementById("config-modal");
       modal.classList.toggle("hidden");
