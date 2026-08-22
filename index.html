@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>SOCB-Casa Bauducco</title>
+  <title>ZACAN SOCB</title>
   
   <link rel="icon" type="image/png" href="./logo.png">
   
@@ -194,7 +194,7 @@
             <span>📝 Checklists em Andamento (Rascunhos)</span>
             <span id="drafts-badge-count-main" class="bg-cb-gold text-cb-bordo-dark px-2 py-0.5 rounded-full text-[10px] font-black">0</span>
           </button>
-          <!-- Configuração apenas na Tela Inicial para Admin -->
+          <!-- Configuração apenas na Tela Inicial para Admin/Gerente -->
           <button id="home-btn-config" onclick="toggleConfigModal()" class="hidden p-3.5 bg-white hover:bg-stone-50 border border-stone-200 rounded-xl shadow-sm transition text-left text-xs font-bold text-cb-bordo uppercase tracking-wider">
             ⚙️ Configurações Gerais dos Checklists
           </button>
@@ -1200,7 +1200,11 @@
       if (!lastDeletedItem) return;
       if (lastDeletedItem.type === 'report') {
         if (!savedReports.some(r => r.id === lastDeletedItem.data.id)) {
-          saveReportToCloud(lastDeletedItem.data);
+          savedReports.unshift(lastDeletedItem.data);
+          localStorage.setItem("CB_LOCAL_REPORTS", JSON.stringify(savedReports));
+          if (isFirebaseReady) {
+            db.collection("reports").doc(lastDeletedItem.data.id).set(lastDeletedItem.data);
+          }
         }
       } else if (lastDeletedItem.type === 'event') {
         if (!calendarEvents.some(e => e.id === lastDeletedItem.data.id)) {
@@ -1592,7 +1596,6 @@
       if (!select) return;
       select.innerHTML = "";
       
-      // Filtra checklists disponíveis para o usuário atual conforme a role (admin, gerente, operador)
       let allowedChecklists = allChecklists.filter(c => {
         if (!c.roles || c.roles.length === 0) return true;
         return c.roles.includes(currentUser?.role);
@@ -1806,7 +1809,7 @@
         return;
       }
       reportData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-      db.collection("reports").add(reportData).then(() => {
+      db.collection("reports").doc(reportData.id).set(reportData).then(() => {
         renderHistoryList();
       }).catch(err => console.error(err));
     }
@@ -3449,9 +3452,7 @@
         selectedRoles.push(cb.value);
       });
 
-      // Validação de permissões conforme regra de acesso solicitada
       if (currentUser?.role === 'gerente') {
-        // Gerentes podem vincular a si próprio ('gerente') ou operadores ('operador')
         selectedRoles = selectedRoles.filter(r => r === 'gerente' || r === 'operador');
       } else if (currentUser?.role === 'operador') {
         return alert("Operadores não podem criar ou gerenciar modelos de checklist.");
