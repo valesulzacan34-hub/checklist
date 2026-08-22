@@ -1158,7 +1158,6 @@
           localStorage.setItem("CB_LOCAL_MANUAL_ACTIONS", JSON.stringify(manualActionsList));
           syncConfigToCloud();
         } else {
-          // Restaurar Não Conformidade ou Manutenção de relatório salvo
           const rep = savedReports.find(r => r.id === lastDeletedItem.reportId);
           if (rep) {
             if (lastDeletedItem.actionType === 'nc') rep.nonConformities.push(lastDeletedItem.data);
