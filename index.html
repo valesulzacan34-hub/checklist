@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>ZACAN SOCB</title>
+  <title>Sistema Integrado - Casa Bauducco</title>
   
   <link rel="icon" type="image/png" href="./logo.png">
   
@@ -27,7 +27,6 @@
     .event-card { cursor: grab; }
     .event-card:active { cursor: grabbing; }
     .resize-handle { height: 4px; width: 100%; cursor: ns-resize; position: absolute; bottom: 0; left: 0; }
-    /* Ajuste para Web: Ocupar todo o espaço lateral fluidamente em telas grandes */
     @media (min-width: 768px) {
       .app-main, .responsive-container { max-width: 100% !important; width: 100% !important; margin: 0 auto; padding-left: 2rem; padding-right: 2rem; }
     }
@@ -106,7 +105,7 @@
       <button onclick="toggleSidebar()" class="text-stone-300 hover:text-white text-lg font-bold p-1">✕</button>
     </div>
 
-    <!-- Menu Lateral Limpo (Apenas Módulos Principais) -->
+    <!-- Menu Lateral com Manutenção -->
     <div class="p-3 space-y-1.5 flex-1 text-xs font-semibold overflow-y-auto">
       <button onclick="openModulesScreen(); toggleSidebar();" class="w-full text-left px-3 py-2.5 rounded-lg hover:bg-cb-bordo transition">
         🏠 Tela Inicial (Módulos)
@@ -121,7 +120,7 @@
         <span>📅 Agenda & Calendário</span>
       </button>
       <button onclick="selectModule('technicians'); toggleSidebar();" class="w-full text-left px-3 py-2.5 rounded-lg hover:bg-cb-bordo transition flex items-center gap-1.5">
-        <span>🔧 Técnicos & Prestadores</span>
+        <span>🔧 Manutenção</span>
       </button>
       <button id="sidebar-btn-users" onclick="toggleUsersModal(); toggleSidebar();" class="hidden w-full text-left px-3 py-2.5 rounded-lg hover:bg-cb-bordo transition">
         👥 Gerenciar Unidades & Usuários
@@ -194,7 +193,6 @@
             <span>📝 Checklists em Andamento (Rascunhos)</span>
             <span id="drafts-badge-count-main" class="bg-cb-gold text-cb-bordo-dark px-2 py-0.5 rounded-full text-[10px] font-black">0</span>
           </button>
-          <!-- Configuração apenas na Tela Inicial para Admin/Gerente -->
           <button id="home-btn-config" onclick="toggleConfigModal()" class="hidden p-3.5 bg-white hover:bg-stone-50 border border-stone-200 rounded-xl shadow-sm transition text-left text-xs font-bold text-cb-bordo uppercase tracking-wider">
             ⚙️ Configurações Gerais dos Checklists
           </button>
@@ -247,7 +245,12 @@
           <button onclick="switchChecklistTab('home')" class="text-xs font-bold text-cb-bordo hover:underline">
             ← Voltar ao Início
           </button>
-          <span class="text-xs font-bold text-stone-700">Relatórios Salvos</span>
+          <div class="flex gap-2">
+            <button onclick="toggleReportsTrashModal()" class="px-3 py-1.5 bg-stone-200 hover:bg-stone-300 text-stone-800 font-bold text-xs rounded-lg transition shadow-sm">
+              🗑️ Lixeira de Relatórios (<span id="reports-trash-count">0</span>)
+            </button>
+            <span class="text-xs font-bold text-stone-700 flex items-center">Relatórios Salvos</span>
+          </div>
         </div>
 
         <div class="bg-white p-4 rounded-xl shadow-sm border border-stone-200 space-y-3">
@@ -255,9 +258,6 @@
             <div>
               <h2 class="font-bold text-cb-bordo text-xs uppercase tracking-wider">Filtragem por Período</h2>
             </div>
-            <button onclick="clearAllHistory()" class="text-xs text-rose-600 font-bold hover:underline">
-              Limpar Tudo
-            </button>
           </div>
 
           <div class="space-y-2 text-xs">
@@ -302,7 +302,7 @@
           </div>
           <div class="flex gap-2">
             <button onclick="toggleTrashModal()" id="btn-trash-actions" class="hidden px-3 py-2 bg-stone-200 hover:bg-stone-300 text-stone-800 font-bold text-xs rounded-lg transition shadow-sm">
-              🗑️ Lixeira (<span id="trash-count">0</span>)
+              🗑️ Lixeira de Planos (<span id="trash-count">0</span>)
             </button>
             <button onclick="openNewActionModal()" class="px-3 py-2 bg-cb-bordo hover:bg-cb-bordo-dark text-white font-bold text-xs rounded-lg transition shadow-sm">
               + Novo Plano de Ação
@@ -310,7 +310,6 @@
           </div>
         </div>
 
-        <!-- Contadores Responsivos, Clicáveis e com Duplo Clique para Limpar Filtro -->
         <div class="grid grid-cols-3 gap-2 pt-1 text-center">
           <div onclick="filterActionsByCounter('Pendente')" ondblclick="clearStatusFilter()" class="bg-rose-50 border border-rose-200 p-2.5 rounded-xl shadow-sm cursor-pointer hover:bg-rose-100 transition" title="Clique para filtrar, duplo clique para limpar">
             <span class="block text-[10px] font-bold text-rose-800 uppercase">Pendentes</span>
@@ -372,17 +371,22 @@
       <div id="centralized-actions-list" class="space-y-3"></div>
     </main>
 
-    <!-- MÓDULO 3: TÉCNICOS & PRESTADORES DE SERVIÇO -->
+    <!-- MÓDULO 3: MANUTENÇÃO & CONTROLE DE GARANTIAS -->
     <main id="module-technicians-container" class="responsive-container space-y-4 hidden w-full">
       <div class="bg-white p-4 rounded-xl shadow-sm border border-stone-200 space-y-3">
         <div class="flex justify-between items-center flex-wrap gap-2">
           <div>
-            <h2 class="font-bold text-cb-bordo text-sm uppercase tracking-wider">🔧 Técnicos & Prestadores de Serviço</h2>
-            <p class="text-xs text-stone-500">Contatos rápidos por região e especialidade</p>
+            <h2 class="font-bold text-cb-bordo text-sm uppercase tracking-wider">🔧 Manutenção & Prestadores de Serviço</h2>
+            <p class="text-xs text-stone-500">Gerencie prestadores, contatos e o controle de garantias</p>
           </div>
-          <button id="btn-add-tech" onclick="openTechModal()" class="px-3 py-2 bg-cb-bordo text-white font-bold text-xs rounded-lg hover:bg-cb-bordo-dark transition">
-            + Novo Contato
-          </button>
+          <div class="flex gap-2">
+            <button onclick="toggleWarrantyModal()" class="px-3 py-2 bg-cb-gold text-cb-bordo font-bold text-xs rounded-lg hover:bg-yellow-500 transition shadow-sm">
+              🛡️ Controle de Garantias
+            </button>
+            <button id="btn-add-tech" onclick="openTechModal()" class="px-3 py-2 bg-cb-bordo text-white font-bold text-xs rounded-lg hover:bg-cb-bordo-dark transition">
+              + Novo Contato
+            </button>
+          </div>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs pt-2">
@@ -466,10 +470,93 @@
   <div id="trash-actions-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white w-full max-w-lg h-[80vh] rounded-2xl flex flex-col shadow-2xl overflow-hidden border border-cb-gold/30 text-xs">
       <div class="p-4 border-b border-stone-200 flex justify-between items-center bg-cb-bordo text-white">
-        <h3 class="font-bold text-sm uppercase text-cb-gold">🗑️ Lixeira de Planos de Ação Excluídos</h3>
+        <h3 class="font-bold text-sm uppercase text-cb-gold">🗑️ Lixeira de Planos de Ação</h3>
         <button onclick="toggleTrashModal()" class="font-bold text-stone-300 hover:text-white text-base">✕</button>
       </div>
       <div id="trash-actions-list" class="p-4 overflow-y-auto space-y-2.5 flex-1 bg-stone-50"></div>
+    </div>
+  </div>
+
+  <!-- Modal da Lixeira de Relatórios / Checklists -->
+  <div id="reports-trash-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-lg h-[80vh] rounded-2xl flex flex-col shadow-2xl overflow-hidden border border-cb-gold/30 text-xs">
+      <div class="p-4 border-b border-stone-200 flex justify-between items-center bg-cb-bordo text-white">
+        <h3 class="font-bold text-sm uppercase text-cb-gold">🗑️ Lixeira de Relatórios de Checklists</h3>
+        <button onclick="toggleReportsTrashModal()" class="font-bold text-stone-300 hover:text-white text-base">✕</button>
+      </div>
+      <div id="reports-trash-list" class="p-4 overflow-y-auto space-y-2.5 flex-1 bg-stone-50"></div>
+    </div>
+  </div>
+
+  <!-- Modal de Conclusão de Manutenção com Garantia -->
+  <div id="maintenance-resolution-modal" class="fixed inset-0 bg-black/70 z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white w-full max-w-lg rounded-2xl p-5 space-y-4 shadow-2xl border border-cb-gold/30 text-xs my-8">
+      <div class="flex justify-between items-center border-b pb-2 bg-cb-bordo text-white -mx-5 -mt-5 p-4 rounded-t-2xl">
+        <h3 class="font-bold text-sm uppercase text-cb-gold">🔧 Encerramento & Controle de Garantia</h3>
+        <button onclick="closeMaintenanceResolutionModal()" class="font-bold text-stone-300 hover:text-white text-base">✕</button>
+      </div>
+      <input type="hidden" id="res-action-id">
+      <input type="hidden" id="res-action-title">
+      <input type="hidden" id="res-action-unit">
+      
+      <div class="space-y-3 max-h-[65vh] overflow-y-auto pr-1">
+        <div>
+          <label class="block font-bold text-stone-700 mb-1">Selecionar Prestador Cadastrado ou Inserir Novo:</label>
+          <select id="res-prestador-select" onchange="onSelectPrestadorChange()" class="w-full border rounded p-2 bg-stone-50 font-semibold mb-1"></select>
+        </div>
+        <div>
+          <label class="block font-bold text-stone-600 mb-1">Nome da Empresa ou Prestador de Serviço:</label>
+          <input type="text" id="res-empresa" placeholder="Ex: Refrigeração Silva" class="w-full border rounded p-2 bg-stone-50 font-semibold">
+        </div>
+        <div>
+          <label class="block font-bold text-stone-600 mb-1">Contato (Telefone / WhatsApp):</label>
+          <input type="text" id="res-contato" placeholder="(12) 99999-9999" class="w-full border rounded p-2 bg-stone-50 font-semibold">
+        </div>
+        <div>
+          <label class="block font-bold text-stone-600 mb-1">Qual Equipamento / Item?</label>
+          <input type="text" id="res-equipamento" placeholder="Ex: Geladeira Expositora" class="w-full border rounded p-2 bg-stone-50 font-semibold">
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block font-bold text-stone-600 mb-1">Valor Mão de Obra (R$):</label>
+            <input type="number" step="0.01" id="res-v-mao" placeholder="0.00" class="w-full border rounded p-2 bg-stone-50 font-semibold">
+          </div>
+          <div>
+            <label class="block font-bold text-stone-600 mb-1">Valor Peças (R$):</label>
+            <input type="number" step="0.01" id="res-v-pecas" placeholder="0.00" class="w-full border rounded p-2 bg-stone-50 font-semibold">
+          </div>
+        </div>
+        <div>
+          <label class="block font-bold text-stone-600 mb-1">Anexar Nota Fiscal de Compra / Serviço:</label>
+          <input type="file" id="res-nf-file" accept="image/*,.pdf" class="w-full border rounded p-1.5 bg-stone-50 text-xs">
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block font-bold text-stone-600 mb-1">Garantia Mão de Obra (Dias):</label>
+            <input type="number" id="res-g-mao" value="90" class="w-full border rounded p-2 bg-stone-50 font-semibold">
+          </div>
+          <div>
+            <label class="block font-bold text-stone-600 mb-1">Garantia Peças (Dias):</label>
+            <input type="number" id="res-g-pecas" value="90" class="w-full border rounded p-2 bg-stone-50 font-semibold">
+          </div>
+        </div>
+        <div>
+          <label class="block font-bold text-stone-600 mb-1">Breve Descrição do Serviço Realizado:</label>
+          <textarea id="res-desc" rows="2" placeholder="O que foi feito..." class="w-full border rounded p-2 bg-stone-50"></textarea>
+        </div>
+        <button onclick="confirmMaintenanceResolution()" class="w-full py-3 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-lg uppercase shadow-md transition">Salvar Conclusão & Registrar Garantia</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Controle de Garantias -->
+  <div id="warranty-control-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-4xl h-[85vh] rounded-2xl flex flex-col shadow-2xl overflow-hidden border border-cb-gold/30 text-xs">
+      <div class="p-4 border-b border-stone-200 flex justify-between items-center bg-cb-bordo text-white">
+        <h3 class="font-bold text-sm uppercase text-cb-gold">🛡️ Planilha de Controle de Garantias</h3>
+        <button onclick="toggleWarrantyModal()" class="font-bold text-stone-300 hover:text-white text-base">✕</button>
+      </div>
+      <div id="warranty-list-container" class="p-4 overflow-y-auto space-y-3 flex-1 bg-stone-50"></div>
     </div>
   </div>
 
@@ -516,7 +603,7 @@
     </div>
   </div>
 
-  <!-- Modal de Técnicos / Prestadores -->
+  <!-- Modal de Técnicos / Manutenção -->
   <div id="tech-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white w-full max-w-md rounded-2xl p-5 space-y-4 shadow-2xl border border-cb-gold/30 text-xs">
       <div class="flex justify-between items-center border-b pb-2">
@@ -919,9 +1006,24 @@
     let currentUser = JSON.parse(sessionStorage.getItem("CB_LOCAL_LOGGED_USER")) || null;
     let manualActionsList = JSON.parse(localStorage.getItem("CB_LOCAL_MANUAL_ACTIONS")) || [];
     let trashActionsList = JSON.parse(localStorage.getItem("CB_LOCAL_TRASH_ACTIONS")) || [];
+    let reportsTrashList = JSON.parse(localStorage.getItem("CB_LOCAL_REPORTS_TRASH")) || [];
+    let warrantyRecords = JSON.parse(localStorage.getItem("CB_LOCAL_WARRANTY_RECORDS")) || [];
     let readNotifications = JSON.parse(localStorage.getItem("CB_READ_NOTIFICATIONS")) || {};
     let unreadChatMessages = JSON.parse(localStorage.getItem("CB_UNREAD_CHAT_MSGS")) || {};
     
+    // Limpeza automática de dados existentes da loja "CB Vale Sul Shopping" caso ainda existam
+    let savedReports = JSON.parse(localStorage.getItem("CB_LOCAL_REPORTS")) || [];
+    let initialReportsCount = savedReports.length;
+    savedReports = savedReports.filter(r => !r.unit || !r.unit.toLowerCase().includes("vale sul"));
+    if (savedReports.length !== initialReportsCount) {
+      localStorage.setItem("CB_LOCAL_REPORTS", JSON.stringify(savedReports));
+    }
+    let initialManualCount = manualActionsList.length;
+    manualActionsList = manualActionsList.filter(a => !a.unit || !a.unit.toLowerCase().includes("vale sul"));
+    if (manualActionsList.length !== initialManualCount) {
+      localStorage.setItem("CB_LOCAL_MANUAL_ACTIONS", JSON.stringify(manualActionsList));
+    }
+
     const centervalePresetActions = [
       { id: "cv_pre_1", unit: "CB Shopping CenterVale", title: "Fachada da loja, luzes, letreiros, Leds", action: "Solicitar manutenção de led do teto do salão (Falar com Thiago ou Emerson)", date: "28/08/2026", rawDate: "2026-08-28", type: "nc" },
       { id: "cv_pre_2", unit: "CB Shopping CenterVale", title: "A comunicação visual está dentro do padrão?", action: "Retirar sacolas de Natal, de exposição, aquelas que estão acima dos bites no emporio", date: "21/08/2026", rawDate: "2026-08-21", type: "nc" },
@@ -1024,24 +1126,6 @@
 
     let allChecklists = JSON.parse(localStorage.getItem("CB_LOCAL_CHECKLISTS")) || defaultTemplates;
     let activeChecklistId = localStorage.getItem("CB_LOCAL_ACTIVE_ID") || allChecklists[0].id;
-    let savedReports = JSON.parse(localStorage.getItem("CB_LOCAL_REPORTS")) || [];
-    let techniciansList = JSON.parse(localStorage.getItem("CB_LOCAL_TECHNICIANS")) || [
-      { name: "Luiz Parahyba (Seguro)", service: "Sinistros e Emergências", region: "Geral", phone: "(12) 99121-5466" }
-    ];
-    let calendarEvents = JSON.parse(localStorage.getItem("CB_LOCAL_CALENDAR_EVENTS")) || [];
-
-    let currentCalendarDate = new Date();
-    let currentCalendarView = 'month';
-    let activeChatActionId = null;
-    let lastDeletedItem = null;
-    
-    let attachedPhotos = JSON.parse(localStorage.getItem("CB_DRAFT_PHOTOS")) || {};
-    let actionPlans = JSON.parse(localStorage.getItem("CB_DRAFT_PLANS")) || {};
-    let customAnswers = JSON.parse(localStorage.getItem("CB_DRAFT_ANSWERS")) || {};
-    let maintenanceOrders = JSON.parse(localStorage.getItem("CB_DRAFT_MAINT")) || {};
-    let draftStartTime = localStorage.getItem("CB_DRAFT_START_TIME") || null;
-
-    let currentActionsTab = 'pending';
 
     function updateSyncUI(status, text) {
       const ind = document.getElementById("sync-indicator");
@@ -1072,6 +1156,8 @@
           if (data.customPriority) { actionCustomPriority = data.customPriority; localStorage.setItem("CB_LOCAL_CUSTOM_PRIORITY", JSON.stringify(actionCustomPriority)); }
           if (data.manualActions) { manualActionsList = data.manualActions; localStorage.setItem("CB_LOCAL_MANUAL_ACTIONS", JSON.stringify(manualActionsList)); }
           if (data.trashActions) { trashActionsList = data.trashActions; localStorage.setItem("CB_LOCAL_TRASH_ACTIONS", JSON.stringify(trashActionsList)); }
+          if (data.reportsTrash) { reportsTrashList = data.reportsTrash; localStorage.setItem("CB_LOCAL_REPORTS_TRASH", JSON.stringify(reportsTrashList)); }
+          if (data.warrantyRecords) { warrantyRecords = data.warrantyRecords; localStorage.setItem("CB_LOCAL_WARRANTY_RECORDS", JSON.stringify(warrantyRecords)); }
 
           renderPresetUnits();
           renderHomeChecklistSelect();
@@ -1085,7 +1171,10 @@
       db.collection("reports").orderBy("createdAt", "desc").onSnapshot(snapshot => {
         savedReports = [];
         snapshot.forEach(doc => {
-          savedReports.push({ id: doc.id, ...doc.data() });
+          let rep = { id: doc.id, ...doc.data() };
+          if (rep.unit && !rep.unit.toLowerCase().includes("vale sul")) {
+            savedReports.push(rep);
+          }
         });
         localStorage.setItem("CB_LOCAL_REPORTS", JSON.stringify(savedReports));
         updateHistoryBadge();
@@ -1110,6 +1199,8 @@
         customPriority: actionCustomPriority,
         manualActions: manualActionsList,
         trashActions: trashActionsList,
+        reportsTrash: reportsTrashList,
+        warrantyRecords: warrantyRecords,
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       }).catch(err => console.error(err));
     }
@@ -1546,7 +1637,7 @@
         renderCentralizedActions();
       } else if (mod === 'technicians') {
         techMod.classList.remove("hidden");
-        badgeMod.innerText = "Técnicos";
+        badgeMod.innerText = "Manutenção";
         renderTechniciansList();
       } else if (mod === 'agenda') {
         if (currentUser.role === 'operador') return alert("Acesso não autorizado para operadores.");
@@ -1644,6 +1735,8 @@
       if (b2) b2.innerText = count;
       updateNotificationBadgeCount();
       updateDraftsBadge();
+      const trashCountEl = document.getElementById("reports-trash-count");
+      if (trashCountEl) trashCountEl.innerText = reportsTrashList.length;
     }
 
     function renderHistoryList() {
@@ -1651,7 +1744,7 @@
       if (!container) return;
       container.innerHTML = ""; 
       updateHistoryBadge();
-      
+       
       const storeFilter = document.getElementById("filter-store").value;
       const startFilter = document.getElementById("filter-date-start").value;
       const endFilter = document.getElementById("filter-date-end").value;
@@ -1678,7 +1771,7 @@
       filtered.forEach((rep, idx) => {
         const itemCard = document.createElement("div");
         itemCard.className = "bg-white rounded-xl border border-stone-200 shadow-sm overflow-hidden text-xs";
-        
+         
         let ncListHtml = rep.nonConformities?.map(nc => `<div class="p-2 bg-rose-50 border border-rose-200 rounded text-xs mb-1"><strong>❌ ${nc.title}</strong><br>Ação: ${nc.action} (Prazo: ${nc.date})</div>`).join("") || "";
         let omListHtml = rep.maintenanceOrders?.map(om => `<div class="p-2 bg-amber-50 border border-amber-300 rounded text-xs mb-1"><strong>🔧 ${om.equipment}</strong><br>Defeito: ${om.action} (Prazo: ${om.date})</div>`).join("") || "";
 
@@ -1699,7 +1792,7 @@
             ${omListHtml ? `<div><strong>Ordens de Manutenção:</strong><br>${omListHtml}</div>` : ''}
             <div class="pt-2 border-t flex justify-end gap-2">
               <button onclick="reopenPDFFromHistoryByIndex('${rep.id}')" class="px-3 py-1.5 bg-cb-bordo text-white font-bold rounded-lg">Visualizar / Imprimir PDF</button>
-              <button onclick="deleteReportFromHistory('${rep.id}')" class="px-2.5 py-1.5 text-rose-600 font-bold">Excluir</button>
+              <button onclick="deleteReportFromHistory('${rep.id}')" class="px-2.5 py-1.5 text-rose-600 font-bold">Mover para Lixeira</button>
             </div>
           </div>`;
         container.appendChild(itemCard);
@@ -1714,14 +1807,80 @@
     }
 
     function deleteReportFromHistory(docId) {
-      if (confirm("Deseja realmente excluir este relatório?")) {
+      if (confirm("Deseja mover este relatório para a lixeira?")) {
         const itemToDelete = savedReports.find(r => r.id === docId);
         savedReports = savedReports.filter(r => r.id !== docId);
         localStorage.setItem("CB_LOCAL_REPORTS", JSON.stringify(savedReports));
+        if (itemToDelete) {
+          reportsTrashList.push({ ...itemToDelete, deletedAt: new Date().toLocaleDateString('pt-BR') });
+          localStorage.setItem("CB_LOCAL_REPORTS_TRASH", JSON.stringify(reportsTrashList));
+        }
         if (isFirebaseReady && docId) db.collection("reports").doc(docId).delete();
+        syncConfigToCloud();
         renderHistoryList();
         updateNotificationBadgeCount();
         triggerUndoToast("Relatório", "report", itemToDelete);
+      }
+    }
+
+    function toggleReportsTrashModal() {
+      const modal = document.getElementById("reports-trash-modal");
+      modal.classList.toggle("hidden");
+      if (!modal.classList.contains("hidden")) {
+        renderReportsTrashList();
+      }
+    }
+
+    function renderReportsTrashList() {
+      const container = document.getElementById("reports-trash-list");
+      if (!container) return;
+      container.innerHTML = "";
+
+      if (reportsTrashList.length === 0) {
+        container.innerHTML = `<div class="p-6 text-center text-stone-400 text-xs">A lixeira de relatórios está vazia.</div>`;
+        return;
+      }
+
+      reportsTrashList.forEach((rep, idx) => {
+        const div = document.createElement("div");
+        div.className = "p-3 bg-white border rounded-xl flex justify-between items-center shadow-sm text-xs";
+        div.innerHTML = `
+          <div>
+            <span class="font-bold text-cb-bordo block">${rep.unit} — ${rep.date}</span>
+            <span class="text-stone-500">Supervisor: ${rep.supervisor} | Nota: ${rep.score}%</span>
+          </div>
+          <div class="flex gap-2">
+            <button onclick="restoreReportFromTrash(${idx})" class="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded shadow-sm">Restaurar</button>
+            ${currentUser?.role === 'admin' ? `<button onclick="permanentDeleteReport(${idx})" class="px-2 py-1.5 bg-rose-600 text-white font-bold rounded shadow-sm">Excluir Definitivo</button>` : ''}
+          </div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function restoreReportFromTrash(idx) {
+      let rep = reportsTrashList.splice(idx, 1)[0];
+      if (rep) {
+        if (!savedReports.some(r => r.id === rep.id)) {
+          savedReports.unshift(rep);
+          localStorage.setItem("CB_LOCAL_REPORTS", JSON.stringify(savedReports));
+          if (isFirebaseReady) db.collection("reports").doc(rep.id).set(rep);
+        }
+        localStorage.setItem("CB_LOCAL_REPORTS_TRASH", JSON.stringify(reportsTrashList));
+        syncConfigToCloud();
+        renderHistoryList();
+        renderReportsTrashList();
+        alert("Relatório restaurado com sucesso!");
+      }
+    }
+
+    function permanentDeleteReport(idx) {
+      if (confirm("Excluir definitivamente este relatório? Esta ação não poderá ser desfeita.")) {
+        reportsTrashList.splice(idx, 1);
+        localStorage.setItem("CB_LOCAL_REPORTS_TRASH", JSON.stringify(reportsTrashList));
+        syncConfigToCloud();
+        renderReportsTrashList();
+        alert("Relatório excluído definitivamente.");
       }
     }
 
@@ -1908,11 +2067,189 @@
     }
 
     function updateActionStatus(actionId, newStatus) {
+      if (newStatus === 'Concluído') {
+        openMaintenanceResolutionModal(actionId);
+        return;
+      }
       actionCustomStatus[actionId] = newStatus;
       localStorage.setItem("CB_LOCAL_CUSTOM_STATUS", JSON.stringify(actionCustomStatus));
       syncConfigToCloud();
       renderCentralizedActions();
       updateNotificationBadgeCount();
+    }
+
+    // Modal e Lógica para Encerramento de Manutenção & Garantia
+    let pendingResolutionActionId = null;
+
+    function openMaintenanceResolutionModal(actionId) {
+      pendingResolutionActionId = actionId;
+      document.getElementById("res-action-id").value = actionId;
+      
+      // Limpa formulário
+      document.getElementById("res-empresa").value = "";
+      document.getElementById("res-contato").value = "";
+      document.getElementById("res-equipamento").value = "";
+      document.getElementById("res-v-mao").value = "";
+      document.getElementById("res-v-pecas").value = "";
+      document.getElementById("res-g-mao").value = "90";
+      document.getElementById("res-g-pecas").value = "90";
+      document.getElementById("res-desc").value = "";
+      const nfInput = document.getElementById("res-nf-file");
+      if (nfInput) nfInput.value = "";
+
+      // Popula select de prestadores cadastrados
+      const select = document.getElementById("res-prestador-select");
+      select.innerHTML = `<option value="">-- Selecionar Prestador Existente ou Inserir Novo --</option>`;
+      techniciansList.forEach((t, idx) => {
+        let opt = document.createElement("option");
+        opt.value = idx;
+        opt.innerText = `${t.name} (${t.service} - ${t.region})`;
+        select.appendChild(opt);
+      });
+
+      document.getElementById("maintenance-resolution-modal").classList.remove("hidden");
+    }
+
+    function closeMaintenanceResolutionModal() {
+      document.getElementById("maintenance-resolution-modal").classList.add("hidden");
+      pendingResolutionActionId = null;
+      renderCentralizedActions(); // Restaura status visual caso cancele
+    }
+
+    function onSelectPrestadorChange() {
+      const selIdx = document.getElementById("res-prestador-select").value;
+      if (selIdx !== "") {
+        const t = techniciansList[parseInt(selIdx)];
+        if (t) {
+          document.getElementById("res-empresa").value = t.name;
+          document.getElementById("res-contato").value = t.phone || '';
+        }
+      }
+    }
+
+    function confirmMaintenanceResolution() {
+      const actionId = document.getElementById("res-action-id").value;
+      const empresa = document.getElementById("res-empresa").value.trim();
+      const contato = document.getElementById("res-contato").value.trim();
+      const equipamento = document.getElementById("res-equipamento").value.trim();
+      const vMao = parseFloat(document.getElementById("res-v-mao").value) || 0;
+      const vPecas = parseFloat(document.getElementById("res-v-pecas").value) || 0;
+      const gMao = parseInt(document.getElementById("res-g-mao").value) || 0;
+      const gPecas = parseInt(document.getElementById("res-g-pecas").value) || 0;
+      const desc = document.getElementById("res-desc").value.trim();
+      const nfInput = document.getElementById("res-nf-file");
+
+      if (!empresa || !equipamento) return alert("Preencha ao menos o nome da empresa/prestador e o equipamento.");
+
+      // Sugestão e inclusão automática na base de prestadores se for um novo contato
+      let existingTech = techniciansList.find(t => t.name.toLowerCase() === empresa.toLowerCase());
+      if (!existingTech) {
+        if (confirm(`A empresa "${empresa}" não está na sua base de Manutenção. Deseja salvá-la automaticamente como novo prestador?`)) {
+          techniciansList.push({
+            name: empresa,
+            service: equipamento,
+            region: 'Geral',
+            phone: contato || '(00) 00000-0000'
+          });
+          localStorage.setItem("CB_LOCAL_TECHNICIANS", JSON.stringify(techniciansList));
+          syncConfigToCloud();
+        }
+      }
+
+      const processRecord = (nfUrl = '') => {
+        const now = new Date();
+        const dataConclusao = now.toLocaleDateString('pt-BR');
+        
+        // Calcula data final da garantia (maior prazo entre mão de obra e peças)
+        const maxDias = Math.max(gMao, gPecas);
+        const garantiaFimDate = new Date(now.getTime() + (maxDias * 24 * 60 * 60 * 1000));
+        const dataGarantiaFim = garantiaFimDate.toLocaleDateString('pt-BR');
+
+        const warrantyObj = {
+          id: "gar_" + Date.now(),
+          actionId: actionId,
+          empresa,
+          contato,
+          equipamento,
+          vMao,
+          vPecas,
+          nfUrl,
+          gMao,
+          gPecas,
+          desc,
+          dataConclusao,
+          dataGarantiaFim
+        };
+
+        warrantyRecords.push(warrantyObj);
+        localStorage.setItem("CB_LOCAL_WARRANTY_RECORDS", JSON.stringify(warrantyRecords));
+
+        // Atualiza status da ação para Concluído
+        actionCustomStatus[actionId] = 'Concluído';
+        localStorage.setItem("CB_LOCAL_CUSTOM_STATUS", JSON.stringify(actionCustomStatus));
+        syncConfigToCloud();
+
+        closeMaintenanceResolutionModal();
+        renderCentralizedActions();
+        updateNotificationBadgeCount();
+        alert("Manutenção concluída e garantia registrada com sucesso!");
+      };
+
+      if (nfInput && nfInput.files && nfInput.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          processRecord(e.target.result);
+        };
+        reader.readAsDataURL(nfInput.files[0]);
+      } else {
+        processRecord('');
+      }
+    }
+
+    function toggleWarrantyModal() {
+      const modal = document.getElementById("warranty-control-modal");
+      modal.classList.toggle("hidden");
+      if (!modal.classList.contains("hidden")) {
+        renderWarrantyList();
+      }
+    }
+
+    function renderWarrantyList() {
+      const container = document.getElementById("warranty-list-container");
+      if (!container) return;
+      container.innerHTML = "";
+
+      if (warrantyRecords.length === 0) {
+        container.innerHTML = `<div class="p-8 text-center text-stone-400 text-xs">Nenhum registro de garantia cadastrado até o momento.</div>`;
+        return;
+      }
+
+      warrantyRecords.forEach((w, idx) => {
+        let nfHtml = w.nfUrl ? `<button onclick="openImageViewer('${w.nfUrl}')" class="text-blue-600 font-bold underline">Visualizar NF</button>` : 'Sem NF';
+        const card = document.createElement("div");
+        card.className = "p-3 bg-white border rounded-xl flex justify-between items-center shadow-sm text-xs gap-2 flex-wrap";
+        card.innerHTML = `
+          <div class="space-y-0.5">
+            <span class="font-bold text-cb-bordo text-sm block">🔧 ${w.equipamento} (${w.empresa})</span>
+            <span class="text-stone-600 block">Contato: ${w.contato || 'N/I'} | Conclusão: ${w.dataConclusao}</span>
+            <span class="text-stone-500 block">Valores: Mão de Obra R$ ${w.vMao.toFixed(2)} | Peças R$ ${w.vPecas.toFixed(2)}</span>
+            <span class="font-bold text-emerald-700 block">🛡️ Vigência da Garantia até: ${w.dataGarantiaFim}</span>
+          </div>
+          <div class="flex flex-col items-end gap-1">
+            ${nfHtml}
+            ${currentUser?.role === 'admin' ? `<button onclick="deleteWarrantyRecord(${idx})" class="text-rose-600 font-bold hover:underline">Excluir</button>` : ''}
+          </div>`;
+        container.appendChild(card);
+      });
+    }
+
+    function deleteWarrantyRecord(idx) {
+      if (confirm("Excluir este registro de garantia?")) {
+        warrantyRecords.splice(idx, 1);
+        localStorage.setItem("CB_LOCAL_WARRANTY_RECORDS", JSON.stringify(warrantyRecords));
+        syncConfigToCloud();
+        renderWarrantyList();
+      }
     }
 
     function updateActionPriority(actionId, newPriority) {
@@ -1988,16 +2325,29 @@
 
       trashActionsList.forEach((item, idx) => {
         const div = document.createElement("div");
-        div.className = "p-3 bg-white border rounded-xl flex justify-between items-center shadow-sm text-xs";
+        div.className = "p-3 bg-white border rounded-xl flex justify-between items-center shadow-sm text-xs gap-2";
         div.innerHTML = `
           <div>
             <span class="font-bold text-cb-bordo block">${item.unit || 'Loja'} — ${item.title || item.equipment || 'Ação'}</span>
             <span class="text-stone-500">${item.action || item.defect || ''}</span>
           </div>
-          <button onclick="restoreActionFromTrash(${idx})" class="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded shadow-sm">Restaurar</button>
+          <div class="flex gap-2">
+            <button onclick="restoreActionFromTrash(${idx})" class="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded shadow-sm">Restaurar</button>
+            <button onclick="permanentDeleteAction(${idx})" class="px-2 py-1.5 bg-rose-600 text-white font-bold rounded shadow-sm">Excluir Definitivo</button>
+          </div>
         `;
         container.appendChild(div);
       });
+    }
+
+    function permanentDeleteAction(idx) {
+      if (confirm("Excluir permanentemente este plano de ação da lixeira?")) {
+        trashActionsList.splice(idx, 1);
+        localStorage.setItem("CB_LOCAL_TRASH_ACTIONS", JSON.stringify(trashActionsList));
+        syncConfigToCloud();
+        renderTrashActionsList();
+        alert("Plano de ação excluído permanentemente.");
+      }
     }
 
     function restoreActionFromTrash(idx) {
@@ -3033,7 +3383,7 @@
       }
     }
 
-    // 🔧 Técnicos & Prestadores de Serviço
+    // 🔧 Manutenção & Prestadores de Serviço
     function toggleTechModal() {
       document.getElementById("tech-modal").classList.toggle("hidden");
     }
