@@ -309,17 +309,17 @@
           </div>
         </div>
 
-        <!-- Contadores Responsivos e Clicáveis -->
+        <!-- Contadores Responsivos, Clicáveis e com Duplo Clique para Limpar Filtro -->
         <div class="grid grid-cols-3 gap-2 pt-1 text-center">
-          <div onclick="filterActionsByCounter('Pendente')" class="bg-rose-50 border border-rose-200 p-2.5 rounded-xl shadow-sm cursor-pointer hover:bg-rose-100 transition">
+          <div onclick="filterActionsByCounter('Pendente')" ondblclick="clearStatusFilter()" class="bg-rose-50 border border-rose-200 p-2.5 rounded-xl shadow-sm cursor-pointer hover:bg-rose-100 transition" title="Clique para filtrar, duplo clique para limpar">
             <span class="block text-[10px] font-bold text-rose-800 uppercase">Pendentes</span>
             <span id="counter-pending" class="text-lg font-black text-rose-700">0</span>
           </div>
-          <div onclick="filterActionsByCounter('Em Andamento')" class="bg-amber-50 border border-amber-200 p-2.5 rounded-xl shadow-sm cursor-pointer hover:bg-amber-100 transition">
+          <div onclick="filterActionsByCounter('Em Andamento')" ondblclick="clearStatusFilter()" class="bg-amber-50 border border-amber-200 p-2.5 rounded-xl shadow-sm cursor-pointer hover:bg-amber-100 transition" title="Clique para filtrar, duplo clique para limpar">
             <span class="block text-[10px] font-bold text-amber-900 uppercase">Em Andamento</span>
             <span id="counter-progress" class="text-lg font-black text-amber-700">0</span>
           </div>
-          <div onclick="filterActionsByCounter('Concluído')" class="bg-emerald-50 border border-emerald-200 p-2.5 rounded-xl shadow-sm cursor-pointer hover:bg-emerald-100 transition">
+          <div onclick="filterActionsByCounter('Concluído')" ondblclick="clearStatusFilter()" class="bg-emerald-50 border border-emerald-200 p-2.5 rounded-xl shadow-sm cursor-pointer hover:bg-emerald-100 transition" title="Clique para filtrar, duplo clique para limpar">
             <span class="block text-[10px] font-bold text-emerald-800 uppercase">Concluídos</span>
             <span id="counter-completed" class="text-lg font-black text-emerald-700">0</span>
           </div>
@@ -908,7 +908,6 @@
     let trashActionsList = JSON.parse(localStorage.getItem("CB_LOCAL_TRASH_ACTIONS")) || [];
     let readNotifications = JSON.parse(localStorage.getItem("CB_READ_NOTIFICATIONS")) || {};
     
-    // PRÉ-CARGA DOS PLANOS DE AÇÃO DA UNIDADE CENTERVALE (20/08/2026)
     const centervalePresetActions = [
       { id: "cv_pre_1", unit: "CB Shopping CenterVale", title: "Fachada da loja, luzes, letreiros, Leds", action: "Solicitar manutenção de led do teto do salão (Falar com Thiago ou Emerson)", date: "28/08/2026", rawDate: "2026-08-28", type: "nc" },
       { id: "cv_pre_2", unit: "CB Shopping CenterVale", title: "A comunicação visual está dentro do padrão?", action: "Retirar sacolas de Natal, de exposição, aquelas que estão acima dos bites no emporio", date: "21/08/2026", rawDate: "2026-08-21", type: "nc" },
@@ -1025,6 +1024,7 @@
     let actionPlans = JSON.parse(localStorage.getItem("CB_DRAFT_PLANS")) || {};
     let customAnswers = JSON.parse(localStorage.getItem("CB_DRAFT_ANSWERS")) || {};
     let maintenanceOrders = JSON.parse(localStorage.getItem("CB_DRAFT_MAINT")) || {};
+    let draftStartTime = localStorage.getItem("CB_DRAFT_START_TIME") || null;
 
     let currentActionsTab = 'pending';
 
@@ -1103,15 +1103,20 @@
       localStorage.setItem("CB_DRAFT_PLANS", JSON.stringify(actionPlans));
       localStorage.setItem("CB_DRAFT_ANSWERS", JSON.stringify(customAnswers));
       localStorage.setItem("CB_DRAFT_MAINT", JSON.stringify(maintenanceOrders));
+      if (!draftStartTime) {
+        draftStartTime = new Date().toLocaleString('pt-BR');
+        localStorage.setItem("CB_DRAFT_START_TIME", draftStartTime);
+      }
       updateDraftsBadge();
     }
 
     function clearDraft() {
-      attachedPhotos = {}; actionPlans = {}; customAnswers = {}; maintenanceOrders = {};
+      attachedPhotos = {}; actionPlans = {}; customAnswers = {}; maintenanceOrders = {}; draftStartTime = null;
       localStorage.removeItem("CB_DRAFT_PHOTOS");
       localStorage.removeItem("CB_DRAFT_PLANS");
       localStorage.removeItem("CB_DRAFT_ANSWERS");
       localStorage.removeItem("CB_DRAFT_MAINT");
+      localStorage.removeItem("CB_DRAFT_START_TIME");
       updateDraftsBadge();
     }
 
@@ -1137,12 +1142,13 @@
         return;
       }
 
+      const startTimeFormatted = draftStartTime || 'Horário não registrado';
       const itemCard = document.createElement("div");
       itemCard.className = "bg-white rounded-xl border border-stone-200 shadow-sm p-4 flex justify-between items-center text-xs";
       itemCard.innerHTML = `
         <div>
           <span class="font-black text-cb-bordo text-sm block">Rascunho Ativo (${getCurrentChecklist().name})</span>
-          <span class="text-stone-500">Preenchimento salvo em andamento...</span>
+          <span class="text-stone-500 block mt-0.5">🕒 Iniciado em: <strong>${startTimeFormatted}</strong></span>
         </div>
         <div class="flex gap-2">
           <button onclick="resumeDraft()" class="px-3 py-1.5 bg-cb-bordo text-white font-bold rounded-lg">Retomar</button>
@@ -1785,6 +1791,14 @@
         switchActionsTab('completed');
       } else {
         switchActionsTab('pending');
+      }
+      renderCentralizedActions();
+    }
+
+    function clearStatusFilter() {
+      const statusSelect = document.getElementById("filter-status");
+      if (statusSelect) {
+        statusSelect.value = "";
       }
       renderCentralizedActions();
     }
@@ -3415,6 +3429,218 @@
         clearDraft();
         renderChecklist();
       }
+    }
+
+    function initApp() {
+      updateLogos(); renderPresetUnits(); updateHistoryBadge(); setupCloudListeners();
+      
+      if (!currentUser) {
+        document.getElementById("login-screen").classList.remove("hidden");
+        document.getElementById("modules-screen").classList.add("hidden");
+        return;
+      }
+      
+      document.getElementById("login-screen").classList.add("hidden");
+      document.getElementById("sidebar-user-name").innerText = `${currentUser.name} (${currentUser.role})`;
+      document.getElementById("supervisor-name").value = currentUser.name;
+      
+      if (currentUser.role === "admin") {
+        document.getElementById("sidebar-btn-users").classList.remove("hidden");
+        document.getElementById("home-btn-config").classList.remove("hidden");
+      } else {
+        document.getElementById("sidebar-btn-users").classList.add("hidden");
+        document.getElementById("home-btn-config").classList.add("hidden");
+      }
+      
+      renderAgendaCalendar();
+      openModulesScreen();
+    }
+
+    function handleEvaluationChange(itemKey, value) {
+      customAnswers[itemKey] = value;
+      const planBox = document.getElementById(`plan-box-${itemKey}`);
+      if (value === "nao-conforme") planBox?.classList.remove("hidden");
+      else planBox?.classList.add("hidden");
+      calculateScore();
+      saveDraft();
+    }
+
+    function handleMaintenanceChange(itemKey, value) {
+      customAnswers[itemKey] = value;
+      const omBox = document.getElementById(`maintenance-box-${itemKey}`);
+      if (value === "abrir") omBox?.classList.remove("hidden");
+      else omBox?.classList.add("hidden");
+      calculateScore();
+      saveDraft();
+    }
+
+    function updateMaintenanceOrder(itemKey, field, val) {
+      if (!maintenanceOrders[itemKey]) maintenanceOrders[itemKey] = { equipment: '', action: '', date: '' };
+      maintenanceOrders[itemKey][field] = val;
+      saveDraft();
+    }
+
+    function setStarRating(itemKey, stars) {
+      customAnswers[itemKey] = stars;
+      for (let i = 1; i <= 5; i++) {
+        const starBtn = document.getElementById(`star-${itemKey}-${i}`);
+        if (starBtn) starBtn.className = `text-xl ${i <= stars ? 'text-amber-400 scale-110' : 'text-stone-300'}`;
+      }
+      const label = document.getElementById(`star-label-${itemKey}`);
+      if (label) label.innerText = `${stars} de 5`;
+      calculateScore();
+      saveDraft();
+    }
+
+    function updateTextInput(itemKey, val) {
+      customAnswers[itemKey] = val;
+      saveDraft();
+    }
+
+    function updateActionPlan(itemKey, field, val) {
+      if (!actionPlans[itemKey]) actionPlans[itemKey] = { action: '', date: '' };
+      actionPlans[itemKey][field] = val;
+      saveDraft();
+    }
+
+    function calculateScore() {
+      let totalQuestionsEvaluated = 0, pointsEarned = 0;
+      getCurrentChecklist().categories.forEach((sec, sIdx) => {
+        sec.items.forEach((item, iIdx) => {
+          const itemKey = `${sIdx}-${iIdx}`;
+          const itemType = item.type || "boolean";
+          let ans = customAnswers[itemKey];
+          if (itemType === "boolean" && ans) {
+            pointsEarned += (ans === "conforme" ? 1.0 : 0.0); totalQuestionsEvaluated += 1.0;
+          } else if (itemType === "maintenance" && ans) {
+            pointsEarned += (ans === "regular" ? 1.0 : 0.0); totalQuestionsEvaluated += 1.0;
+          } else if (itemType === "stars" && ans) {
+            let rating = parseInt(ans) || 0;
+            if (rating > 0) { pointsEarned += (rating / 5); totalQuestionsEvaluated += 1.0; }
+          }
+        });
+      });
+      const score = totalQuestionsEvaluated > 0 ? Math.round((pointsEarned / totalQuestionsEvaluated) * 100) : 100;
+      document.getElementById("score-display").innerText = score + "%";
+      document.getElementById("evaluated-count-display").innerText = `${Math.round(totalQuestionsEvaluated)} item(ns) avaliado(s)`;
+      return { score, total: Math.round(totalQuestionsEvaluated) };
+    }
+
+    function renderChecklist() {
+      const container = document.getElementById("checklist-container");
+      const current = getCurrentChecklist();
+      container.innerHTML = "";
+
+      current.categories.forEach((sec, sIdx) => {
+        if (sec.items.length === 0) return;
+        const secEl = document.createElement("div");
+        secEl.className = "bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden";
+        
+        let itemsHtml = sec.items.map((item, iIdx) => {
+          const itemKey = `${sIdx}-${iIdx}`;
+          const itemType = item.type || "boolean";
+          const photoData = attachedPhotos[itemKey];
+          const planData = actionPlans[itemKey] || { action: '', date: '' };
+          const omData = maintenanceOrders[itemKey] || { equipment: '', action: '', date: '' };
+          const savedAnswer = customAnswers[itemKey];
+          let controlHtml = "";
+
+          if (itemType === "boolean") {
+            let isConf = savedAnswer === 'conforme' ? 'checked' : '';
+            let isNaoConf = savedAnswer === 'nao-conforme' ? 'checked' : '';
+            let isNa = savedAnswer === 'na' ? 'checked' : '';
+            let planHidden = savedAnswer === 'nao-conforme' ? '' : 'hidden';
+
+            controlHtml = `
+              <div class="flex gap-2 text-xs">
+                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="conforme" ${isConf} class="hidden peer" onchange="handleEvaluationChange('${itemKey}', 'conforme')"><div class="text-center py-2 rounded-md border peer-checked:bg-emerald-600 peer-checked:text-white font-bold">Sim</div></label>
+                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="nao-conforme" ${isNaoConf} class="hidden peer" onchange="handleEvaluationChange('${itemKey}', 'nao-conforme')"><div class="text-center py-2 rounded-md border peer-checked:bg-rose-700 peer-checked:text-white font-bold">Não</div></label>
+                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="na" ${isNa} class="hidden peer" onchange="handleEvaluationChange('${itemKey}', 'na')"><div class="text-center py-2 rounded-md border peer-checked:bg-stone-500 peer-checked:text-white font-bold">N/A</div></label>
+              </div>
+              <div id="plan-box-${itemKey}" class="${planHidden} p-3 bg-rose-50 border rounded-lg space-y-2 text-xs">
+                <span class="block font-bold text-rose-800 uppercase text-[10px]">⚠️ Plano de Ação</span>
+                <input type="text" value="${planData.action}" placeholder="Ação..." oninput="updateActionPlan('${itemKey}', 'action', this.value)" class="w-full border p-2 bg-white rounded">
+                <input type="date" value="${planData.date}" oninput="updateActionPlan('${itemKey}', 'date', this.value)" class="w-full border p-2 bg-white rounded">
+              </div>`;
+          } else if (itemType === "maintenance") {
+            let isAbrir = savedAnswer === 'abrir' ? 'checked' : '';
+            let isReg = savedAnswer === 'regular' ? 'checked' : '';
+            let isNa = savedAnswer === 'na' ? 'checked' : '';
+            let omHidden = savedAnswer === 'abrir' ? '' : 'hidden';
+
+            controlHtml = `
+              <div class="flex gap-2 text-xs">
+                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="abrir" ${isAbrir} class="hidden peer" onchange="handleMaintenanceChange('${itemKey}', 'abrir')"><div class="text-center py-2 rounded-md border peer-checked:bg-amber-600 peer-checked:text-white font-bold">Abrir</div></label>
+                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="regular" ${isReg} class="hidden peer" onchange="handleMaintenanceChange('${itemKey}', 'regular')"><div class="text-center py-2 rounded-md border peer-checked:bg-emerald-600 peer-checked:text-white font-bold">Regular / Ok</div></label>
+                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="na" ${isNa} class="hidden peer" onchange="handleMaintenanceChange('${itemKey}', 'na')"><div class="text-center py-2 rounded-md border peer-checked:bg-stone-500 peer-checked:text-white font-bold">N/A</div></label>
+              </div>
+              <div id="maintenance-box-${itemKey}" class="${omHidden} p-3 bg-amber-50 border rounded-lg space-y-2 text-xs">
+                <span class="block font-bold text-amber-900 uppercase text-[10px]">Abertura de Ordem de Manutenção</span>
+                <input type="text" value="${omData.equipment}" placeholder="Equipamento..." oninput="updateMaintenanceOrder('${itemKey}', 'equipment', this.value)" class="w-full border p-2 bg-white rounded">
+                <input type="text" value="${omData.action}" placeholder="Defeito..." oninput="updateMaintenanceOrder('${itemKey}', 'action', this.value)" class="w-full border p-2 bg-white rounded">
+                <input type="date" value="${omData.date}" oninput="updateMaintenanceOrder('${itemKey}', 'date', this.value)" class="w-full border p-2 bg-white rounded">
+              </div>`;
+          } else if (itemType === "stars") {
+            let currentStars = parseInt(savedAnswer) || 0;
+            let starsSpans = "";
+            for (let s = 1; s <= 5; s++) starsSpans += `<button type="button" id="star-${itemKey}-${s}" onclick="setStarRating('${itemKey}', ${s})" class="text-xl ${s <= currentStars ? 'text-amber-400' : 'text-stone-300'}">★</button>`;
+            controlHtml = `<div class="flex items-center justify-between bg-stone-50 p-2.5 rounded border"><div class="flex gap-2">${starsSpans}</div><span id="star-label-${itemKey}" class="text-xs font-bold">${currentStars ? currentStars + ' de 5' : 'Avalie'}</span></div>`;
+          } else if (itemType === "text") {
+            controlHtml = `<div><textarea rows="2" placeholder="Digite..." oninput="updateTextInput('${itemKey}', this.value)" class="w-full border p-2 text-xs bg-stone-50 rounded">${savedAnswer || ''}</textarea></div>`;
+          }
+
+          return `
+          <div class="p-3.5 border-t flex flex-col gap-2.5">
+            <div class="flex justify-between items-start gap-2"><span class="text-sm font-medium">${item.title}</span>${item.requirePhoto ? '<span class="text-[10px] bg-amber-50 text-amber-800 border px-1.5 rounded font-bold">Foto Obrigatória</span>' : ''}</div>
+            ${controlHtml}
+            <div class="flex items-center gap-2 pt-1">
+              <label class="cursor-pointer inline-flex items-center gap-1.5 text-xs font-semibold bg-cb-cream px-3 py-1.5 rounded border">
+                <span id="photo-label-${itemKey}">${photoData ? 'Alterar Foto' : 'Adicionar Foto'}</span>
+                <input type="file" accept="image/*" class="hidden" onchange="handlePhotoUpload(event, '${itemKey}')">
+              </label>
+              <span id="photo-status-${itemKey}" class="text-xs text-emerald-800 bg-emerald-50 px-2 py-1 rounded border font-medium ${photoData ? '' : 'hidden'}">✓ Foto Anexada</span>
+            </div>
+          </div>`;
+        }).join("");
+
+        secEl.innerHTML = `<div class="bg-cb-cream px-4 py-2.5 font-bold text-xs uppercase text-cb-bordo border-b"><span>${sec.category}</span></div><div>${itemsHtml}</div>`;
+        container.appendChild(secEl);
+      });
+
+      calculateScore();
+    }
+
+    function handlePhotoUpload(event, key) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          attachedPhotos[key] = e.target.result;
+          saveDraft();
+          
+          const label = document.getElementById(`photo-label-${key}`);
+          const status = document.getElementById(`photo-status-${key}`);
+          if (label) label.innerText = 'Alterar Foto';
+          if (status) status.classList.remove('hidden');
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    function validatePhotos() {
+      let missing = [];
+      const current = getCurrentChecklist();
+      current.categories.forEach((sec, sIdx) => {
+        sec.items.forEach((item, iIdx) => {
+          const key = `${sIdx}-${iIdx}`;
+          if (item.requirePhoto && !attachedPhotos[key]) {
+            const isNc = customAnswers[key] === 'nao-conforme';
+            const isOm = customAnswers[key] === 'abrir';
+            if (isNc || isOm) missing.push(item.title);
+          }
+        });
+      });
+      return missing;
     }
 
     initApp();
