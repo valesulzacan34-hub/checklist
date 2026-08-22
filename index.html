@@ -496,8 +496,6 @@
         <button onclick="closeMaintenanceResolutionModal()" class="font-bold text-stone-300 hover:text-white text-base">✕</button>
       </div>
       <input type="hidden" id="res-action-id">
-      <input type="hidden" id="res-action-title">
-      <input type="hidden" id="res-action-unit">
       
       <div class="space-y-3 max-h-[65vh] overflow-y-auto pr-1">
         <div>
@@ -1010,19 +1008,16 @@
     let warrantyRecords = JSON.parse(localStorage.getItem("CB_LOCAL_WARRANTY_RECORDS")) || [];
     let readNotifications = JSON.parse(localStorage.getItem("CB_READ_NOTIFICATIONS")) || {};
     let unreadChatMessages = JSON.parse(localStorage.getItem("CB_UNREAD_CHAT_MSGS")) || {};
+    let techniciansList = JSON.parse(localStorage.getItem("CB_LOCAL_TECHNICIANS")) || [
+      { name: "Luiz Parahyba (Seguro)", service: "Sinistros e Emergências", region: "Geral", phone: "(12) 99121-5466" }
+    ];
     
-    // Limpeza automática de dados existentes da loja "CB Vale Sul Shopping" caso ainda existam
     let savedReports = JSON.parse(localStorage.getItem("CB_LOCAL_REPORTS")) || [];
-    let initialReportsCount = savedReports.length;
     savedReports = savedReports.filter(r => !r.unit || !r.unit.toLowerCase().includes("vale sul"));
-    if (savedReports.length !== initialReportsCount) {
-      localStorage.setItem("CB_LOCAL_REPORTS", JSON.stringify(savedReports));
-    }
-    let initialManualCount = manualActionsList.length;
+    localStorage.setItem("CB_LOCAL_REPORTS", JSON.stringify(savedReports));
+    
     manualActionsList = manualActionsList.filter(a => !a.unit || !a.unit.toLowerCase().includes("vale sul"));
-    if (manualActionsList.length !== initialManualCount) {
-      localStorage.setItem("CB_LOCAL_MANUAL_ACTIONS", JSON.stringify(manualActionsList));
-    }
+    localStorage.setItem("CB_LOCAL_MANUAL_ACTIONS", JSON.stringify(manualActionsList));
 
     const centervalePresetActions = [
       { id: "cv_pre_1", unit: "CB Shopping CenterVale", title: "Fachada da loja, luzes, letreiros, Leds", action: "Solicitar manutenção de led do teto do salão (Falar com Thiago ou Emerson)", date: "28/08/2026", rawDate: "2026-08-28", type: "nc" },
@@ -1204,6 +1199,14 @@
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       }).catch(err => console.error(err));
     }
+
+    let attachedPhotos = JSON.parse(localStorage.getItem("CB_DRAFT_PHOTOS")) || {};
+    let actionPlans = JSON.parse(localStorage.getItem("CB_DRAFT_PLANS")) || {};
+    let customAnswers = JSON.parse(localStorage.getItem("CB_DRAFT_ANSWERS")) || {};
+    let maintenanceOrders = JSON.parse(localStorage.getItem("CB_DRAFT_MAINT")) || {};
+    let draftStartTime = localStorage.getItem("CB_DRAFT_START_TIME") || null;
+
+    let currentActionsTab = 'pending';
 
     function saveDraft() {
       localStorage.setItem("CB_DRAFT_PHOTOS", JSON.stringify(attachedPhotos));
@@ -2034,12 +2037,16 @@
 
       const processAndSave = (photoUrl = '') => {
         const newId = "manual_act_" + Date.now();
+        let formattedDate = date;
+        if (date.includes('-')) {
+          formattedDate = date.split('-').reverse().join('/');
+        }
         const actObj = {
           id: newId,
           unit,
           title,
           action: desc,
-          date: date.split('-').reverse().join('/'),
+          date: formattedDate,
           rawDate: date,
           type: type,
           photoUrl: photoUrl,
@@ -2078,14 +2085,12 @@
       updateNotificationBadgeCount();
     }
 
-    // Modal e Lógica para Encerramento de Manutenção & Garantia
     let pendingResolutionActionId = null;
 
     function openMaintenanceResolutionModal(actionId) {
       pendingResolutionActionId = actionId;
       document.getElementById("res-action-id").value = actionId;
       
-      // Limpa formulário
       document.getElementById("res-empresa").value = "";
       document.getElementById("res-contato").value = "";
       document.getElementById("res-equipamento").value = "";
@@ -2097,7 +2102,6 @@
       const nfInput = document.getElementById("res-nf-file");
       if (nfInput) nfInput.value = "";
 
-      // Popula select de prestadores cadastrados
       const select = document.getElementById("res-prestador-select");
       select.innerHTML = `<option value="">-- Selecionar Prestador Existente ou Inserir Novo --</option>`;
       techniciansList.forEach((t, idx) => {
@@ -2113,7 +2117,7 @@
     function closeMaintenanceResolutionModal() {
       document.getElementById("maintenance-resolution-modal").classList.add("hidden");
       pendingResolutionActionId = null;
-      renderCentralizedActions(); // Restaura status visual caso cancele
+      renderCentralizedActions();
     }
 
     function onSelectPrestadorChange() {
@@ -2141,7 +2145,6 @@
 
       if (!empresa || !equipamento) return alert("Preencha ao menos o nome da empresa/prestador e o equipamento.");
 
-      // Sugestão e inclusão automática na base de prestadores se for um novo contato
       let existingTech = techniciansList.find(t => t.name.toLowerCase() === empresa.toLowerCase());
       if (!existingTech) {
         if (confirm(`A empresa "${empresa}" não está na sua base de Manutenção. Deseja salvá-la automaticamente como novo prestador?`)) {
@@ -2160,7 +2163,6 @@
         const now = new Date();
         const dataConclusao = now.toLocaleDateString('pt-BR');
         
-        // Calcula data final da garantia (maior prazo entre mão de obra e peças)
         const maxDias = Math.max(gMao, gPecas);
         const garantiaFimDate = new Date(now.getTime() + (maxDias * 24 * 60 * 60 * 1000));
         const dataGarantiaFim = garantiaFimDate.toLocaleDateString('pt-BR');
@@ -2184,7 +2186,6 @@
         warrantyRecords.push(warrantyObj);
         localStorage.setItem("CB_LOCAL_WARRANTY_RECORDS", JSON.stringify(warrantyRecords));
 
-        // Atualiza status da ação para Concluído
         actionCustomStatus[actionId] = 'Concluído';
         localStorage.setItem("CB_LOCAL_CUSTOM_STATUS", JSON.stringify(actionCustomStatus));
         syncConfigToCloud();
