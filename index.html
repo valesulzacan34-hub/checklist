@@ -27,8 +27,9 @@
     .event-card { cursor: grab; }
     .event-card:active { cursor: grabbing; }
     .resize-handle { height: 4px; width: 100%; cursor: ns-resize; position: absolute; bottom: 0; left: 0; }
+    /* Ajuste para Web: Ocupar todo o espaço lateral fluidamente em telas grandes */
     @media (min-width: 768px) {
-      .app-main, .responsive-container { max-width: 900px !important; margin: 0 auto; }
+      .app-main, .responsive-container { max-width: 100% !important; width: 100% !important; margin: 0 auto; padding-left: 2rem; padding-right: 2rem; }
     }
     @media (max-width: 767px) {
       .app-main, .responsive-container { max-width: 100% !important; padding-left: 0.75rem; padding-right: 0.75rem; }
@@ -135,7 +136,7 @@
   </div>
 
   <header class="bg-cb-bordo text-white sticky top-0 z-30 shadow-lg border-b-2 border-cb-gold">
-    <div class="max-w-4xl mx-auto px-4 py-2.5 flex justify-between items-center">
+    <div class="w-full px-6 py-2.5 flex justify-between items-center">
       <div class="flex items-center gap-2.5">
         <button onclick="toggleSidebar()" class="p-1.5 bg-cb-bordo-dark border border-cb-gold/40 rounded-lg text-stone-200 hover:text-white transition text-sm font-bold">
           ☰
@@ -170,15 +171,15 @@
     </div>
   </header>
 
-  <div class="app-main p-4">
+  <div class="app-main p-6 w-full">
     <!-- MÓDULO 1: CHECKLISTS -->
-    <div id="module-checklists-container" class="responsive-container">
+    <div id="module-checklists-container" class="responsive-container w-full">
       <main id="checklist-home-view" class="space-y-4">
         <div class="bg-white p-5 rounded-xl shadow-sm border border-stone-200 space-y-4">
           <h2 class="font-bold text-cb-bordo text-xs uppercase tracking-wider">Selecione o Checklist</h2>
           <div class="space-y-3">
             <select id="home-checklist-select" class="w-full text-xs font-semibold bg-stone-50 border rounded-lg p-3 focus:outline-none focus:ring-1 focus:ring-cb-bordo text-stone-800"></select>
-            <button type="button" onclick="startSelectedChecklist()" class="w-full py-3 bg-cb-bordo hover:bg-cb-bordo-dark text-white font-bold text-xs rounded-lg transition uppercase tracking-wider border border-cb-gold/40 shadow-md">
+            <button type="button" onclick="startSelectedChecklist()" class="w-full py-3 bg-cb-bordo hover:bg-cb-bordo-dark text-white font-bold text-xs rounded-lg transition uppercase tracking-wider border border-cb-gold/40 shadow-md cursor-pointer">
               Iniciar Checklist
             </button>
           </div>
@@ -292,7 +293,7 @@
     </div>
 
     <!-- MÓDULO 2: PLANOS DE AÇÃO & MANUTENÇÃO -->
-    <main id="module-actions-container" class="responsive-container space-y-4 hidden">
+    <main id="module-actions-container" class="responsive-container space-y-4 hidden w-full">
       <div class="bg-white p-4 rounded-xl shadow-sm border border-stone-200 space-y-3">
         <div class="flex justify-between items-center flex-wrap gap-2">
           <div>
@@ -372,7 +373,7 @@
     </main>
 
     <!-- MÓDULO 3: TÉCNICOS & PRESTADORES DE SERVIÇO -->
-    <main id="module-technicians-container" class="responsive-container space-y-4 hidden">
+    <main id="module-technicians-container" class="responsive-container space-y-4 hidden w-full">
       <div class="bg-white p-4 rounded-xl shadow-sm border border-stone-200 space-y-3">
         <div class="flex justify-between items-center flex-wrap gap-2">
           <div>
@@ -412,7 +413,7 @@
     </main>
 
     <!-- MÓDULO 4: AGENDA / CALENDÁRIO COM IA E DRAG & DROP -->
-    <main id="module-agenda-container" class="responsive-container space-y-4 hidden">
+    <main id="module-agenda-container" class="responsive-container space-y-4 hidden w-full">
       <div class="bg-gradient-to-r from-cb-bordo to-rose-900 p-4 rounded-xl shadow-lg border border-cb-gold/30 space-y-2">
         <h3 class="text-white font-bold text-xs flex items-center gap-2">🤖 Agendamento Inteligente (IA)</h3>
         <div class="flex gap-2">
@@ -505,6 +506,10 @@
               <option value="avulso">Avulso Geral</option>
             </select>
           </div>
+        </div>
+        <div>
+          <label class="block font-bold text-stone-600 mb-1">Anexar Imagem (Opcional):</label>
+          <input type="file" id="manual-action-file" accept="image/*" class="w-full border rounded p-1.5 bg-stone-50 text-xs">
         </div>
         <button onclick="saveManualAction()" class="w-full py-2.5 bg-cb-bordo hover:bg-cb-bordo-dark text-white font-bold rounded uppercase">Criar Plano de Ação</button>
       </div>
@@ -762,9 +767,17 @@
       <div id="tab-content-models" class="p-5 space-y-5 overflow-y-auto flex-1 bg-stone-50 text-sm">
         <div class="bg-white p-4 rounded-xl border border-stone-200 space-y-3 shadow-sm">
           <span class="block text-xs font-bold text-cb-bordo uppercase tracking-wider">Novo Modelo</span>
-          <div class="flex gap-2">
-            <input type="text" id="new-checklist-name" placeholder="Ex: Fechamento" class="flex-1 text-xs border rounded-lg p-2.5 bg-stone-50">
-            <button onclick="createNewChecklistType()" class="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-lg transition">+ Criar</button>
+          <div class="space-y-2">
+            <input type="text" id="new-checklist-name" placeholder="Ex: Fechamento" class="w-full text-xs border rounded-lg p-2.5 bg-stone-50">
+            <div id="new-checklist-roles-box" class="space-y-1">
+              <label class="block font-bold text-stone-600 text-xs">Vincular Perfis com Acesso a este Checklist:</label>
+              <div class="flex gap-4 text-xs font-semibold">
+                <label><input type="checkbox" name="new-chk-role" value="admin" checked> Admin</label>
+                <label><input type="checkbox" name="new-chk-role" value="gerente" checked> Gerentes</label>
+                <label><input type="checkbox" name="new-chk-role" value="operador" checked> Operadores</label>
+              </div>
+            </div>
+            <button onclick="createNewChecklistType()" class="w-full py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-lg transition">+ Criar Modelo</button>
           </div>
         </div>
         <div class="bg-white p-4 rounded-xl border border-stone-200 space-y-3 shadow-sm">
@@ -939,6 +952,7 @@
       {
         id: "cb-supervisao",
         name: "Casa Bauducco - Rota de Supervisão",
+        roles: ["admin", "gerente", "operador"],
         categories: [
           {
             category: "1. Estrutura, Salão & Visual",
@@ -1441,6 +1455,7 @@
         updateLogos();
         openModulesScreen();
       } else {
+        document.getElementById("login-error").classList.add("hidden");
         document.getElementById("login-error").classList.remove("hidden");
       }
     }
@@ -1576,7 +1591,19 @@
       const select = document.getElementById("home-checklist-select");
       if (!select) return;
       select.innerHTML = "";
-      allChecklists.forEach(c => {
+      
+      // Filtra checklists disponíveis para o usuário atual conforme a role (admin, gerente, operador)
+      let allowedChecklists = allChecklists.filter(c => {
+        if (!c.roles || c.roles.length === 0) return true;
+        return c.roles.includes(currentUser?.role);
+      });
+
+      if (allowedChecklists.length === 0) {
+        select.innerHTML = `<option value="">Nenhum checklist disponível para seu perfil</option>`;
+        return;
+      }
+
+      allowedChecklists.forEach(c => {
         const opt = document.createElement("option");
         opt.value = c.id;
         opt.innerText = c.name;
@@ -1587,12 +1614,11 @@
 
     function startSelectedChecklist() {
       const select = document.getElementById("home-checklist-select");
-      if (!select || !select.value) return alert("Selecione um checklist.");
+      if (!select || !select.value) return alert("Selecione um checklist válido.");
       activeChecklistId = select.value;
       localStorage.setItem("CB_LOCAL_ACTIVE_ID", activeChecklistId);
       document.getElementById("active-model-title-badge").innerText = getCurrentChecklist().name;
       
-      // Inicializa nova auditoria mantendo rascunhos salvos seguros se houver
       customAnswers = {};
       attachedPhotos = {};
       actionPlans = {};
@@ -1829,6 +1855,8 @@
       document.getElementById("manual-action-title").value = "";
       document.getElementById("manual-action-desc").value = "";
       document.getElementById("manual-action-date").value = new Date().toISOString().split('T')[0];
+      const fileInput = document.getElementById("manual-action-file");
+      if (fileInput) fileInput.value = "";
       toggleNewActionModal();
     }
 
@@ -1838,28 +1866,42 @@
       const desc = document.getElementById("manual-action-desc").value.trim();
       const date = document.getElementById("manual-action-date").value;
       const type = document.getElementById("manual-action-type").value;
+      const fileInput = document.getElementById("manual-action-file");
 
       if (!title || !desc || !date) return alert("Preencha todos os campos do plano de ação.");
 
-      const newId = "manual_act_" + Date.now();
-      const actObj = {
-        id: newId,
-        unit,
-        title,
-        action: desc,
-        date: date.split('-').reverse().join('/'),
-        rawDate: date,
-        type: type,
-        createdAt: new Date().toISOString()
+      const processAndSave = (photoUrl = '') => {
+        const newId = "manual_act_" + Date.now();
+        const actObj = {
+          id: newId,
+          unit,
+          title,
+          action: desc,
+          date: date.split('-').reverse().join('/'),
+          rawDate: date,
+          type: type,
+          photoUrl: photoUrl,
+          createdAt: new Date().toISOString()
+        };
+
+        manualActionsList.push(actObj);
+        localStorage.setItem("CB_LOCAL_MANUAL_ACTIONS", JSON.stringify(manualActionsList));
+        syncConfigToCloud();
+        toggleNewActionModal();
+        renderCentralizedActions();
+        renderAgendaCalendar();
+        alert("Plano de ação criado com sucesso!");
       };
 
-      manualActionsList.push(actObj);
-      localStorage.setItem("CB_LOCAL_MANUAL_ACTIONS", JSON.stringify(manualActionsList));
-      syncConfigToCloud();
-      toggleNewActionModal();
-      renderCentralizedActions();
-      renderAgendaCalendar();
-      alert("Plano de ação criado com sucesso!");
+      if (fileInput && fileInput.files && fileInput.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          processAndSave(e.target.result);
+        };
+        reader.readAsDataURL(fileInput.files[0]);
+      } else {
+        processAndSave('');
+      }
     }
 
     function updateActionStatus(actionId, newStatus) {
@@ -2381,14 +2423,19 @@
           <span>⚠️ <strong>Atenção:</strong> Fazer 3 orçamentos e enviar para aprovação.</span>
         </div>` : '';
 
+      let photoUrlDisplay = '';
       if (isManual) {
         const manualAct = manualActionsList.find(a => a.id === chatId);
         if (manualAct) {
           document.getElementById("chat-modal-title").innerText = manualAct.title;
           document.getElementById("chat-modal-subtitle").innerText = `${manualAct.unit} • Prazo: ${manualAct.date}`;
+          if (manualAct.photoUrl) {
+            photoUrlDisplay = `<div class="mt-2"><span class="block font-bold mb-1">Foto anexada:</span><img src="${manualAct.photoUrl}" onclick="openImageViewer('${manualAct.photoUrl}')" class="h-28 w-auto rounded-lg border object-cover cursor-pointer hover:opacity-90"></div>`;
+          }
           detailsContainer.innerHTML = `
             ${orientacaoManutencao}
             <div><strong>Descrição / Ação:</strong> ${manualAct.action}</div>
+            ${photoUrlDisplay}
           `;
         }
       } else {
@@ -2399,10 +2446,14 @@
             document.getElementById("chat-modal-title").innerText = type === 'nc' ? itemData.title : `Manutenção: ${itemData.equipment}`;
             document.getElementById("chat-modal-subtitle").innerText = `${rep.unit} • Prazo: ${itemData.date}`;
             
+            if (itemData.photoUrl) {
+              photoUrlDisplay = `<div class="mt-2"><span class="block font-bold mb-1">Foto anexada no Checklist:</span><img src="${itemData.photoUrl}" onclick="openImageViewer('${itemData.photoUrl}')" class="h-28 w-auto rounded-lg border object-cover cursor-pointer hover:opacity-90"></div>`;
+            }
+
             detailsContainer.innerHTML = `
               ${orientacaoManutencao}
               <div><strong>Descrição / Ação:</strong> ${itemData.action || itemData.defect || 'Não especificada'}</div>
-              ${itemData.photoUrl ? `<div class="mt-2"><span class="block font-bold mb-1">Foto anexada no Checklist:</span><img src="${itemData.photoUrl}" onclick="openImageViewer('${itemData.photoUrl}')" class="h-28 w-auto rounded-lg border object-cover cursor-pointer hover:opacity-90"></div>` : ''}
+              ${photoUrlDisplay}
             `;
           }
         }
@@ -3121,6 +3172,7 @@
 
     // Configurações Gerais de Checklists
     function toggleConfigModal() {
+      if (currentUser?.role === 'operador') return alert("Operadores não possuem permissão para editar checklists.");
       const modal = document.getElementById("config-modal");
       modal.classList.toggle("hidden");
       if (!modal.classList.contains("hidden")) {
@@ -3151,13 +3203,17 @@
       const container = document.getElementById("models-list-container");
       container.innerHTML = "";
       allChecklists.forEach((c, idx) => {
+        let rolesStr = c.roles ? c.roles.join(", ") : "todos";
         const div = document.createElement("div");
         div.className = "flex justify-between items-center p-2.5 bg-stone-50 rounded border text-xs";
         div.innerHTML = `
-          <span class="font-bold">${c.name}</span>
+          <div>
+            <span class="font-bold block">${c.name}</span>
+            <span class="text-[10px] text-stone-500">Acessos: [${rolesStr}]</span>
+          </div>
           <div class="flex gap-2">
-            <button onclick="editChecklistName(${idx})" class="text-blue-600 font-bold underline">Editar Nome</button>
-            <button onclick="activeChecklistId='${c.id}'; switchConfigTab('items');" class="text-cb-bordo font-bold underline">Seções/Perguntas</button>
+            <button onclick="editChecklistName(${idx})" class="text-blue-600 font-bold underline">Editar</button>
+            <button onclick="activeChecklistId='${c.id}'; switchConfigTab('items');" class="text-cb-bordo font-bold underline">Perguntas</button>
             ${allChecklists.length > 1 ? `<button onclick="deleteModel('${c.id}')" class="text-rose-600 font-bold">Excluir</button>` : ''}
           </div>`;
         container.appendChild(div);
@@ -3387,13 +3443,30 @@
     function createNewChecklistType() {
       const name = document.getElementById("new-checklist-name").value.trim();
       if (!name) return alert("Nome vazio.");
+      
+      let selectedRoles = [];
+      document.querySelectorAll('input[name="new-chk-role"]:checked').forEach(cb => {
+        selectedRoles.push(cb.value);
+      });
+
+      // Validação de permissões conforme regra de acesso solicitada
+      if (currentUser?.role === 'gerente') {
+        // Gerentes podem vincular a si próprio ('gerente') ou operadores ('operador')
+        selectedRoles = selectedRoles.filter(r => r === 'gerente' || r === 'operador');
+      } else if (currentUser?.role === 'operador') {
+        return alert("Operadores não podem criar ou gerenciar modelos de checklist.");
+      }
+
       const newId = "checklist-" + Date.now();
-      allChecklists.push({ id: newId, name: name, categories: [{ category: "1. Itens Gerais", items: [] }] });
+      allChecklists.push({ id: newId, name: name, roles: selectedRoles, categories: [{ category: "1. Itens Gerais", items: [] }] });
       activeChecklistId = newId;
       localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
       localStorage.setItem("CB_LOCAL_ACTIVE_ID", activeChecklistId);
-      syncConfigToCloud(); document.getElementById("new-checklist-name").value = "";
-      renderModelsListInConfig(); switchConfigTab('items'); alert("Modelo criado com sucesso!");
+      syncConfigToCloud(); 
+      document.getElementById("new-checklist-name").value = "";
+      renderModelsListInConfig(); 
+      switchConfigTab('items'); 
+      alert("Modelo criado com sucesso!");
     }
 
     function addNewCategory() {
@@ -3433,6 +3506,222 @@
         clearDraft();
         renderChecklist();
       }
+    }
+
+    function initApp() {
+      updateLogos(); renderPresetUnits(); updateHistoryBadge(); setupCloudListeners();
+      
+      if (!currentUser) {
+        document.getElementById("login-screen").classList.remove("hidden");
+        document.getElementById("modules-screen").classList.add("hidden");
+        return;
+      }
+      
+      document.getElementById("login-screen").classList.add("hidden");
+      document.getElementById("sidebar-user-name").innerText = `${currentUser.name} (${currentUser.role})`;
+      document.getElementById("supervisor-name").value = currentUser.name;
+      
+      if (currentUser.role === "admin" || currentUser.role === "gerente") {
+        document.getElementById("home-btn-config").classList.remove("hidden");
+        if (currentUser.role === "admin") {
+          document.getElementById("sidebar-btn-users").classList.remove("hidden");
+        } else {
+          document.getElementById("sidebar-btn-users").classList.add("hidden");
+        }
+      } else {
+        document.getElementById("sidebar-btn-users").classList.add("hidden");
+        document.getElementById("home-btn-config").classList.add("hidden");
+      }
+      
+      renderAgendaCalendar();
+      openModulesScreen();
+    }
+
+    function handleEvaluationChange(itemKey, value) {
+      customAnswers[itemKey] = value;
+      const planBox = document.getElementById(`plan-box-${itemKey}`);
+      if (value === "nao-conforme") planBox?.classList.remove("hidden");
+      else planBox?.classList.add("hidden");
+      calculateScore();
+      saveDraft();
+    }
+
+    function handleMaintenanceChange(itemKey, value) {
+      customAnswers[itemKey] = value;
+      const omBox = document.getElementById(`maintenance-box-${itemKey}`);
+      if (value === "abrir") omBox?.classList.remove("hidden");
+      else omBox?.classList.add("hidden");
+      calculateScore();
+      saveDraft();
+    }
+
+    function updateMaintenanceOrder(itemKey, field, val) {
+      if (!maintenanceOrders[itemKey]) maintenanceOrders[itemKey] = { equipment: '', action: '', date: '' };
+      maintenanceOrders[itemKey][field] = val;
+      saveDraft();
+    }
+
+    function setStarRating(itemKey, stars) {
+      customAnswers[itemKey] = stars;
+      for (let i = 1; i <= 5; i++) {
+        const starBtn = document.getElementById(`star-${itemKey}-${i}`);
+        if (starBtn) starBtn.className = `text-xl ${i <= stars ? 'text-amber-400 scale-110' : 'text-stone-300'}`;
+      }
+      const label = document.getElementById(`star-label-${itemKey}`);
+      if (label) label.innerText = `${stars} de 5`;
+      calculateScore();
+      saveDraft();
+    }
+
+    function updateTextInput(itemKey, val) {
+      customAnswers[itemKey] = val;
+      saveDraft();
+    }
+
+    function updateActionPlan(itemKey, field, val) {
+      if (!actionPlans[itemKey]) actionPlans[itemKey] = { action: '', date: '' };
+      actionPlans[itemKey][field] = val;
+      saveDraft();
+    }
+
+    function calculateScore() {
+      let totalQuestionsEvaluated = 0, pointsEarned = 0;
+      getCurrentChecklist().categories.forEach((sec, sIdx) => {
+        sec.items.forEach((item, iIdx) => {
+          const itemKey = `${sIdx}-${iIdx}`;
+          const itemType = item.type || "boolean";
+          let ans = customAnswers[itemKey];
+          if (itemType === "boolean" && ans) {
+            pointsEarned += (ans === "conforme" ? 1.0 : 0.0); totalQuestionsEvaluated += 1.0;
+          } else if (itemType === "maintenance" && ans) {
+            pointsEarned += (ans === "regular" ? 1.0 : 0.0); totalQuestionsEvaluated += 1.0;
+          } else if (itemType === "stars" && ans) {
+            let rating = parseInt(ans) || 0;
+            if (rating > 0) { pointsEarned += (rating / 5); totalQuestionsEvaluated += 1.0; }
+          }
+        });
+      });
+      const score = totalQuestionsEvaluated > 0 ? Math.round((pointsEarned / totalQuestionsEvaluated) * 100) : 100;
+      document.getElementById("score-display").innerText = score + "%";
+      document.getElementById("evaluated-count-display").innerText = `${Math.round(totalQuestionsEvaluated)} item(ns) avaliado(s)`;
+      return { score, total: Math.round(totalQuestionsEvaluated) };
+    }
+
+    function renderChecklist() {
+      const container = document.getElementById("checklist-container");
+      const current = getCurrentChecklist();
+      container.innerHTML = "";
+
+      current.categories.forEach((sec, sIdx) => {
+        if (sec.items.length === 0) return;
+        const secEl = document.createElement("div");
+        secEl.className = "bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden";
+        
+        let itemsHtml = sec.items.map((item, iIdx) => {
+          const itemKey = `${sIdx}-${iIdx}`;
+          const itemType = item.type || "boolean";
+          const photoData = attachedPhotos[itemKey];
+          const planData = actionPlans[itemKey] || { action: '', date: '' };
+          const omData = maintenanceOrders[itemKey] || { equipment: '', action: '', date: '' };
+          const savedAnswer = customAnswers[itemKey];
+          let controlHtml = "";
+
+          if (itemType === "boolean") {
+            let isConf = savedAnswer === 'conforme' ? 'checked' : '';
+            let isNaoConf = savedAnswer === 'nao-conforme' ? 'checked' : '';
+            let isNa = savedAnswer === 'na' ? 'checked' : '';
+            let planHidden = savedAnswer === 'nao-conforme' ? '' : 'hidden';
+
+            controlHtml = `
+              <div class="flex gap-2 text-xs">
+                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="conforme" ${isConf} class="hidden peer" onchange="handleEvaluationChange('${itemKey}', 'conforme')"><div class="text-center py-2 rounded-md border peer-checked:bg-emerald-600 peer-checked:text-white font-bold">Sim</div></label>
+                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="nao-conforme" ${isNaoConf} class="hidden peer" onchange="handleEvaluationChange('${itemKey}', 'nao-conforme')"><div class="text-center py-2 rounded-md border peer-checked:bg-rose-700 peer-checked:text-white font-bold">Não</div></label>
+                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="na" ${isNa} class="hidden peer" onchange="handleEvaluationChange('${itemKey}', 'na')"><div class="text-center py-2 rounded-md border peer-checked:bg-stone-500 peer-checked:text-white font-bold">N/A</div></label>
+              </div>
+              <div id="plan-box-${itemKey}" class="${planHidden} p-3 bg-rose-50 border rounded-lg space-y-2 text-xs">
+                <span class="block font-bold text-rose-800 uppercase text-[10px]">⚠️ Plano de Ação</span>
+                <input type="text" value="${planData.action}" placeholder="Ação..." oninput="updateActionPlan('${itemKey}', 'action', this.value)" class="w-full border p-2 bg-white rounded">
+                <input type="date" value="${planData.date}" oninput="updateActionPlan('${itemKey}', 'date', this.value)" class="w-full border p-2 bg-white rounded">
+              </div>`;
+          } else if (itemType === "maintenance") {
+            let isAbrir = savedAnswer === 'abrir' ? 'checked' : '';
+            let isReg = savedAnswer === 'regular' ? 'checked' : '';
+            let isNa = savedAnswer === 'na' ? 'checked' : '';
+            let omHidden = savedAnswer === 'abrir' ? '' : 'hidden';
+
+            controlHtml = `
+              <div class="flex gap-2 text-xs">
+                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="abrir" ${isAbrir} class="hidden peer" onchange="handleMaintenanceChange('${itemKey}', 'abrir')"><div class="text-center py-2 rounded-md border peer-checked:bg-amber-600 peer-checked:text-white font-bold">Abrir</div></label>
+                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="regular" ${isReg} class="hidden peer" onchange="handleMaintenanceChange('${itemKey}', 'regular')"><div class="text-center py-2 rounded-md border peer-checked:bg-emerald-600 peer-checked:text-white font-bold">Regular / Ok</div></label>
+                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="na" ${isNa} class="hidden peer" onchange="handleMaintenanceChange('${itemKey}', 'na')"><div class="text-center py-2 rounded-md border peer-checked:bg-stone-500 peer-checked:text-white font-bold">N/A</div></label>
+              </div>
+              <div id="maintenance-box-${itemKey}" class="${omHidden} p-3 bg-amber-50 border rounded-lg space-y-2 text-xs">
+                <span class="block font-bold text-amber-900 uppercase text-[10px]">Abertura de Ordem de Manutenção</span>
+                <input type="text" value="${omData.equipment}" placeholder="Equipamento..." oninput="updateMaintenanceOrder('${itemKey}', 'equipment', this.value)" class="w-full border p-2 bg-white rounded">
+                <input type="text" value="${omData.action}" placeholder="Defeito..." oninput="updateMaintenanceOrder('${itemKey}', 'action', this.value)" class="w-full border p-2 bg-white rounded">
+                <input type="date" value="${omData.date}" oninput="updateMaintenanceOrder('${itemKey}', 'date', this.value)" class="w-full border p-2 bg-white rounded">
+              </div>`;
+          } else if (itemType === "stars") {
+            let currentStars = parseInt(savedAnswer) || 0;
+            let starsSpans = "";
+            for (let s = 1; s <= 5; s++) starsSpans += `<button type="button" id="star-${itemKey}-${s}" onclick="setStarRating('${itemKey}', ${s})" class="text-xl ${s <= currentStars ? 'text-amber-400' : 'text-stone-300'}">★</button>`;
+            controlHtml = `<div class="flex items-center justify-between bg-stone-50 p-2.5 rounded border"><div class="flex gap-2">${starsSpans}</div><span id="star-label-${itemKey}" class="text-xs font-bold">${currentStars ? currentStars + ' de 5' : 'Avalie'}</span></div>`;
+          } else if (itemType === "text") {
+            controlHtml = `<div><textarea rows="2" placeholder="Digite..." oninput="updateTextInput('${itemKey}', this.value)" class="w-full border p-2 text-xs bg-stone-50 rounded">${savedAnswer || ''}</textarea></div>`;
+          }
+
+          return `
+          <div class="p-3.5 border-t flex flex-col gap-2.5">
+            <div class="flex justify-between items-start gap-2"><span class="text-sm font-medium">${item.title}</span>${item.requirePhoto ? '<span class="text-[10px] bg-amber-50 text-amber-800 border px-1.5 rounded font-bold">Foto Obrigatória</span>' : ''}</div>
+            ${controlHtml}
+            <div class="flex items-center gap-2 pt-1">
+              <label class="cursor-pointer inline-flex items-center gap-1.5 text-xs font-semibold bg-cb-cream px-3 py-1.5 rounded border">
+                <span id="photo-label-${itemKey}">${photoData ? 'Alterar Foto' : 'Adicionar Foto'}</span>
+                <input type="file" accept="image/*" class="hidden" onchange="handlePhotoUpload(event, '${itemKey}')">
+              </label>
+              <span id="photo-status-${itemKey}" class="text-xs text-emerald-800 bg-emerald-50 px-2 py-1 rounded border font-medium ${photoData ? '' : 'hidden'}">✓ Foto Anexada</span>
+            </div>
+          </div>`;
+        }).join("");
+
+        secEl.innerHTML = `<div class="bg-cb-cream px-4 py-2.5 font-bold text-xs uppercase text-cb-bordo border-b"><span>${sec.category}</span></div><div>${itemsHtml}</div>`;
+        container.appendChild(secEl);
+      });
+
+      calculateScore();
+    }
+
+    function handlePhotoUpload(event, key) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          attachedPhotos[key] = e.target.result;
+          saveDraft();
+          
+          const label = document.getElementById(`photo-label-${key}`);
+          const status = document.getElementById(`photo-status-${key}`);
+          if (label) label.innerText = 'Alterar Foto';
+          if (status) status.classList.remove('hidden');
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    function validatePhotos() {
+      let missing = [];
+      const current = getCurrentChecklist();
+      current.categories.forEach((sec, sIdx) => {
+        sec.items.forEach((item, iIdx) => {
+          const key = `${sIdx}-${iIdx}`;
+          if (item.requirePhoto && !attachedPhotos[key]) {
+            const isNc = customAnswers[key] === 'nao-conforme';
+            const isOm = customAnswers[key] === 'abrir';
+            if (isNc || isOm) missing.push(item.title);
+          }
+        });
+      });
+      return missing;
     }
 
     initApp();
