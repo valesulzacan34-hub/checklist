@@ -37,6 +37,12 @@
 </head>
 <body class="bg-cb-cream text-stone-800 antialiased pb-36 font-sans">
 
+  <!-- Toast / Banner de Desfazer Exclusão -->
+  <div id="undo-toast" class="fixed bottom-16 right-4 bg-stone-900 text-white px-4 py-3 rounded-xl shadow-2xl z-[100] hidden flex items-center gap-3 text-xs border border-cb-gold/40">
+    <span id="undo-text">Item excluído.</span>
+    <button onclick="executeUndo()" class="bg-cb-gold text-cb-bordo font-bold px-2.5 py-1 rounded hover:bg-yellow-500 transition uppercase text-[10px]">Desfazer</button>
+  </div>
+
   <div id="cloud-sync-status" class="bg-stone-900 text-[10px] text-stone-300 px-3 py-1 flex justify-between items-center z-50">
     <span id="sync-indicator">🟢 Sincronizado na Nuvem</span>
     <span id="sync-time" class="text-stone-400 font-mono">Conectando...</span>
@@ -181,7 +187,7 @@
         <div class="grid grid-cols-1 gap-2.5">
           <button onclick="switchChecklistTab('history')" class="p-3.5 bg-white hover:bg-stone-50 border border-stone-200 rounded-xl shadow-sm transition flex justify-between items-center text-xs font-bold text-cb-bordo uppercase tracking-wider">
             <span>📂 Relatórios Salvos</span>
-            <span id="history-badge-count" class="bg-cb-gold text-cb-bordo-dark px-2 py-0.5 rounded-full text-[10px] font-black">0</span>
+            <span id="history-badge-count-main" class="bg-cb-gold text-cb-bordo-dark px-2 py-0.5 rounded-full text-[10px] font-black">0</span>
           </button>
           <button id="home-btn-config" onclick="toggleConfigModal()" class="hidden p-3.5 bg-white hover:bg-stone-50 border border-stone-200 rounded-xl shadow-sm transition text-left text-xs font-bold text-cb-bordo uppercase tracking-wider">
             ⚙️ Configurações Gerais dos Checklists
@@ -273,8 +279,15 @@
     <!-- MÓDULO 2: PLANOS DE AÇÃO & MANUTENÇÃO -->
     <main id="module-actions-container" class="responsive-container space-y-4 hidden">
       <div class="bg-white p-4 rounded-xl shadow-sm border border-stone-200 space-y-3">
-        <h2 class="font-bold text-cb-bordo text-xs uppercase tracking-wider">Agenda de Planos de Ação</h2>
-        <p class="text-xs text-stone-500">Acompanhamento e chat com os responsáveis</p>
+        <div class="flex justify-between items-center flex-wrap gap-2">
+          <div>
+            <h2 class="font-bold text-cb-bordo text-xs uppercase tracking-wider">Agenda de Planos de Ação</h2>
+            <p class="text-xs text-stone-500">Acompanhamento e chat com os responsáveis</p>
+          </div>
+          <button onclick="openNewActionModal()" class="px-3 py-2 bg-cb-bordo hover:bg-cb-bordo-dark text-white font-bold text-xs rounded-lg transition shadow-sm">
+            + Novo Plano de Ação
+          </button>
+        </div>
 
         <div class="grid grid-cols-3 gap-2 pt-1 text-center">
           <div class="bg-rose-50 border border-rose-200 p-2.5 rounded-xl shadow-sm">
@@ -321,6 +334,7 @@
               <option value="">Todos os Tipos</option>
               <option value="nc">Não Conformidade</option>
               <option value="om">Manutenção</option>
+              <option value="avulso">Avulso / Manual</option>
             </select>
           </div>
           <div>
@@ -344,7 +358,7 @@
             <h2 class="font-bold text-cb-bordo text-sm uppercase tracking-wider">🔧 Técnicos & Prestadores de Serviço</h2>
             <p class="text-xs text-stone-500">Contatos rápidos por região e especialidade</p>
           </div>
-          <button id="btn-add-tech" onclick="toggleTechModal()" class="hidden px-3 py-2 bg-cb-bordo text-white font-bold text-xs rounded-lg hover:bg-cb-bordo-dark transition">
+          <button id="btn-add-tech" onclick="openTechModal()" class="px-3 py-2 bg-cb-bordo text-white font-bold text-xs rounded-lg hover:bg-cb-bordo-dark transition">
             + Novo Contato
           </button>
         </div>
@@ -425,7 +439,84 @@
     </main>
   </div>
 
-  <!-- MODAIS DO SISTEMA -->
+  <!-- Modal de Novo Plano de Ação Manual -->
+  <div id="new-action-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-md rounded-2xl p-5 space-y-4 shadow-2xl border border-cb-gold/30 text-xs">
+      <div class="flex justify-between items-center border-b pb-2">
+        <h3 class="font-bold text-cb-bordo text-sm uppercase">Novo Plano de Ação Manual</h3>
+        <button onclick="toggleNewActionModal()" class="font-bold text-stone-400 hover:text-stone-700 text-base">✕</button>
+      </div>
+      <div class="space-y-3">
+        <div>
+          <label class="block font-bold text-stone-600 mb-1">Loja / Unidade:</label>
+          <select id="manual-action-unit" class="w-full border rounded p-2 bg-stone-50 font-semibold"></select>
+        </div>
+        <div>
+          <label class="block font-bold text-stone-600 mb-1">Título / Ocorrência:</label>
+          <input type="text" id="manual-action-title" placeholder="Ex: Organização do Estoque" class="w-full border rounded p-2 bg-stone-50 font-semibold">
+        </div>
+        <div>
+          <label class="block font-bold text-stone-600 mb-1">Ação a ser Realizada:</label>
+          <textarea id="manual-action-desc" rows="2" placeholder="Detalhes da ação..." class="w-full border rounded p-2 bg-stone-50"></textarea>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block font-bold text-stone-600 mb-1">Prazo de Conclusão:</label>
+            <input type="date" id="manual-action-date" class="w-full border rounded p-2 bg-stone-50 font-semibold">
+          </div>
+          <div>
+            <label class="block font-bold text-stone-600 mb-1">Tipo de Ação:</label>
+            <select id="manual-action-type" class="w-full border rounded p-2 bg-stone-50 font-semibold">
+              <option value="nc">Não Conformidade</option>
+              <option value="om">Manutenção</option>
+              <option value="avulso">Avulso Geral</option>
+            </select>
+          </div>
+        </div>
+        <button onclick="saveManualAction()" class="w-full py-2.5 bg-cb-bordo hover:bg-cb-bordo-dark text-white font-bold rounded uppercase">Criar Plano de Ação</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Técnicos / Prestadores -->
+  <div id="tech-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-md rounded-2xl p-5 space-y-4 shadow-2xl border border-cb-gold/30 text-xs">
+      <div class="flex justify-between items-center border-b pb-2">
+        <h3 id="tech-modal-title" class="font-bold text-cb-bordo text-sm uppercase">Novo Contato de Manutenção</h3>
+        <button onclick="toggleTechModal()" class="font-bold text-stone-400 hover:text-stone-700 text-base">✕</button>
+      </div>
+      <input type="hidden" id="tech-edit-idx">
+      <div class="space-y-3">
+        <div>
+          <label class="block font-bold text-stone-600 mb-1">Nome do Prestador / Empresa:</label>
+          <input type="text" id="tech-name" placeholder="Ex: Refrigeração Silva" class="w-full border rounded p-2 bg-stone-50 font-semibold">
+        </div>
+        <div>
+          <label class="block font-bold text-stone-600 mb-1">Serviço / Especialidade:</label>
+          <input type="text" id="tech-service" placeholder="Ex: Ar Condicionado, Máquina de Gelo" class="w-full border rounded p-2 bg-stone-50 font-semibold">
+        </div>
+        <div>
+          <label class="block font-bold text-stone-600 mb-1">Região:</label>
+          <select id="tech-region" class="w-full border rounded p-2 bg-stone-50 font-semibold">
+            <option value="São José dos Campos">São José dos Campos</option>
+            <option value="Mogi">Mogi</option>
+            <option value="São Paulo">São Paulo</option>
+            <option value="Geral">Geral (Todas Regiões)</option>
+          </select>
+        </div>
+        <div>
+          <label class="block font-bold text-stone-600 mb-1">Telefone / WhatsApp:</label>
+          <input type="text" id="tech-phone" placeholder="(00) 00000-0000" class="w-full border rounded p-2 bg-stone-50 font-semibold">
+        </div>
+        <div class="flex justify-between items-center pt-2">
+          <button id="btn-delete-tech" onclick="deleteTechnicianFromModal()" class="px-3 py-2 bg-rose-100 text-rose-800 font-bold rounded hidden">Excluir</button>
+          <button onclick="saveTechnician()" class="flex-1 py-2.5 bg-cb-bordo hover:bg-cb-bordo-dark text-white font-bold rounded uppercase ml-auto">Salvar Contato</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Eventos da Agenda -->
   <div id="event-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white w-full max-w-md rounded-2xl p-5 space-y-4 shadow-2xl border border-cb-gold/30 text-xs">
       <div class="flex justify-between items-center border-b pb-2">
@@ -488,6 +579,7 @@
     </div>
   </div>
 
+  <!-- Modal de Chat e Detalhes da Ação -->
   <div id="chat-modal" class="fixed inset-0 bg-black/70 z-50 hidden flex items-center justify-center p-2 sm:p-4">
     <div class="bg-white w-full max-w-lg h-[90vh] rounded-2xl flex flex-col shadow-2xl overflow-hidden border border-cb-gold/30">
       <div class="p-3.5 border-b border-stone-200 flex justify-between items-center bg-cb-bordo text-white">
@@ -514,6 +606,7 @@
     </div>
   </div>
 
+  <!-- Modal de Gerenciamento de Usuários e Unidades -->
   <div id="users-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white w-full max-w-xl h-[90vh] rounded-2xl flex flex-col shadow-2xl overflow-hidden border border-cb-gold/30">
       <div class="p-4 border-b border-stone-200 flex justify-between items-center bg-cb-cream">
@@ -619,6 +712,7 @@
     </div>
   </div>
 
+  <!-- Modal de Configuração Geral dos Checklists -->
   <div id="config-modal" class="fixed inset-0 bg-black/70 z-50 hidden flex items-center justify-center p-2 sm:p-4">
     <div class="bg-white w-full max-w-2xl h-[92vh] rounded-2xl flex flex-col shadow-2xl overflow-hidden border border-cb-gold/30">
       
@@ -692,6 +786,7 @@
     </div>
   </div>
 
+  <!-- Modal de Edição de Pergunta -->
   <div id="edit-question-modal" class="fixed inset-0 bg-black/60 z-[60] hidden flex items-center justify-center p-4">
     <div class="bg-white w-full max-w-md rounded-2xl p-5 space-y-4 shadow-2xl border text-xs">
       <div class="flex justify-between items-center border-b pb-2">
@@ -776,6 +871,7 @@
     let actionCustomStatus = JSON.parse(localStorage.getItem("CB_LOCAL_CUSTOM_STATUS")) || {};
     let actionCustomPriority = JSON.parse(localStorage.getItem("CB_LOCAL_CUSTOM_PRIORITY")) || {};
     let currentUser = JSON.parse(sessionStorage.getItem("CB_LOCAL_LOGGED_USER")) || null;
+    let manualActionsList = JSON.parse(localStorage.getItem("CB_LOCAL_MANUAL_ACTIONS")) || [];
     
     const defaultTemplates = [
       {
@@ -853,12 +949,15 @@
     let allChecklists = JSON.parse(localStorage.getItem("CB_LOCAL_CHECKLISTS")) || defaultTemplates;
     let activeChecklistId = localStorage.getItem("CB_LOCAL_ACTIVE_ID") || allChecklists[0].id;
     let savedReports = JSON.parse(localStorage.getItem("CB_LOCAL_REPORTS")) || [];
-    let techniciansList = JSON.parse(localStorage.getItem("CB_LOCAL_TECHNICIANS")) || [];
+    let techniciansList = JSON.parse(localStorage.getItem("CB_LOCAL_TECHNICIANS")) || [
+      { name: "Luiz Parahyba (Seguro)", service: "Sinistros e Emergências", region: "Geral", phone: "(12) 99121-5466" }
+    ];
     let calendarEvents = JSON.parse(localStorage.getItem("CB_LOCAL_CALENDAR_EVENTS")) || [];
 
     let currentCalendarDate = new Date();
     let currentCalendarView = 'month';
     let activeChatActionId = null;
+    let lastDeletedItem = null; // Suporte a Desfazer / Undo
     
     let attachedPhotos = JSON.parse(localStorage.getItem("CB_DRAFT_PHOTOS")) || {};
     let actionPlans = JSON.parse(localStorage.getItem("CB_DRAFT_PLANS")) || {};
@@ -894,6 +993,7 @@
           if (data.calendarEvents) { calendarEvents = data.calendarEvents; localStorage.setItem("CB_LOCAL_CALENDAR_EVENTS", JSON.stringify(calendarEvents)); }
           if (data.customStatus) { actionCustomStatus = data.customStatus; localStorage.setItem("CB_LOCAL_CUSTOM_STATUS", JSON.stringify(actionCustomStatus)); }
           if (data.customPriority) { actionCustomPriority = data.customPriority; localStorage.setItem("CB_LOCAL_CUSTOM_PRIORITY", JSON.stringify(actionCustomPriority)); }
+          if (data.manualActions) { manualActionsList = data.manualActions; localStorage.setItem("CB_LOCAL_MANUAL_ACTIONS", JSON.stringify(manualActionsList)); }
 
           renderPresetUnits();
           renderHomeChecklistSelect();
@@ -911,6 +1011,7 @@
         localStorage.setItem("CB_LOCAL_REPORTS", JSON.stringify(savedReports));
         updateHistoryBadge();
         renderCentralizedActions();
+        listenToAllChats();
       });
     }
 
@@ -926,6 +1027,7 @@
         calendarEvents: calendarEvents,
         customStatus: actionCustomStatus,
         customPriority: actionCustomPriority,
+        manualActions: manualActionsList,
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       }).catch(err => console.error(err));
     }
@@ -943,6 +1045,39 @@
       localStorage.removeItem("CB_DRAFT_PLANS");
       localStorage.removeItem("CB_DRAFT_ANSWERS");
       localStorage.removeItem("CB_DRAFT_MAINT");
+    }
+
+    function triggerUndoToast(desc, type, data) {
+      lastDeletedItem = { type, data };
+      document.getElementById("undo-text").innerText = `${desc} excluído.`;
+      const toast = document.getElementById("undo-toast");
+      toast.classList.remove("hidden");
+      setTimeout(() => { toast.classList.add("hidden"); }, 7000);
+    }
+
+    function executeUndo() {
+      if (!lastDeletedItem) return;
+      if (lastDeletedItem.type === 'report') {
+        saveReportToCloud(lastDeletedItem.data);
+      } else if (lastDeletedItem.type === 'event') {
+        calendarEvents.push(lastDeletedItem.data);
+        localStorage.setItem("CB_LOCAL_CALENDAR_EVENTS", JSON.stringify(calendarEvents));
+        syncConfigToCloud();
+        renderAgendaCalendar();
+      } else if (lastDeletedItem.type === 'tech') {
+        techniciansList.push(lastDeletedItem.data);
+        localStorage.setItem("CB_LOCAL_TECHNICIANS", JSON.stringify(techniciansList));
+        syncConfigToCloud();
+        renderTechniciansList();
+      } else if (lastDeletedItem.type === 'manualAction') {
+        manualActionsList.push(lastDeletedItem.data);
+        localStorage.setItem("CB_LOCAL_MANUAL_ACTIONS", JSON.stringify(manualActionsList));
+        syncConfigToCloud();
+        renderCentralizedActions();
+      }
+      document.getElementById("undo-toast").classList.add("hidden");
+      lastDeletedItem = null;
+      alert("Ação desfeita com sucesso!");
     }
 
     function toggleSidebar() {
@@ -972,6 +1107,7 @@
       const filterActionStore = document.getElementById("filter-action-store");
       const filterAgendaStore = document.getElementById("filter-agenda-store");
       const eventStoreSelect = document.getElementById("event-store");
+      const manualActUnit = document.getElementById("manual-action-unit");
       const listContainer = document.getElementById("admin-units-list");
       const allowedUnits = getAllowedUnits();
 
@@ -982,6 +1118,13 @@
           const opt = document.createElement("option"); opt.value = u; opt.innerText = u; select.appendChild(opt);
         });
         if (currentVal && allowedUnits.includes(currentVal)) select.value = currentVal;
+      }
+
+      if (manualActUnit) {
+        manualActUnit.innerHTML = "";
+        allowedUnits.forEach(u => {
+          const opt = document.createElement("option"); opt.value = u; opt.innerText = u; manualActUnit.appendChild(opt);
+        });
       }
 
       if (filterStore) {
@@ -1206,12 +1349,10 @@
         if (sideBtnUsers) sideBtnUsers.classList.remove("hidden");
         if (sideBtnConfig) sideBtnConfig.classList.remove("hidden");
         if (homeBtnConfig) homeBtnConfig.classList.remove("hidden");
-        document.getElementById("btn-add-tech")?.classList.remove("hidden");
       } else {
         if (sideBtnUsers) sideBtnUsers.classList.add("hidden");
         if (sideBtnConfig) sideBtnConfig.classList.add("hidden");
         if (homeBtnConfig) homeBtnConfig.classList.add("hidden");
-        document.getElementById("btn-add-tech")?.classList.add("hidden");
       }
 
       checklistsMod.classList.add("hidden");
@@ -1298,8 +1439,11 @@
     }
 
     function updateHistoryBadge() {
-      const badge = document.getElementById("history-badge-count");
-      if (badge) badge.innerText = savedReports.length;
+      const count = savedReports.length;
+      const b1 = document.getElementById("history-badge-count");
+      const b2 = document.getElementById("history-badge-count-main");
+      if (b1) b1.innerText = count;
+      if (b2) b2.innerText = count;
       updateNotificationBadgeCount();
     }
 
@@ -1368,12 +1512,14 @@
     }
 
     function deleteReportFromHistory(docId) {
-      if (confirm("Excluir relatório?")) {
+      if (confirm("Deseja realmente excluir este relatório?")) {
+        const itemToDelete = savedReports.find(r => r.id === docId);
         savedReports = savedReports.filter(r => r.id !== docId);
         localStorage.setItem("CB_LOCAL_REPORTS", JSON.stringify(savedReports));
         if (isFirebaseReady && docId) db.collection("reports").doc(docId).delete();
         renderHistoryList();
         updateNotificationBadgeCount();
+        triggerUndoToast("Relatório", "report", itemToDelete);
       }
     }
 
@@ -1477,6 +1623,47 @@
       renderCentralizedActions();
     }
 
+    function toggleNewActionModal() {
+      document.getElementById("new-action-modal").classList.toggle("hidden");
+    }
+
+    function openNewActionModal() {
+      renderPresetUnits();
+      document.getElementById("manual-action-title").value = "";
+      document.getElementById("manual-action-desc").value = "";
+      document.getElementById("manual-action-date").value = new Date().toISOString().split('T')[0];
+      toggleNewActionModal();
+    }
+
+    function saveManualAction() {
+      const unit = document.getElementById("manual-action-unit").value;
+      const title = document.getElementById("manual-action-title").value.trim();
+      const desc = document.getElementById("manual-action-desc").value.trim();
+      const date = document.getElementById("manual-action-date").value;
+      const type = document.getElementById("manual-action-type").value;
+
+      if (!title || !desc || !date) return alert("Preencha todos os campos do plano de ação.");
+
+      const newId = "manual_act_" + Date.now();
+      const actObj = {
+        id: newId,
+        unit,
+        title,
+        action: desc,
+        date: date.split('-').reverse().join('/'),
+        rawDate: date,
+        type: type,
+        createdAt: new Date().toISOString()
+      };
+
+      manualActionsList.push(actObj);
+      localStorage.setItem("CB_LOCAL_MANUAL_ACTIONS", JSON.stringify(manualActionsList));
+      syncConfigToCloud();
+      toggleNewActionModal();
+      renderCentralizedActions();
+      alert("Plano de ação criado com sucesso!");
+    }
+
     function updateActionStatus(actionId, newStatus) {
       actionCustomStatus[actionId] = newStatus;
       localStorage.setItem("CB_LOCAL_CUSTOM_STATUS", JSON.stringify(actionCustomStatus));
@@ -1501,10 +1688,19 @@
         rep.nonConformities?.forEach((nc, i) => {
           let actId = `${rep.id}_nc_${i}`;
           let status = actionCustomStatus[actId] || 'Pendente';
-          if (!status.toLowerCase().includes('concluído')) {
-            unreadCount++;
-          }
+          if (!status.toLowerCase().includes('concluído')) unreadCount++;
         });
+        rep.maintenanceOrders?.forEach((om, i) => {
+          let actId = `${rep.id}_om_${i}`;
+          let status = actionCustomStatus[actId] || 'Pendente';
+          if (!status.toLowerCase().includes('concluído')) unreadCount++;
+        });
+      });
+
+      manualActionsList.forEach(act => {
+        if (!allowedUnits.includes(act.unit)) return;
+        let status = actionCustomStatus[act.id] || 'Pendente';
+        if (!status.toLowerCase().includes('concluído')) unreadCount++;
       });
 
       const badge = document.getElementById("global-notification-dot");
@@ -1539,6 +1735,21 @@
               unreadList.push({ unit: rep.unit, title: nc.title, date: nc.date || 'Indefinido', chatId: actId, reportId: rep.id, type: 'nc', index: i });
             }
           });
+          rep.maintenanceOrders?.forEach((om, i) => {
+            let actId = `${rep.id}_om_${i}`;
+            let status = actionCustomStatus[actId] || 'Pendente';
+            if (!status.toLowerCase().includes('concluído')) {
+              unreadList.push({ unit: rep.unit, title: `Manutenção: ${om.equipment}`, date: om.date || 'Indefinido', chatId: actId, reportId: rep.id, type: 'om', index: i });
+            }
+          });
+        });
+
+        manualActionsList.forEach(act => {
+          if (!allowedUnits.includes(act.unit)) return;
+          let status = actionCustomStatus[act.id] || 'Pendente';
+          if (!status.toLowerCase().includes('concluído')) {
+            unreadList.push({ unit: act.unit, title: act.title, date: act.date, chatId: act.id, reportId: null, type: act.type, index: 0, isManual: true });
+          }
         });
 
         countBadge.innerText = unreadList.length;
@@ -1554,7 +1765,7 @@
           div.onclick = () => {
             dropdown.classList.add("hidden");
             selectModule('actions');
-            openChatModal(item.chatId, item.reportId, item.type, item.index);
+            openChatModal(item.chatId, item.reportId, item.type, item.index, item.isManual);
           };
           div.innerHTML = `
             <div class="font-bold text-cb-bordo uppercase text-[11px]">${item.unit}</div>
@@ -1572,6 +1783,39 @@
       }
     };
 
+    function listenToAllChats() {
+      if (!isFirebaseReady) return;
+      let allowedUnits = getAllowedUnits();
+      let allChatIds = [];
+
+      savedReports.forEach(rep => {
+        if (!allowedUnits.includes(rep.unit)) return;
+        rep.nonConformities?.forEach((nc, i) => allChatIds.push(`${rep.id}_nc_${i}`));
+        rep.maintenanceOrders?.forEach((om, i) => allChatIds.push(`${rep.id}_om_${i}`));
+      });
+
+      manualActionsList.forEach(act => {
+        if (allowedUnits.includes(act.unit)) allChatIds.push(act.id);
+      });
+
+      allChatIds.forEach(chatId => {
+        db.collection("chats").doc(chatId).collection("messages")
+          .where("seen", "==", false)
+          .onSnapshot(snapshot => {
+            let hasUnread = false;
+            snapshot.forEach(doc => {
+              let m = doc.data();
+              if (m.sender !== currentUser?.name) hasUnread = true;
+            });
+            const dot = document.getElementById(`chat-dot-${chatId}`);
+            if (dot) {
+              if (hasUnread) dot.classList.remove("hidden");
+              else dot.classList.add("hidden");
+            }
+          });
+      });
+    }
+
     function renderCentralizedActions() {
       const container = document.getElementById("centralized-actions-list");
       if (!container) return;
@@ -1588,9 +1832,7 @@
       if (statusSelect && statusSelect.options.length <= 1) {
         actionStatuses.forEach(st => {
           let opt = document.createElement("option");
-          opt.value = st.name;
-          opt.innerText = st.name;
-          statusSelect.appendChild(opt);
+          opt.value = st.name; opt.innerText = st.name; statusSelect.appendChild(opt);
         });
         statusSelect.value = statusFilter;
       }
@@ -1599,9 +1841,7 @@
       if (prioritySelect && prioritySelect.options.length <= 1) {
         actionPriorities.forEach(pr => {
           let opt = document.createElement("option");
-          opt.value = pr.name;
-          opt.innerText = pr.name;
-          prioritySelect.appendChild(opt);
+          opt.value = pr.name; opt.innerText = pr.name; prioritySelect.appendChild(opt);
         });
         prioritySelect.value = priorityFilter;
       }
@@ -1611,7 +1851,6 @@
 
       savedReports.forEach(rep => {
         if (!allowedUnits.includes(rep.unit)) return;
-        
         let storeMatchForCounters = !storeFilter || rep.unit === storeFilter;
 
         rep.nonConformities?.forEach((nc, i) => {
@@ -1634,20 +1873,11 @@
             else counts.pending++;
           }
 
-          let storeMatchCard = !storeFilter || rep.unit === storeFilter;
-          if (matchDate && storeMatchCard) {
+          if (matchDate && storeMatchForCounters) {
             allActions.push({ 
-              unit: rep.unit, 
-              title: nc.title, 
-              action: nc.action || 'Não descrita', 
-              date: dueDate || 'Indefinida', 
-              rawDate: dueDate, 
-              chatId: actId, 
-              status: statusObj,
-              priority: priorityObj,
-              fullReportId: rep.id,
-              type: 'nc',
-              index: i
+              unit: rep.unit, title: nc.title, action: nc.action || 'Não descrita', 
+              date: dueDate || 'Indefinida', rawDate: dueDate, chatId: actId, 
+              status: statusObj, priority: priorityObj, fullReportId: rep.id, type: 'nc', index: i
             });
           }
         });
@@ -1672,23 +1902,42 @@
             else counts.pending++;
           }
 
-          let storeMatchCard = !storeFilter || rep.unit === storeFilter;
-          if (matchDate && storeMatchCard) {
+          if (matchDate && storeMatchForCounters) {
             allActions.push({ 
-              unit: rep.unit, 
-              title: `Manutenção: ${om.equipment}`, 
-              action: om.action || 'Não descrito', 
-              date: dueDate || 'Indefinida', 
-              rawDate: dueDate, 
-              chatId: actId, 
-              status: statusObj,
-              priority: priorityObj,
-              fullReportId: rep.id,
-              type: 'om',
-              index: i
+              unit: rep.unit, title: `Manutenção: ${om.equipment}`, action: om.action || 'Não descrito', 
+              date: dueDate || 'Indefinida', rawDate: dueDate, chatId: actId, 
+              status: statusObj, priority: priorityObj, fullReportId: rep.id, type: 'om', index: i
             });
           }
         });
+      });
+
+      manualActionsList.forEach((act, i) => {
+        if (!allowedUnits.includes(act.unit)) return;
+        let storeMatchForCounters = !storeFilter || act.unit === storeFilter;
+        let matchDate = true;
+        if (act.rawDate) {
+          if (startFilter && act.rawDate < startFilter) matchDate = false;
+          if (endFilter && act.rawDate > endFilter) matchDate = false;
+        }
+
+        let statusObj = actionCustomStatus[act.id] || 'Pendente';
+        let priorityObj = actionCustomPriority[act.id] || 'Urgente';
+
+        if (storeMatchForCounters) {
+          let sLower = statusObj.toLowerCase();
+          if (sLower.includes('concluído')) counts.completed++;
+          else if (sLower.includes('andamento')) counts.progress++;
+          else counts.pending++;
+        }
+
+        if (matchDate && storeMatchForCounters) {
+          allActions.push({
+            unit: act.unit, title: act.title, action: act.action,
+            date: act.date, rawDate: act.rawDate, chatId: act.id,
+            status: statusObj, priority: priorityObj, fullReportId: null, type: act.type || 'avulso', index: i, isManual: true
+          });
+        }
       });
 
       document.getElementById("counter-pending").innerText = counts.pending;
@@ -1719,8 +1968,8 @@
         let atrasoHtml = "";
         let isDone = act.status.toLowerCase().includes('concluído');
         if (!isDone && act.rawDate && act.rawDate !== 'Indefinida' && act.rawDate !== 'Não definida') {
-          let parts = act.rawDate.split('/');
-          let dueIso = `${parts[2]}-${parts[1]}-${parts[0]}`;
+          let parts = act.rawDate.includes('-') ? act.rawDate.split('-') : act.rawDate.split('/').reverse();
+          let dueIso = `${parts[0]}-${parts[1]}-${parts[2]}`;
           let todayIso = new Date().toISOString().split('T')[0];
           if (dueIso < todayIso) {
             let diffTime = Math.abs(new Date(todayIso) - new Date(dueIso));
@@ -1751,7 +2000,7 @@
               <select onchange="updateActionStatus('${act.chatId}', this.value)" class="border rounded px-2.5 py-1 text-xs font-bold bg-white shadow-sm cursor-pointer">
                 ${statusOptions}
               </select>
-              <button id="btn-chat-${act.chatId}" onclick="openChatModal('${act.chatId}', '${act.fullReportId}', '${act.type}', ${act.index})" class="relative px-3 py-1 bg-white text-cb-bordo font-bold rounded shadow-sm border border-stone-200 hover:bg-stone-50 transition">
+              <button id="btn-chat-${act.chatId}" onclick="openChatModal('${act.chatId}', '${act.fullReportId}', '${act.type}', ${act.index}, ${act.isManual ? 'true' : 'false'})" class="relative px-3 py-1 bg-white text-cb-bordo font-bold rounded shadow-sm border border-stone-200 hover:bg-stone-50 transition">
                 💬 Chat & Detalhes
                 <span id="chat-dot-${act.chatId}" class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-white hidden"></span>
               </button>
@@ -1762,8 +2011,734 @@
           </div>`;
         container.appendChild(card);
       });
+
+      listenToAllChats();
     }
 
+    function openChatModal(chatId, reportId, type, index, isManual = false) {
+      activeChatActionId = chatId;
+      const detailsContainer = document.getElementById("chat-action-details");
+      detailsContainer.innerHTML = "";
+
+      let orientacaoManutencao = (type === 'om') ? `
+        <div class="p-2.5 bg-amber-100 border border-amber-300 rounded-lg text-amber-900 font-bold flex items-center gap-2">
+          <span>⚠️ <strong>Atenção:</strong> Fazer 3 orçamentos e enviar para aprovação.</span>
+        </div>` : '';
+
+      if (isManual) {
+        const manualAct = manualActionsList.find(a => a.id === chatId);
+        if (manualAct) {
+          document.getElementById("chat-modal-title").innerText = manualAct.title;
+          document.getElementById("chat-modal-subtitle").innerText = `${manualAct.unit} • Prazo: ${manualAct.date}`;
+          detailsContainer.innerHTML = `
+            ${orientacaoManutencao}
+            <div><strong>Descrição / Ação:</strong> ${manualAct.action}</div>
+          `;
+        }
+      } else {
+        const rep = savedReports.find(r => r.id === reportId);
+        if (rep) {
+          let itemData = type === 'nc' ? rep.nonConformities?.[index] : rep.maintenanceOrders?.[index];
+          if (itemData) {
+            document.getElementById("chat-modal-title").innerText = type === 'nc' ? itemData.title : `Manutenção: ${itemData.equipment}`;
+            document.getElementById("chat-modal-subtitle").innerText = `${rep.unit} • Prazo: ${itemData.date}`;
+            
+            detailsContainer.innerHTML = `
+              ${orientacaoManutencao}
+              <div><strong>Descrição / Ação:</strong> ${itemData.action || itemData.defect || 'Não especificada'}</div>
+              ${itemData.photoUrl ? `<div class="mt-2"><span class="block font-bold mb-1">Foto anexada no Checklist:</span><img src="${itemData.photoUrl}" onclick="openImageViewer('${itemData.photoUrl}')" class="h-28 w-auto rounded-lg border object-cover cursor-pointer hover:opacity-90"></div>` : ''}
+            `;
+          }
+        }
+      }
+
+      document.getElementById("chat-modal").classList.remove("hidden");
+      loadChatMessages(chatId);
+      document.getElementById(`chat-dot-${chatId}`)?.classList.add("hidden");
+    }
+
+    function toggleChatModal() {
+      document.getElementById("chat-modal").classList.add("hidden");
+      activeChatActionId = null;
+      renderCentralizedActions();
+    }
+
+    function openImageViewer(url) {
+      document.getElementById("viewer-img").src = url;
+      document.getElementById("image-viewer-modal").classList.remove("hidden");
+    }
+
+    function sendChatAttachment(event) {
+      const file = event.target.files[0];
+      if (!file || !activeChatActionId || !isFirebaseReady) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const fileData = e.target.result;
+        let isImage = file.type.startsWith('image/');
+
+        db.collection("chats").doc(activeChatActionId).collection("messages").add({
+          text: fileData, 
+          sender: currentUser.name, 
+          seen: false, 
+          isAttachment: true,
+          fileType: isImage ? 'image' : 'file',
+          fileName: file.name,
+          time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }), 
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        }).then(() => {
+          event.target.value = '';
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function loadChatMessages(chatId) {
+      if (!isFirebaseReady) return;
+      db.collection("chats").doc(chatId).collection("messages").orderBy("createdAt", "asc").onSnapshot(snapshot => {
+        const container = document.getElementById("chat-messages-container");
+        container.innerHTML = "";
+
+        if (snapshot.empty) {
+          container.innerHTML = `<div class="text-center text-stone-400 py-6">Nenhuma mensagem ainda. Inicie a conversa.</div>`;
+          return;
+        }
+
+        snapshot.forEach(doc => {
+          const m = doc.data();
+          const isMe = m.sender === currentUser.name;
+          
+          if (!isMe && !m.seen) {
+            db.collection("chats").doc(chatId).collection("messages").doc(doc.id).update({ seen: true });
+          }
+
+          const msgDiv = document.createElement("div");
+          msgDiv.className = `flex flex-col ${isMe ? 'items-end' : 'items-start'}`;
+          
+          let bubbleContent = "";
+          if (m.isAttachment) {
+            if (m.fileType === 'image') {
+              bubbleContent = `<img src="${m.text}" onclick="openImageViewer('${m.text}')" class="max-h-40 rounded-lg cursor-pointer border hover:opacity-90 object-cover mb-1"><a href="${m.text}" download="anexo" class="text-[10px] underline block font-bold">Baixar Imagem</a>`;
+            } else {
+              bubbleContent = `<a href="${m.text}" download="${m.fileName || 'arquivo'}" class="underline font-bold text-blue-600 block">📄 Baixar: ${m.fileName || 'Arquivo'}</a>`;
+            }
+          } else {
+            bubbleContent = `<span>${m.text}</span>`;
+          }
+
+          msgDiv.innerHTML = `
+            <div class="max-w-[80%] p-2.5 rounded-xl ${isMe ? 'bg-cb-bordo text-white' : 'bg-stone-200 text-stone-800'}">
+              <span class="block text-[9px] font-bold opacity-75 mb-0.5">${m.sender}</span>
+              ${bubbleContent}
+            </div>
+            <div class="flex items-center gap-1 mt-0.5">
+              <span class="text-[9px] text-stone-400">${m.time || ''}</span>
+              ${isMe ? `<span class="text-[9px] font-bold ${m.seen ? 'text-emerald-600' : 'text-stone-400'}">${m.seen ? '✓✓ Visto' : '✓ Enviado'}</span>` : ''}
+            </div>`;
+          container.appendChild(msgDiv);
+        });
+        container.scrollTop = container.scrollHeight;
+      });
+    }
+
+    function sendChatMessage() {
+      const input = document.getElementById("chat-input-msg");
+      const text = input.value.trim();
+      if (!text || !activeChatActionId || !isFirebaseReady) return;
+      db.collection("chats").doc(activeChatActionId).collection("messages").add({
+        text: text, sender: currentUser.name, seen: false, time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }), createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      }).then(() => input.value = "");
+    }
+
+    function playAudioBeep() {
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+        gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        osc.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.15);
+      } catch (e) {
+        console.log("Áudio restrito pelo navegador");
+      }
+    }
+
+    // 📅 Agenda & Calendário
+    function changeCalendarView(view) {
+      currentCalendarView = view;
+      document.getElementById("btn-view-month").className = `px-3 py-1.5 font-bold rounded transition ${view === 'month' ? 'bg-cb-bordo text-white' : 'bg-stone-200 text-stone-700'}`;
+      document.getElementById("btn-view-week").className = `px-3 py-1.5 font-bold rounded transition ${view === 'week' ? 'bg-cb-bordo text-white' : 'bg-stone-200 text-stone-700'}`;
+      document.getElementById("btn-view-day").className = `px-3 py-1.5 font-bold rounded transition ${view === 'day' ? 'bg-cb-bordo text-white' : 'bg-stone-200 text-stone-700'}`;
+      renderAgendaCalendar();
+    }
+
+    function navigateCalendar(dir) {
+      if (dir === 0) {
+        currentCalendarDate = new Date();
+      } else {
+        if (currentCalendarView === 'month') {
+          currentCalendarDate.setMonth(currentCalendarDate.getMonth() + dir);
+        } else if (currentCalendarView === 'week') {
+          currentCalendarDate.setDate(currentCalendarDate.getDate() + (dir * 7));
+        } else if (currentCalendarView === 'day') {
+          currentCalendarDate.setDate(currentCalendarDate.getDate() + dir);
+        }
+      }
+      renderAgendaCalendar();
+    }
+
+    function renderAgendaCalendar() {
+      const gridContainer = document.getElementById("calendar-grid-container");
+      const titleEl = document.getElementById("calendar-period-title");
+      if (!gridContainer) return;
+      gridContainer.innerHTML = "";
+
+      let storeSelection = document.getElementById("filter-agenda-store").value;
+      if (currentUser.role === 'gerente' && currentUser.units && currentUser.units.length > 0) {
+        storeSelection = currentUser.units[0];
+      }
+
+      let allEvents = [...calendarEvents];
+
+      savedReports.forEach(rep => {
+        if (currentUser.role === 'gerente' && rep.unit !== storeSelection) return;
+        rep.nonConformities?.forEach((nc, i) => {
+          if (nc.date && nc.date !== 'Não definida' && nc.date !== 'Indefinida') {
+            allEvents.push({
+              id: `rep_nc_${rep.id}_${i}`,
+              title: `[Ação] ${nc.title}`,
+              date: nc.date.split('/').reverse().join('-'),
+              time: '09:00',
+              timeEnd: '10:00',
+              store: rep.unit,
+              scope: 'INDIVIDUAL',
+              desc: nc.action || 'Não descrita',
+              type: 'action'
+            });
+          }
+        });
+        rep.maintenanceOrders?.forEach((om, i) => {
+          if (om.date && om.date !== 'Não definida' && om.date !== 'Indefinida') {
+            allEvents.push({
+              id: `rep_om_${rep.id}_${i}`,
+              title: `[Manutenção] ${om.equipment}`,
+              date: om.date.split('/').reverse().join('-'),
+              time: '10:00',
+              timeEnd: '11:00',
+              store: rep.unit,
+              scope: 'INDIVIDUAL',
+              desc: om.action || om.defect || 'Sem descrição',
+              type: 'maintenance'
+            });
+          }
+        });
+      });
+
+      manualActionsList.forEach((act, i) => {
+        if (currentUser.role === 'gerente' && act.unit !== storeSelection) return;
+        if (act.rawDate) {
+          allEvents.push({
+            id: `act_manual_${act.id}`,
+            title: `[Plano] ${act.title}`,
+            date: act.rawDate,
+            time: '14:00',
+            timeEnd: '15:00',
+            store: act.unit,
+            scope: 'INDIVIDUAL',
+            desc: act.action,
+            type: 'action'
+          });
+        }
+      });
+
+      let filteredEvents = allEvents.filter(ev => {
+        if (storeSelection === 'GERAL') return ev.scope === 'GERAL';
+        return ev.scope === 'GERAL' || ev.store === storeSelection;
+      });
+
+      let year = currentCalendarDate.getFullYear();
+      let month = currentCalendarDate.getMonth();
+      const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+
+      if (currentCalendarView === 'month') {
+        titleEl.innerText = `${monthNames[month]} de ${year}`;
+        let firstDayIndex = new Date(year, month, 1).getDay();
+        let totalDays = new Date(year, month + 1, 0).getDate();
+
+        let table = document.createElement("div");
+        table.className = "grid grid-cols-7 text-xs text-center border-stone-200";
+
+        ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].forEach(d => {
+          let cell = document.createElement("div");
+          cell.className = "bg-cb-bordo text-cb-gold font-bold p-2 border-b";
+          cell.innerText = d;
+          table.appendChild(cell);
+        });
+
+        for (let i = 0; i < firstDayIndex; i++) {
+          let emptyCell = document.createElement("div");
+          emptyCell.className = "bg-stone-50/50 p-2 border-b border-r min-h-[90px]";
+          table.appendChild(emptyCell);
+        }
+
+        for (let d = 1; d <= totalDays; d++) {
+          let dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+          let dayEvents = filteredEvents.filter(e => e.date === dateStr);
+
+          let cell = document.createElement("div");
+          cell.className = "bg-white p-1.5 border-b border-r min-h-[90px] flex flex-col justify-start text-left overflow-hidden cursor-pointer hover:bg-stone-50 relative";
+          cell.setAttribute('data-date', dateStr);
+          
+          cell.ondragover = (e) => e.preventDefault();
+          cell.ondrop = (e) => {
+            e.preventDefault();
+            let evId = e.dataTransfer.getData("text/plain");
+            moveEventToDate(evId, dateStr);
+          };
+
+          cell.onclick = (e) => {
+            if (e.target.tagName !== 'DIV' && e.target.tagName !== 'SPAN') return;
+            openEventModalForDate(dateStr);
+          };
+          
+          let todayStr = new Date().toISOString().split('T')[0];
+          let isToday = dateStr === todayStr;
+
+          let eventsHtml = dayEvents.map(ev => {
+            let isAuto = ev.type === 'action' || ev.type === 'maintenance';
+            let bgClass = isAuto ? 'bg-amber-100 text-amber-900 border-amber-300' : (ev.scope === 'GERAL' ? 'bg-purple-100 text-purple-900 border-purple-300' : 'bg-sky-100 text-sky-900 border-sky-300');
+            return `
+              <div draggable="true" 
+                   ondragstart="event.dataTransfer.setData('text/plain', '${ev.id}')"
+                   onclick="event.stopPropagation(); openEventDetail('${ev.id}')" 
+                   class="event-card px-1.5 py-0.5 rounded border text-[10px] font-semibold truncate cursor-pointer mb-0.5 ${bgClass} relative group" 
+                   title="${ev.title}">
+                • ${ev.time ? ev.time + ' ' : ''}${ev.title}
+                <div class="resize-handle opacity-0 group-hover:opacity-100 bg-black/20" onmousedown="initResize(event, '${ev.id}')" title="Redimensionar horário"></div>
+              </div>`;
+          }).join("");
+
+          cell.innerHTML = `
+            <div class="font-bold text-stone-700 mb-1 flex justify-between items-center pointer-events-none">
+              <span class="${isToday ? 'bg-cb-bordo text-cb-gold px-1.5 py-0.5 rounded-full' : ''}">${d}</span>
+            </div>
+            <div class="flex-1 overflow-y-auto space-y-0.5 max-h-[70px]">${eventsHtml}</div>`;
+          table.appendChild(cell);
+        }
+        gridContainer.appendChild(table);
+
+      } else if (currentCalendarView === 'week') {
+        let currDate = new Date(currentCalendarDate);
+        let firstDayOfWeek = new Date(currDate.setDate(currDate.getDate() - currDate.getDay()));
+        let lastDayOfWeek = new Date(firstDayOfWeek);
+        lastDayOfWeek.setDate(lastDayOfWeek.getDate() + 6);
+
+        titleEl.innerText = `Semana: ${firstDayOfWeek.toLocaleDateString('pt-BR')} a ${lastDayOfWeek.toLocaleDateString('pt-BR')}`;
+
+        let table = document.createElement("div");
+        table.className = "divide-y text-xs";
+
+        for (let i = 0; i < 7; i++) {
+          let loopDate = new Date(firstDayOfWeek);
+          loopDate.setDate(loopDate.getDate() + i);
+          let dateStr = loopDate.toISOString().split('T')[0];
+          let dayEvents = filteredEvents.filter(e => e.date === dateStr);
+
+          let row = document.createElement("div");
+          row.className = "p-3 flex flex-col sm:flex-row gap-2 justify-between items-start sm:items-center bg-white hover:bg-stone-50 transition cursor-pointer";
+          row.ondragover = (e) => e.preventDefault();
+          row.ondrop = (e) => {
+            e.preventDefault();
+            let evId = e.dataTransfer.getData("text/plain");
+            moveEventToDate(evId, dateStr);
+          };
+          row.onclick = () => openEventModalForDate(dateStr);
+          
+          let eventsHtml = dayEvents.map(ev => `
+            <span draggable="true" 
+                  ondragstart="event.dataTransfer.setData('text/plain', '${ev.id}')"
+                  onclick="event.stopPropagation(); openEventDetail('${ev.id}')" 
+                  class="event-card px-2.5 py-1 bg-amber-100 text-amber-900 border rounded font-semibold text-[11px] cursor-pointer hover:bg-amber-200">
+              ${ev.time ? ev.time + ' - ' : ''}${ev.title}
+            </span>`).join(" ");
+
+          row.innerHTML = `
+            <div class="font-bold text-cb-bordo w-36 pointer-events-none">${loopDate.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit' })}</div>
+            <div class="flex-1 flex gap-2 flex-wrap items-center">${eventsHtml || '<span class="text-stone-400 italic">Nenhum evento neste dia</span>'}</div>`;
+          table.appendChild(row);
+        }
+        gridContainer.appendChild(table);
+
+      } else if (currentCalendarView === 'day') {
+        let dateStr = currentCalendarDate.toISOString().split('T')[0];
+        titleEl.innerText = `Dia: ${currentCalendarDate.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}`;
+
+        let dayEvents = filteredEvents.filter(e => e.date === dateStr);
+        let listDiv = document.createElement("div");
+        listDiv.className = "p-4 space-y-3 text-xs";
+
+        if (dayEvents.length === 0) {
+          listDiv.innerHTML = `<div class="text-center text-stone-400 py-6">Nenhum compromisso ou evento agendado para hoje. <button onclick="openEventModalForDate('${dateStr}')" class="text-cb-bordo font-bold underline block mx-auto mt-1">+ Criar Evento</button></div>`;
+        } else {
+          dayEvents.forEach(ev => {
+            let item = document.createElement("div");
+            item.className = "p-3 bg-stone-50 border rounded-xl flex justify-between items-center";
+            item.innerHTML = `
+              <div class="space-y-1">
+                <span class="font-bold text-sm text-cb-bordo block">${ev.time ? '⏰ ' + ev.time + ' — ' : ''}${ev.title}</span>
+                <span class="text-stone-600">${ev.desc}</span>
+                <span class="text-[10px] text-stone-400 block">Loja: ${ev.store}</span>
+              </div>
+              <button onclick="openEventDetail('${ev.id}')" class="px-3 py-1.5 bg-cb-bordo text-white font-bold rounded">Detalhes / Editar</button>`;
+            listDiv.appendChild(item);
+          });
+        }
+        gridContainer.appendChild(listDiv);
+      }
+    }
+
+    function moveEventToDate(eventId, newDate) {
+      let ev = calendarEvents.find(e => e.id === eventId);
+      if (!ev) return;
+      if (ev.scope === 'GERAL' && currentUser.role !== 'admin') {
+        return alert("Apenas administradores podem alterar eventos em comum.");
+      }
+      if (currentUser.role === 'gerente' && ev.store !== currentUser.units?.[0]) {
+        return alert("Você só pode mover eventos da sua própria unidade.");
+      }
+
+      ev.date = newDate;
+      ev.displayDate = newDate.split('-').reverse().join('/');
+      localStorage.setItem("CB_LOCAL_CALENDAR_EVENTS", JSON.stringify(calendarEvents));
+      syncConfigToCloud();
+      renderAgendaCalendar();
+    }
+
+    function initResize(e, eventId) {
+      e.stopPropagation();
+      e.preventDefault();
+      let ev = calendarEvents.find(e => e.id === eventId);
+      if (!ev) return;
+
+      let startY = e.clientY;
+      function onMouseMove(moveEvent) {
+        let diff = moveEvent.clientY - startY;
+        if (Math.abs(diff) > 25) {
+          let [h, m] = (ev.timeEnd || '10:00').split(':').map(Number);
+          m += diff > 0 ? 30 : -30;
+          if (m >= 60) { h += 1; m = 0; }
+          if (m < 0) { h -= 1; m = 30; }
+          ev.timeEnd = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+          startY = moveEvent.clientY;
+          localStorage.setItem("CB_LOCAL_CALENDAR_EVENTS", JSON.stringify(calendarEvents));
+          syncConfigToCloud();
+          renderAgendaCalendar();
+        }
+      }
+
+      function onMouseUp() {
+        window.removeEventListener('mousemove', onMouseMove);
+        window.removeEventListener('mouseup', onMouseUp);
+      }
+
+      window.addEventListener('mousemove', onMouseMove);
+      window.addEventListener('mouseup', onMouseUp);
+    }
+
+    function processarAgendaIA() {
+      const texto = document.getElementById("ia-input").value;
+      if (!texto) return alert("Digite um comando para a IA.");
+
+      let novoEvento = { title: texto.split(/dia|às/i)[0].trim(), data: "", hora: "09:00", loja: "" };
+      
+      const dataMatch = texto.match(/\d{2}\/\d{2}(\/\d{4})?/);
+      if (dataMatch) {
+          let partes = dataMatch[0].split('/');
+          let ano = partes[2] || new Date().getFullYear();
+          novoEvento.data = `${ano}-${partes[1]}-${partes[0]}`;
+      }
+
+      presetUnits.forEach(u => {
+          if (texto.toLowerCase().includes(u.toLowerCase().split(' ').slice(1).join(' '))) novoEvento.loja = u;
+      });
+
+      document.getElementById("event-title").value = novoEvento.title;
+      document.getElementById("event-date").value = novoEvento.data || new Date().toISOString().split('T')[0];
+      document.getElementById("event-time-start").value = novoEvento.hora;
+      
+      if (novoEvento.loja) {
+          document.getElementById("event-scope").value = "INDIVIDUAL";
+          document.getElementById("event-store").value = novoEvento.loja;
+          toggleEventStoreSelect();
+      }
+
+      document.getElementById("event-modal").classList.remove("hidden");
+      document.getElementById("ia-input").value = "";
+    }
+
+    function openEventModalForDate(dateStr) {
+      if (currentUser.role === 'operador') return alert("Acesso não autorizado.");
+      document.getElementById("event-modal-title").innerText = "Novo Evento na Agenda";
+      document.getElementById("event-edit-id").value = "";
+      document.getElementById("event-title").value = "";
+      document.getElementById("event-date").value = dateStr;
+      document.getElementById("event-time-start").value = "09:00";
+      document.getElementById("event-time-end").value = "10:00";
+      document.getElementById("event-recurrence").value = "none";
+      document.getElementById("event-desc").value = "";
+      
+      let scopeSelect = document.getElementById("event-scope");
+      if (currentUser.role === 'gerente') {
+        scopeSelect.value = 'INDIVIDUAL';
+        scopeSelect.disabled = true;
+      } else {
+        scopeSelect.value = 'GERAL';
+        scopeSelect.disabled = false;
+      }
+      toggleEventStoreSelect();
+      document.getElementById("btn-delete-event").classList.add("hidden");
+      document.getElementById("event-modal").classList.remove("hidden");
+    }
+
+    function openEventDetail(id) {
+      let ev = calendarEvents.find(e => e.id === id);
+      if (!ev) return;
+
+      if (ev.scope === 'GERAL' && currentUser.role !== 'admin') {
+        return alert(`Evento em Comum da Rede: ${ev.title}\nData: ${ev.displayDate || ev.date}\n${ev.desc}\n\n(Apenas administradores podem editar este evento).`);
+      }
+      if (currentUser.role === 'gerente' && ev.store !== currentUser.units?.[0]) {
+        return alert("Você só pode editar eventos da sua própria unidade.");
+      }
+
+      document.getElementById("event-modal-title").innerText = "Editar Evento";
+      document.getElementById("event-edit-id").value = ev.id;
+      document.getElementById("event-title").value = ev.title;
+      document.getElementById("event-date").value = ev.date;
+      document.getElementById("event-scope").value = ev.scope;
+      document.getElementById("event-store").value = ev.store || '';
+      document.getElementById("event-time-start").value = ev.time || '09:00';
+      document.getElementById("event-time-end").value = ev.timeEnd || '10:00';
+      document.getElementById("event-recurrence").value = ev.recurrence || 'none';
+      document.getElementById("event-desc").value = ev.desc || '';
+      
+      toggleEventStoreSelect();
+      document.getElementById("btn-delete-event").classList.remove("hidden");
+      document.getElementById("event-modal").classList.remove("hidden");
+    }
+
+    function openEventModal() {
+      openEventModalForDate(new Date().toISOString().split('T')[0]);
+    }
+
+    function toggleEventModal() {
+      document.getElementById("event-modal").classList.toggle("hidden");
+    }
+
+    function toggleEventStoreSelect() {
+      let scope = document.getElementById("event-scope").value;
+      let box = document.getElementById("event-store-box");
+      if (scope === 'INDIVIDUAL') box.classList.remove("hidden");
+      else box.classList.add("hidden");
+    }
+
+    function saveCalendarEvent() {
+      let id = document.getElementById("event-edit-id").value || "ev_" + Date.now();
+      let title = document.getElementById("event-title").value.trim();
+      let date = document.getElementById("event-date").value;
+      let scope = document.getElementById("event-scope").value;
+      let store = scope === 'INDIVIDUAL' ? (currentUser.role === 'gerente' ? currentUser.units[0] : document.getElementById("event-store").value) : 'GERAL';
+      let time = document.getElementById("event-time-start").value;
+      let timeEnd = document.getElementById("event-time-end").value;
+      let recurrence = document.getElementById("event-recurrence").value;
+      let desc = document.getElementById("event-desc").value.trim();
+
+      if (!title || !date) return alert("Preencha o título e a data do evento.");
+      if (scope === 'GERAL' && currentUser.role !== 'admin') return alert("Apenas administradores podem criar ou editar eventos em comum para toda a rede.");
+
+      let existingIdx = calendarEvents.findIndex(e => e.id === id);
+      let evObj = { id, title, date, displayDate: date.split('-').reverse().join('/'), store, scope, time, timeEnd, recurrence, desc, type: 'manual' };
+
+      if (existingIdx >= 0) {
+        if (calendarEvents[existingIdx].scope === 'GERAL' && currentUser.role !== 'admin') {
+          return alert("Apenas administradores podem modificar eventos em comum.");
+        }
+        calendarEvents[existingIdx] = evObj;
+      } else {
+        calendarEvents.push(evObj);
+      }
+
+      localStorage.setItem("CB_LOCAL_CALENDAR_EVENTS", JSON.stringify(calendarEvents));
+      syncConfigToCloud();
+      toggleEventModal();
+      renderAgendaCalendar();
+      alert("Evento salvo com sucesso na agenda!");
+    }
+
+    function deleteCalendarEventFromModal() {
+      let id = document.getElementById("event-edit-id").value;
+      if (!id) return;
+      let ev = calendarEvents.find(e => e.id === id);
+      if (ev && ev.scope === 'GERAL' && currentUser.role !== 'admin') {
+        return alert("Apenas administradores podem excluir eventos em comum.");
+      }
+
+      if (confirm("Deseja realmente excluir este evento?")) {
+        const itemToDelete = { ...ev };
+        calendarEvents = calendarEvents.filter(e => e.id !== id);
+        localStorage.setItem("CB_LOCAL_CALENDAR_EVENTS", JSON.stringify(calendarEvents));
+        syncConfigToCloud();
+        toggleEventModal();
+        renderAgendaCalendar();
+        triggerUndoToast("Evento da Agenda", "event", itemToDelete);
+      }
+    }
+
+    // 🔧 Técnicos & Prestadores de Serviço
+    function toggleTechModal() {
+      document.getElementById("tech-modal").classList.toggle("hidden");
+    }
+
+    function openTechModal(idx = null) {
+      document.getElementById("tech-edit-idx").value = idx !== null ? idx : '';
+      const btnDel = document.getElementById("btn-delete-tech");
+
+      if (idx !== null) {
+        const t = techniciansList[idx];
+        document.getElementById("tech-modal-title").innerText = "Editar Contato";
+        document.getElementById("tech-name").value = t.name;
+        document.getElementById("tech-service").value = t.service;
+        document.getElementById("tech-region").value = t.region;
+        document.getElementById("tech-phone").value = t.phone;
+        if (currentUser.role === 'admin') btnDel.classList.remove("hidden");
+        else btnDel.classList.add("hidden");
+      } else {
+        document.getElementById("tech-modal-title").innerText = "Novo Contato de Manutenção";
+        document.getElementById("tech-name").value = "";
+        document.getElementById("tech-service").value = "";
+        document.getElementById("tech-region").value = "São José dos Campos";
+        document.getElementById("tech-phone").value = "";
+        btnDel.classList.add("hidden");
+      }
+      toggleTechModal();
+    }
+
+    function saveTechnician() {
+      const idx = document.getElementById("tech-edit-idx").value;
+      const name = document.getElementById("tech-name").value.trim();
+      const service = document.getElementById("tech-service").value.trim();
+      const region = document.getElementById("tech-region").value;
+      const phone = document.getElementById("tech-phone").value.trim();
+
+      if (!name || !service || !phone) return alert("Preencha todos os campos do contato.");
+
+      const techObj = { name, service, region, phone };
+
+      if (idx !== '') {
+        techniciansList[parseInt(idx)] = techObj;
+      } else {
+        techniciansList.push(techObj);
+      }
+
+      localStorage.setItem("CB_LOCAL_TECHNICIANS", JSON.stringify(techniciansList));
+      syncConfigToCloud();
+      toggleTechModal();
+      renderTechniciansList();
+      alert("Contato salvo com sucesso!");
+    }
+
+    function deleteTechnicianFromModal() {
+      if (currentUser.role !== 'admin') return alert("Apenas administradores podem excluir prestadores.");
+      const idx = document.getElementById("tech-edit-idx").value;
+      if (idx === '') return;
+
+      if (confirm("Deseja realmente excluir este contato?")) {
+        const itemToDelete = techniciansList[parseInt(idx)];
+        techniciansList.splice(parseInt(idx), 1);
+        localStorage.setItem("CB_LOCAL_TECHNICIANS", JSON.stringify(techniciansList));
+        syncConfigToCloud();
+        toggleTechModal();
+        renderTechniciansList();
+        triggerUndoToast("Prestador", "tech", itemToDelete);
+      }
+    }
+
+    function renderTechniciansList() {
+      const container = document.getElementById("technicians-list-container");
+      if (!container) return;
+      container.innerHTML = "";
+
+      const regionFilter = document.getElementById("filter-tech-region").value;
+      const serviceFilter = document.getElementById("filter-tech-service").value;
+
+      const serviceSelect = document.getElementById("filter-tech-service");
+      if (serviceSelect && serviceSelect.options.length <= 1) {
+        let uniqueServices = [...new Set(techniciansList.map(t => t.service))].sort();
+        uniqueServices.forEach(srv => {
+          let opt = document.createElement("option");
+          opt.value = srv; opt.innerText = srv; serviceSelect.appendChild(opt);
+        });
+        serviceSelect.value = serviceFilter;
+      }
+
+      let filtered = techniciansList.filter(t => {
+        let matchReg = !regionFilter || t.region.includes(regionFilter) || t.region === "Geral";
+        let matchSrv = !serviceFilter || t.service === serviceFilter;
+        return matchReg && matchSrv;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = `<div class="p-8 text-center bg-white rounded-xl border text-stone-400 text-xs">Nenhum técnico encontrado.</div>`;
+        return;
+      }
+
+      let groups = {};
+      filtered.forEach(t => {
+        let reg = t.region || "Geral";
+        if (!groups[reg]) groups[reg] = [];
+        groups[reg].push(t);
+      });
+
+      for (let reg in groups) {
+        let section = document.createElement("div");
+        section.className = "bg-white p-4 rounded-xl border shadow-sm space-y-3";
+        section.innerHTML = `<h3 class="font-bold text-cb-bordo text-xs uppercase tracking-wider border-b pb-1.5">📍 ${reg}</h3>`;
+
+        let listDiv = document.createElement("div");
+        listDiv.className = "grid grid-cols-1 sm:grid-cols-2 gap-2";
+
+        groups[reg].forEach((tech) => {
+          let originalIdx = techniciansList.indexOf(tech);
+          let cleanPhone = tech.phone.replace(/\D/g, '');
+          let whatsAppUrl = `https://api.whatsapp.com/send?phone=55${cleanPhone}`;
+
+          let card = document.createElement("div");
+          card.className = "p-3 bg-stone-50 border rounded-xl flex justify-between items-center text-xs";
+          card.innerHTML = `
+            <div class="space-y-0.5">
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-stone-900 text-sm">${tech.name}</span>
+                ${currentUser.role === 'admin' || currentUser.role === 'gerente' ? `<button onclick="openTechModal(${originalIdx})" class="text-blue-600 font-bold hover:underline text-[10px]">✏️ Editar</button>` : ''}
+              </div>
+              <span class="inline-block bg-amber-100 text-amber-900 font-semibold px-2 py-0.5 rounded text-[10px]">${tech.service}</span>
+              <span class="block text-stone-500 font-mono">📞 ${tech.phone}</span>
+            </div>
+            <a href="${whatsAppUrl}" target="_blank" class="px-3 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-lg transition flex items-center gap-1 shadow-sm shrink-0">
+              <span>💬 WhatsApp</span>
+            </a>`;
+          listDiv.appendChild(card);
+        });
+
+        section.appendChild(listDiv);
+        container.appendChild(section);
+      }
+    }
+
+    // Configurações Gerais de Checklists
     function toggleConfigModal() {
       const modal = document.getElementById("config-modal");
       modal.classList.toggle("hidden");
@@ -1957,9 +2932,7 @@
       select.innerHTML = "";
       presetUnits.forEach(u => {
         const opt = document.createElement("option");
-        opt.value = u;
-        opt.innerText = u;
-        select.appendChild(opt);
+        opt.value = u; opt.innerText = u; select.appendChild(opt);
       });
     }
 
@@ -2292,225 +3265,6 @@
         });
       });
       return missing;
-    }
-
-    function openChatModal(chatId, reportId, type, index) {
-      activeChatActionId = chatId;
-      const rep = savedReports.find(r => r.id === reportId);
-      const detailsContainer = document.getElementById("chat-action-details");
-      detailsContainer.innerHTML = "";
-
-      if (rep) {
-        let itemData = type === 'nc' ? rep.nonConformities?.[index] : rep.maintenanceOrders?.[index];
-        if (itemData) {
-          document.getElementById("chat-modal-title").innerText = type === 'nc' ? itemData.title : `Manutenção: ${itemData.equipment}`;
-          document.getElementById("chat-modal-subtitle").innerText = `${rep.unit} • Prazo: ${itemData.date}`;
-          
-          detailsContainer.innerHTML = `
-            <div><strong>Descrição / Ação Sugerida:</strong> ${itemData.action || itemData.defect || 'Não especificada'}</div>
-            ${itemData.photoUrl ? `<div class="mt-2"><span class="block font-bold mb-1">Foto do Checklist:</span><img src="${itemData.photoUrl}" onclick="openImageViewer('${itemData.photoUrl}')" class="h-28 w-auto rounded-lg border object-cover cursor-pointer hover:opacity-90"></div>` : ''}
-          `;
-        }
-      }
-
-      document.getElementById("chat-modal").classList.remove("hidden");
-      loadChatMessages(chatId);
-      document.getElementById(`chat-dot-${chatId}`)?.classList.add("hidden");
-    }
-
-    function toggleChatModal() {
-      document.getElementById("chat-modal").classList.add("hidden");
-      activeChatActionId = null;
-      renderCentralizedActions();
-    }
-
-    function openImageViewer(url) {
-      document.getElementById("viewer-img").src = url;
-      document.getElementById("image-viewer-modal").classList.remove("hidden");
-    }
-
-    function sendChatAttachment(event) {
-      const file = event.target.files[0];
-      if (!file || !activeChatActionId || !isFirebaseReady) return;
-
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        const fileData = e.target.result;
-        let isImage = file.type.startsWith('image/');
-
-        db.collection("chats").doc(activeChatActionId).collection("messages").add({
-          text: fileData, 
-          sender: currentUser.name, 
-          seen: false, 
-          isAttachment: true,
-          fileType: isImage ? 'image' : 'file',
-          fileName: file.name,
-          time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }), 
-          createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        }).then(() => {
-          event.target.value = '';
-        });
-      };
-      reader.readAsDataURL(file);
-    }
-
-    function loadChatMessages(chatId) {
-      if (!isFirebaseReady) return;
-      db.collection("chats").doc(chatId).collection("messages").orderBy("createdAt", "asc").onSnapshot(snapshot => {
-        const container = document.getElementById("chat-messages-container");
-        container.innerHTML = "";
-        
-        snapshot.docChanges().forEach(change => {
-          if (change.type === "added") {
-            const m = change.doc.data();
-            if (m.sender !== currentUser.name && !m.seen) {
-              playAudioBeep();
-              updateNotificationBadgeCount();
-              document.getElementById(`chat-dot-${chatId}`)?.classList.remove("hidden");
-            }
-          }
-        });
-
-        if (snapshot.empty) {
-          container.innerHTML = `<div class="text-center text-stone-400 py-6">Nenhuma mensagem ainda. Inicie a conversa.</div>`;
-          return;
-        }
-
-        snapshot.forEach(doc => {
-          const m = doc.data();
-          const isMe = m.sender === currentUser.name;
-          
-          if (!isMe && !m.seen) {
-            db.collection("chats").doc(chatId).collection("messages").doc(doc.id).update({ seen: true });
-          }
-
-          const msgDiv = document.createElement("div");
-          msgDiv.className = `flex flex-col ${isMe ? 'items-end' : 'items-start'}`;
-          
-          let bubbleContent = "";
-          if (m.isAttachment) {
-            if (m.fileType === 'image') {
-              bubbleContent = `<img src="${m.text}" onclick="openImageViewer('${m.text}')" class="max-h-40 rounded-lg cursor-pointer border hover:opacity-90 object-cover mb-1"><a href="${m.text}" download="anexo" class="text-[10px] underline block font-bold">Baixar Imagem</a>`;
-            } else {
-              bubbleContent = `<a href="${m.text}" download="${m.fileName || 'arquivo'}" class="underline font-bold text-blue-600 block">📄 Baixar: ${m.fileName || 'Arquivo'}</a>`;
-            }
-          } else {
-            bubbleContent = `<span>${m.text}</span>`;
-          }
-
-          msgDiv.innerHTML = `
-            <div class="max-w-[80%] p-2.5 rounded-xl ${isMe ? 'bg-cb-bordo text-white' : 'bg-stone-200 text-stone-800'}">
-              <span class="block text-[9px] font-bold opacity-75 mb-0.5">${m.sender}</span>
-              ${bubbleContent}
-            </div>
-            <div class="flex items-center gap-1 mt-0.5">
-              <span class="text-[9px] text-stone-400">${m.time || ''}</span>
-              ${isMe ? `<span class="text-[9px] font-bold ${m.seen ? 'text-emerald-600' : 'text-stone-400'}">${m.seen ? '✓✓ Visto' : '✓ Enviado'}</span>` : ''}
-            </div>`;
-          container.appendChild(msgDiv);
-        });
-        container.scrollTop = container.scrollHeight;
-      });
-    }
-
-    function sendChatMessage() {
-      const input = document.getElementById("chat-input-msg");
-      const text = input.value.trim();
-      if (!text || !activeChatActionId || !isFirebaseReady) return;
-      db.collection("chats").doc(activeChatActionId).collection("messages").add({
-        text: text, sender: currentUser.name, seen: false, time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }), createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      }).then(() => input.value = "");
-    }
-
-    function playAudioBeep() {
-      try {
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = audioCtx.createOscillator();
-        const gainNode = audioCtx.createGain();
-        osc.type = "sine";
-        osc.frequency.setValueAtTime(880, audioCtx.currentTime);
-        gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
-        osc.connect(gainNode);
-        gainNode.connect(audioCtx.destination);
-        osc.start();
-        osc.stop(audioCtx.currentTime + 0.15);
-      } catch (e) {
-        console.log("Áudio restrito pelo navegador");
-      }
-    }
-
-    function toggleTechModal() {
-      if (currentUser.role !== 'admin') return alert("Acesso restrito a administradores.");
-      document.getElementById("tech-modal").classList.toggle("hidden");
-    }
-
-    function renderTechniciansList() {
-      const container = document.getElementById("technicians-list-container");
-      if (!container) return;
-      container.innerHTML = "";
-
-      const regionFilter = document.getElementById("filter-tech-region").value;
-      const serviceFilter = document.getElementById("filter-tech-service").value;
-
-      const serviceSelect = document.getElementById("filter-tech-service");
-      if (serviceSelect && serviceSelect.options.length <= 1) {
-        let uniqueServices = [...new Set(techniciansList.map(t => t.service))].sort();
-        uniqueServices.forEach(srv => {
-          let opt = document.createElement("option");
-          opt.value = srv;
-          opt.innerText = srv;
-          serviceSelect.appendChild(opt);
-        });
-        serviceSelect.value = serviceFilter;
-      }
-
-      let filtered = techniciansList.filter(t => {
-        let matchReg = !regionFilter || t.region.includes(regionFilter) || t.region === "Geral";
-        let matchSrv = !serviceFilter || t.service === serviceFilter;
-        return matchReg && matchSrv;
-      });
-
-      if (filtered.length === 0) {
-        container.innerHTML = `<div class="p-8 text-center bg-white rounded-xl border text-stone-400 text-xs">Nenhum técnico encontrado.</div>`;
-        return;
-      }
-
-      let groups = {};
-      filtered.forEach(t => {
-        let reg = t.region || "Geral";
-        if (!groups[reg]) groups[reg] = [];
-        groups[reg].push(t);
-      });
-
-      for (let reg in groups) {
-        let section = document.createElement("div");
-        section.className = "bg-white p-4 rounded-xl border shadow-sm space-y-3";
-        section.innerHTML = `<h3 class="font-bold text-cb-bordo text-xs uppercase tracking-wider border-b pb-1.5">📍 ${reg}</h3>`;
-
-        let listDiv = document.createElement("div");
-        listDiv.className = "grid grid-cols-1 sm:grid-cols-2 gap-2";
-
-        groups[reg].forEach(tech => {
-          let cleanPhone = tech.phone.replace(/\D/g, '');
-          let whatsAppUrl = `https://api.whatsapp.com/send?phone=55${cleanPhone}`;
-
-          let card = document.createElement("div");
-          card.className = "p-3 bg-stone-50 border rounded-xl flex justify-between items-center text-xs";
-          card.innerHTML = `
-            <div class="space-y-0.5">
-              <span class="font-bold text-stone-900 block text-sm">${tech.name}</span>
-              <span class="inline-block bg-amber-100 text-amber-900 font-semibold px-2 py-0.5 rounded text-[10px]">${tech.service}</span>
-              <span class="block text-stone-500 font-mono">📞 ${tech.phone}</span>
-            </div>
-            <a href="${whatsAppUrl}" target="_blank" class="px-3 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-lg transition flex items-center gap-1 shadow-sm shrink-0">
-              <span>💬 WhatsApp</span>
-            </a>`;
-          listDiv.appendChild(card);
-        });
-
-        section.appendChild(listDiv);
-        container.appendChild(section);
-      }
     }
 
     initApp();
