@@ -4,9 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Sistema Integrado - Casa Bauducco</title>
-  
+
   <link rel="icon" type="image/png" href="./logo.png">
-  
+
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
@@ -153,7 +153,7 @@
           🔔
           <span id="global-notification-dot" class="absolute -top-1.5 -right-1.5 px-1.5 py-0.2 bg-rose-600 text-white rounded-full text-[9px] font-black border border-white hidden">0</span>
         </button>
-        
+
         <div id="notification-dropdown" class="hidden absolute right-0 top-11 w-72 bg-white text-stone-800 rounded-xl shadow-2xl border border-stone-200 z-50 overflow-hidden">
           <div class="bg-cb-bordo text-white px-3 py-2 text-xs font-bold flex justify-between items-center">
             <div class="flex items-center gap-2">
@@ -496,7 +496,7 @@
         <button onclick="closeMaintenanceResolutionModal()" class="font-bold text-stone-300 hover:text-white text-base">✕</button>
       </div>
       <input type="hidden" id="res-action-id">
-      
+
       <div class="space-y-3 max-h-[65vh] overflow-y-auto pr-1">
         <div>
           <label class="block font-bold text-stone-700 mb-1">Selecionar Prestador Cadastrado ou Inserir Novo:</label>
@@ -838,7 +838,7 @@
   <!-- Modal de Configuração Geral dos Checklists -->
   <div id="config-modal" class="fixed inset-0 bg-black/70 z-50 hidden flex items-center justify-center p-2 sm:p-4">
     <div class="bg-white w-full max-w-2xl h-[92vh] rounded-2xl flex flex-col shadow-2xl overflow-hidden border border-cb-gold/30">
-      
+
       <div class="p-3.5 border-b border-stone-200 flex justify-between items-center bg-cb-bordo text-white">
         <div><h3 class="font-bold text-sm text-cb-gold">Configurações Gerais</h3></div>
         <button onclick="toggleConfigModal()" class="text-stone-300 hover:text-white text-xl font-bold px-2 py-0.5">✕</button>
@@ -1017,34 +1017,8 @@
     let currentCalendarView = 'month';
     let activeChatActionId = null;
     let lastDeletedItem = null;
-    
+
     let savedReports = JSON.parse(localStorage.getItem("CB_LOCAL_REPORTS")) || [];
-
-    const centervalePresetActions = [
-      { id: "cv_pre_1", unit: "CB Shopping CenterVale", title: "Fachada da loja, luzes, letreiros, Leds", action: "Solicitar manutenção de led do teto do salão (Falar com Thiago ou Emerson)", date: "28/08/2026", rawDate: "2026-08-28", type: "nc" },
-      { id: "cv_pre_2", unit: "CB Shopping CenterVale", title: "A comunicação visual está dentro do padrão?", action: "Retirar sacolas de Natal, de exposição, aquelas que estão acima dos bites no emporio", date: "21/08/2026", rawDate: "2026-08-21", type: "nc" },
-      { id: "cv_pre_3", unit: "CB Shopping CenterVale", title: "Condição de móveis, utensílios e equipamentos", action: "Solicitar manutenção de gaveteiros e porta da lixeira operacional de INOX (Falar com Marido da Grazi / Getninjas)", date: "28/08/2026", rawDate: "2026-08-28", type: "nc" },
-      { id: "cv_pre_4", unit: "CB Shopping CenterVale", title: "Verificar organização da área do caixa", action: "Organizar todas as gavetas do caixa", date: "21/08/2026", rawDate: "2026-08-21", type: "nc" },
-      { id: "cv_pre_5", unit: "CB Shopping CenterVale", title: "Cardápios disponíveis e em bom estado", action: "Trocar cardápios antigos por novos.", date: "21/08/2026", rawDate: "2026-08-21", type: "nc" },
-      { id: "cv_pre_6", unit: "CB Shopping CenterVale", title: "Mesas de atendimento", action: "Organizar mesas redondas em 'X', para otimizar o espaço e para os clientes não se esbarrarem ao se levantar da cadeira.", date: "21/08/2026", rawDate: "2026-08-21", type: "nc" },
-      { id: "cv_pre_7", unit: "CB Shopping CenterVale", title: "Limpeza geral", action: "Limpar prateleira em cima da maquina de café, estão todas empoeiradas.", date: "21/08/2026", rawDate: "2026-08-21", type: "nc" },
-      { id: "cv_pre_8", unit: "CB Shopping CenterVale", title: "Checar cumprimento da jornada do cliente", action: "Houve filas durante os atendimentos, os 2 pdvs devem estar abertos após as 14hrs, e mesmo que forme fila o atendente do salão deve abordar os clientes da fila.", date: "21/08/2026", rawDate: "2026-08-21", type: "nc" },
-      { id: "cv_pre_9", unit: "CB Shopping CenterVale", title: "Conhecimentos gerais sobre marca e produtos?", action: "As avaliações precisam ser pedidas após o consumo do cliente. Repassar regras do plano fidelidade nas reuniões diárias.", date: "22/08/2026", rawDate: "2026-08-22", type: "nc" },
-      { id: "cv_pre_10", unit: "CB Shopping CenterVale", title: "Exposição do empório", action: "Refazer precificadores, não utilizar direx por cima dos preços, retirar qualquer precificador danificado.", date: "21/08/2026", rawDate: "2026-08-21", type: "nc" },
-      { id: "cv_pre_11", unit: "CB Shopping CenterVale", title: "Realização de venda sugestiva", action: "Fazer plano de ação para estimular oferecimento dos produtos com premiação rápida, defina meta e acompanhe dia a dia.", date: "22/08/2026", rawDate: "2026-08-22", type: "nc" },
-      { id: "cv_pre_12", unit: "CB Shopping CenterVale", title: "Manutenção: Vazamento de Dreno do Ar condicionado", action: "Arrumar o vazamento e fazer o fechamento do drywall, Fazer 3 orçamentos e me enviar para aprovação", date: "28/08/2026", rawDate: "2026-08-28", type: "om" },
-      { id: "cv_pre_13", unit: "CB Shopping CenterVale", title: "Manutenção: Ar condicionado", action: "Chamar mais um profissional para verificar o ar condicionado e me passar a avaliação (Wesley: +55 12 97401-0864).", date: "28/08/2026", rawDate: "2026-08-28", type: "om" }
-    ];
-
-    if (!localStorage.getItem("CB_CENTERVALE_INITIAL_LOAD")) {
-      centervalePresetActions.forEach(act => {
-        if (!manualActionsList.some(a => a.id === act.id)) {
-          manualActionsList.push(act);
-        }
-      });
-      localStorage.setItem("CB_LOCAL_MANUAL_ACTIONS", JSON.stringify(manualActionsList));
-      localStorage.setItem("CB_CENTERVALE_INITIAL_LOAD", "true");
-    }
 
     const defaultTemplates = [
       {
@@ -1563,7 +1537,7 @@
       document.getElementById("modules-screen").classList.remove("hidden");
       document.getElementById("current-user-badge").innerText = currentUser ? currentUser.name : '';
       updateLogos();
-      
+
       const grid = document.getElementById("modules-grid");
       grid.innerHTML = "";
 
@@ -1644,7 +1618,7 @@
         if (currentUser.role === 'operador') return alert("Acesso não autorizado para operadores.");
         agendaMod.classList.remove("hidden");
         badgeMod.innerText = "Agenda";
-        
+
         if (currentUser.role === 'gerente' && currentUser.units && currentUser.units.length > 0) {
           document.getElementById("filter-agenda-store").value = currentUser.units[0];
           document.getElementById("filter-agenda-store").disabled = true;
@@ -1687,7 +1661,7 @@
       const select = document.getElementById("home-checklist-select");
       if (!select) return;
       select.innerHTML = "";
-      
+
       let allowedChecklists = allChecklists.filter(c => {
         if (!c.roles || c.roles.length === 0) return true;
         return c.roles.includes(currentUser?.role);
@@ -1712,10 +1686,10 @@
       if (!select || !select.value) return alert("Selecione um checklist válido.");
       activeChecklistId = select.value;
       localStorage.setItem("CB_LOCAL_ACTIVE_ID", activeChecklistId);
-      
+
       const chk = getCurrentChecklist();
       document.getElementById("active-model-title-badge").innerText = chk ? chk.name : "Checklist";
-      
+
       customAnswers = {};
       attachedPhotos = {};
       actionPlans = {};
@@ -1744,7 +1718,7 @@
       if (!container) return;
       container.innerHTML = ""; 
       updateHistoryBadge();
-      
+
       const storeFilter = document.getElementById("filter-store")?.value || "";
       const startFilter = document.getElementById("filter-date-start")?.value || "";
       const endFilter = document.getElementById("filter-date-end")?.value || "";
@@ -1774,7 +1748,7 @@
       filtered.forEach((rep, idx) => {
         const itemCard = document.createElement("div");
         itemCard.className = "bg-white rounded-xl border border-stone-200 shadow-sm overflow-hidden text-xs";
-        
+
         let ncListHtml = rep.nonConformities?.map(nc => `<div class="p-2 bg-rose-50 border border-rose-200 rounded text-xs mb-1"><strong>❌ ${nc.title}</strong><br>Ação: ${nc.action} (Prazo: ${nc.date})</div>`).join("") || "";
         let omListHtml = rep.maintenanceOrders?.map(om => `<div class="p-2 bg-amber-50 border border-amber-300 rounded text-xs mb-1"><strong>🔧 ${om.equipment}</strong><br>Defeito: ${om.action} (Prazo: ${om.date})</div>`).join("") || "";
 
@@ -1957,8 +1931,13 @@
 
     function openPrintWindow(html) {
       const win = window.open('', '_blank');
-      win.document.write(`<html><head><title>Relatório PDF</title></head><body>${html}<script>window.print();<\/script></body></html>`);
-      win.document.close();
+      if (win) {
+        win.document.open();
+        win.document.write(`<!DOCTYPE html><html><head><title>Relatório PDF</title><style>@media print { body { -webkit-print-color-adjust: exact; } }</style></head><body>${html}<script>window.onload = function() { window.print(); };<\/script></body></html>`);
+        win.document.close();
+      } else {
+        alert("O navegador bloqueou a abertura da janela de impressão. Por favor, libere os pop-ups.");
+      }
     }
 
     function saveReportToCloud(reportData) {
@@ -2090,7 +2069,7 @@
     function openMaintenanceResolutionModal(actionId) {
       pendingResolutionActionId = actionId;
       document.getElementById("res-action-id").value = actionId;
-      
+
       document.getElementById("res-empresa").value = "";
       document.getElementById("res-contato").value = "";
       document.getElementById("res-equipamento").value = "";
@@ -2162,7 +2141,7 @@
       const processRecord = (nfUrl = '') => {
         const now = new Date();
         const dataConclusao = now.toLocaleDateString('pt-BR');
-        
+
         const maxDias = Math.max(gMao, gPecas);
         const garantiaFimDate = new Date(now.getTime() + (maxDias * 24 * 60 * 60 * 1000));
         const dataGarantiaFim = garantiaFimDate.toLocaleDateString('pt-BR');
@@ -2382,7 +2361,7 @@
 
       savedReports.forEach(rep => {
         if (!allowedUnits.includes(rep.unit)) return;
-        
+
         let repNotifId = `notif_rep_${rep.id}`;
         if (!readNotifications[repNotifId]) {
           notifs.push({
@@ -2436,7 +2415,7 @@
       const dropdown = document.getElementById("notification-dropdown");
       const listContainer = document.getElementById("notification-list");
       const countBadge = document.getElementById("notif-count-badge");
-      
+
       dropdown.classList.toggle("hidden");
       if (!dropdown.classList.contains("hidden")) {
         listContainer.innerHTML = "";
@@ -2557,12 +2536,12 @@
 
       if (!container) return;
       container.innerHTML = "";
-      const startFilter = document.getElementById("action-date-start").value;
-      const endFilter = document.getElementById("action-date-end").value;
-      const storeFilter = document.getElementById("filter-action-store").value;
-      const statusFilter = document.getElementById("filter-status").value;
-      const priorityFilter = document.getElementById("filter-priority").value;
-      const actionTypeFilter = document.getElementById("filter-action-type").value;
+      const startFilter = document.getElementById("action-date-start")?.value || "";
+      const endFilter = document.getElementById("action-date-end")?.value || "";
+      const storeFilter = document.getElementById("filter-action-store")?.value || "";
+      const statusFilter = document.getElementById("filter-status")?.value || "";
+      const priorityFilter = document.getElementById("filter-priority")?.value || "";
+      const actionTypeFilter = document.getElementById("filter-action-type")?.value || "";
       const allowedUnits = getAllowedUnits();
 
       const statusSelect = document.getElementById("filter-status");
@@ -2799,7 +2778,7 @@
           if (itemData) {
             document.getElementById("chat-modal-title").innerText = type === 'nc' ? itemData.title : `Manutenção: ${itemData.equipment}`;
             document.getElementById("chat-modal-subtitle").innerText = `${rep.unit} • Prazo: ${itemData.date}`;
-            
+
             if (itemData.photoUrl) {
               photoUrlDisplay = `<div class="mt-2"><span class="block font-bold mb-1">Foto anexada no Checklist:</span><img src="${itemData.photoUrl}" onclick="openImageViewer('${itemData.photoUrl}')" class="h-28 w-auto rounded-lg border object-cover cursor-pointer hover:opacity-90"></div>`;
             }
@@ -2868,14 +2847,14 @@
         snapshot.forEach(doc => {
           const m = doc.data();
           const isMe = m.sender === currentUser.name;
-          
+
           if (!isMe && !m.seen) {
             db.collection("chats").doc(chatId).collection("messages").doc(doc.id).update({ seen: true });
           }
 
           const msgDiv = document.createElement("div");
           msgDiv.className = `flex flex-col ${isMe ? 'items-end' : 'items-start'}`;
-          
+
           let bubbleContent = "";
           if (m.isAttachment) {
             if (m.fileType === 'image') {
@@ -2987,7 +2966,7 @@
 
       savedReports.forEach(rep => {
         if (currentUser?.role === 'gerente' && rep.unit !== storeSelection) return;
-        
+
         rep.nonConformities?.forEach((nc, i) => {
           let isoDate = normalizeDateToISO(nc.date);
           if (isoDate) {
@@ -3078,7 +3057,7 @@
           let cell = document.createElement("div");
           cell.className = "bg-white p-1.5 border-b border-r min-h-[90px] flex flex-col justify-start text-left overflow-hidden cursor-pointer hover:bg-stone-50 relative";
           cell.setAttribute('data-date', dateStr);
-          
+
           cell.ondragover = (e) => e.preventDefault();
           cell.ondrop = (e) => {
             e.preventDefault();
@@ -3090,7 +3069,7 @@
             if (e.target.tagName !== 'DIV' && e.target.tagName !== 'SPAN') return;
             openEventModalForDate(dateStr);
           };
-          
+
           let todayStr = new Date().toISOString().split('T')[0];
           let isToday = dateStr === todayStr;
 
@@ -3143,7 +3122,7 @@
             moveEventToDate(evId, dateStr);
           };
           row.onclick = () => openEventModalForDate(dateStr);
-          
+
           let eventsHtml = dayEvents.map(ev => `
             <span draggable="true" 
                   ondragstart="event.dataTransfer.setData('text/plain', '${ev.id}')"
@@ -3240,7 +3219,7 @@
       if (!texto) return alert("Digite um comando para a IA.");
 
       let novoEvento = { title: texto.split(/dia|às/i)[0].trim(), data: "", hora: "09:00", loja: "" };
-      
+
       const dataMatch = texto.match(/\d{2}\/\d{2}(\/\d{4})?/);
       if (dataMatch) {
           let partes = dataMatch[0].split('/');
@@ -3255,7 +3234,7 @@
       document.getElementById("event-title").value = novoEvento.title;
       document.getElementById("event-date").value = novoEvento.data || new Date().toISOString().split('T')[0];
       document.getElementById("event-time-start").value = novoEvento.hora;
-      
+
       if (novoEvento.loja) {
           document.getElementById("event-scope").value = "INDIVIDUAL";
           document.getElementById("event-store").value = novoEvento.loja;
@@ -3276,7 +3255,7 @@
       document.getElementById("event-time-end").value = "10:00";
       document.getElementById("event-recurrence").value = "none";
       document.getElementById("event-desc").value = "";
-      
+
       let scopeSelect = document.getElementById("event-scope");
       if (currentUser.role === 'gerente') {
         scopeSelect.value = 'INDIVIDUAL';
@@ -3311,7 +3290,7 @@
       document.getElementById("event-time-end").value = ev.timeEnd || '10:00';
       document.getElementById("event-recurrence").value = ev.recurrence || 'none';
       document.getElementById("event-desc").value = ev.desc || '';
-      
+
       toggleEventStoreSelect();
       document.getElementById("btn-delete-event").classList.remove("hidden");
       document.getElementById("event-modal").classList.remove("hidden");
@@ -3598,7 +3577,7 @@
         const secBox = document.createElement("div");
         secBox.className = "border rounded-xl p-3 bg-white space-y-2 text-xs";
         secBox.innerHTML = `<div class="flex justify-between items-center border-b pb-1"><span class="font-bold uppercase">${sec.category}</span><button onclick="editCategory(${sIdx})" class="underline font-bold">Editar Seção</button></div>`;
-        
+
         sec.items.forEach((item, iIdx) => {
           let typeLabel = item.type === 'maintenance' ? 'Manutenção' : item.type === 'stars' ? 'Estrelas' : item.type === 'text' ? 'Texto' : 'Sim/Não';
           secBox.innerHTML += `
@@ -3750,7 +3729,7 @@
       const pass = document.getElementById("new-user-pass").value.trim();
       const name = document.getElementById("new-user-fullname").value.trim();
       const role = document.getElementById("new-user-role").value;
-      
+
       let assignedUnits = [];
       if (role !== 'admin') {
         const select = document.getElementById("new-user-units");
@@ -3797,7 +3776,7 @@
     function createNewChecklistType() {
       const name = document.getElementById("new-checklist-name").value.trim();
       if (!name) return alert("Nome vazio.");
-      
+
       let selectedRoles = [];
       document.querySelectorAll('input[name="new-chk-role"]:checked').forEach(cb => {
         selectedRoles.push(cb.value);
@@ -3862,17 +3841,17 @@
 
     function initApp() {
       updateLogos(); renderPresetUnits(); updateHistoryBadge(); setupCloudListeners();
-      
+
       if (!currentUser) {
         document.getElementById("login-screen").classList.remove("hidden");
         document.getElementById("modules-screen").classList.add("hidden");
         return;
       }
-      
+
       document.getElementById("login-screen").classList.add("hidden");
       document.getElementById("sidebar-user-name").innerText = `${currentUser.name} (${currentUser.role})`;
       document.getElementById("supervisor-name").value = currentUser.name;
-      
+
       if (currentUser.role === "admin" || currentUser.role === "gerente") {
         document.getElementById("home-btn-config").classList.remove("hidden");
         if (currentUser.role === "admin") {
@@ -3884,7 +3863,7 @@
         document.getElementById("sidebar-btn-users").classList.add("hidden");
         document.getElementById("home-btn-config").classList.add("hidden");
       }
-      
+
       renderAgendaCalendar();
       openModulesScreen();
     }
@@ -3971,7 +3950,7 @@
         if (sec.items.length === 0) return;
         const secEl = document.createElement("div");
         secEl.className = "bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden";
-        
+
         let itemsHtml = sec.items.map((item, iIdx) => {
           const itemKey = `${sIdx}-${iIdx}`;
           const itemType = item.type || "boolean";
@@ -4053,7 +4032,7 @@
         reader.onload = function(e) {
           attachedPhotos[key] = e.target.result;
           saveDraft();
-          
+
           const label = document.getElementById(`photo-label-${key}`);
           const status = document.getElementById(`photo-status-${key}`);
           if (label) label.innerText = 'Alterar Foto';
