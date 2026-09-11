@@ -27,8 +27,6 @@
     .event-card { cursor: grab; }
     .event-card:active { cursor: grabbing; }
     .resize-handle { height: 4px; width: 100%; cursor: ns-resize; position: absolute; bottom: 0; left: 0; }
-    .draggable-item { cursor: move; }
-    .draggable-item.dragging { opacity: 0.5; border: 2px dashed #D4AF37; }
     @media (min-width: 768px) {
       .app-main, .responsive-container { max-width: 100% !important; width: 100% !important; margin: 0 auto; padding-left: 2rem; padding-right: 2rem; }
     }
@@ -369,6 +367,7 @@
           </div>
         </div>
 
+        <!-- Barra de Ações em Massa (Batch) -->
         <div id="batch-actions-bar" class="p-2.5 bg-stone-100 rounded-xl border border-stone-200 flex justify-between items-center flex-wrap gap-2 text-xs">
           <div class="flex items-center gap-2">
             <input type="checkbox" id="select-all-actions" onchange="toggleSelectAllActions(this.checked)" class="rounded text-cb-bordo focus:ring-0">
@@ -869,7 +868,7 @@
       <div id="tab-content-models" class="p-5 space-y-5 overflow-y-auto flex-1 bg-stone-50 text-sm">
         <div class="bg-white p-4 rounded-xl border border-stone-200 space-y-3 shadow-sm">
           <span class="block text-xs font-bold text-cb-bordo uppercase tracking-wider">Novo Modelo</span>
-          <div class="space-y-2 text-xs">
+          <div class="space-y-2">
             <input type="text" id="new-checklist-name" placeholder="Ex: Fechamento" class="w-full text-xs border rounded-lg p-2.5 bg-stone-50">
             <div id="new-checklist-roles-box" class="space-y-1">
               <label class="block font-bold text-stone-600 text-xs">Vincular Perfis com Acesso a este Checklist:</label>
@@ -879,49 +878,6 @@
                 <label><input type="checkbox" name="new-chk-role" value="operador" checked> Operadores</label>
               </div>
             </div>
-
-            <!-- Frequência e Seletores Dinâmicos -->
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
-              <div>
-                <label class="block font-bold text-stone-600 text-xs mb-1">Frequência / Recorrência:</label>
-                <select id="new-checklist-frequency" onchange="toggleFrequencyFields('new')" class="w-full border rounded p-2 bg-stone-50 font-semibold">
-                  <option value="diario">Diário</option>
-                  <option value="semanal">Semanal (Dia da Semana)</option>
-                  <option value="quinzenal">Quinzenal</option>
-                  <option value="mensal">Mensal</option>
-                  <option value="especifico">Data Específica / Anual</option>
-                </select>
-              </div>
-
-              <div id="new-freq-weekday-box" class="hidden">
-                <label class="block font-bold text-stone-600 text-xs mb-1">Dia da Semana:</label>
-                <select id="new-checklist-weekday" class="w-full border rounded p-2 bg-stone-50 font-semibold">
-                  <option value="Segunda-feira">Segunda-feira</option>
-                  <option value="Terça-feira">Terça-feira</option>
-                  <option value="Quarta-feira">Quarta-feira</option>
-                  <option value="Quinta-feira">Quinta-feira</option>
-                  <option value="Sexta-feira">Sexta-feira</option>
-                  <option value="Sábado">Sábado</option>
-                  <option value="Domingo">Domingo</option>
-                </select>
-              </div>
-
-              <div id="new-freq-date-box" class="hidden">
-                <label class="block font-bold text-stone-600 text-xs mb-1">Data Específica:</label>
-                <input type="date" id="new-checklist-date" class="w-full border rounded p-2 bg-stone-50 font-semibold">
-              </div>
-
-              <div>
-                <label class="block font-bold text-stone-600 text-xs mb-1">Horário Previsto:</label>
-                <input type="time" id="new-checklist-time" value="09:00" class="w-full border rounded p-2 bg-stone-50 font-semibold">
-              </div>
-            </div>
-
-            <div>
-              <label class="block font-bold text-stone-600 text-xs mb-1">Lojas Aplicáveis (Ctrl para selecionar múltiplas):</label>
-              <select id="new-checklist-units" multiple class="w-full border rounded p-2 bg-stone-50 h-16"></select>
-            </div>
-
             <button onclick="createNewChecklistType()" class="w-full py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-lg transition">+ Criar Modelo</button>
           </div>
         </div>
@@ -962,7 +918,7 @@
           <div class="flex items-center justify-between pt-1">
             <label class="flex items-center gap-1.5 cursor-pointer text-stone-700 text-xs font-medium">
               <input type="checkbox" id="new-item-req-photo" class="rounded text-cb-bordo focus:ring-0">
-              <span>Exigir Foto em Não Conforme</span>
+              <span>Exigir Foto</span>
             </label>
             <button onclick="addNewItem()" class="px-4 py-2 bg-cb-bordo hover:bg-cb-bordo-dark text-white text-xs font-bold rounded-lg transition shadow-sm">+ Inserir Pergunta</button>
           </div>
@@ -974,71 +930,6 @@
         <button onclick="toggleConfigModal()" class="bg-stone-900 hover:bg-black text-white font-bold px-6 py-2 rounded-lg transition">Concluir</button>
       </div>
 
-    </div>
-  </div>
-
-  <!-- Modal de Edição de Modelo Existente -->
-  <div id="edit-model-modal" class="fixed inset-0 bg-black/60 z-[60] hidden flex items-center justify-center p-4">
-    <div class="bg-white w-full max-w-lg rounded-2xl p-5 space-y-4 shadow-2xl border text-xs">
-      <div class="flex justify-between items-center border-b pb-2">
-        <h3 class="font-bold text-cb-bordo text-sm uppercase">Editar Modelo de Checklist</h3>
-        <button onclick="closeEditModelModal()" class="font-bold text-stone-400 hover:text-stone-700 text-base">✕</button>
-      </div>
-      <input type="hidden" id="edit-model-idx">
-      <div class="space-y-3">
-        <div>
-          <label class="block font-bold text-stone-600 mb-1">Nome do Modelo:</label>
-          <input type="text" id="edit-model-name" class="w-full border rounded p-2 bg-stone-50 font-semibold">
-        </div>
-        <div>
-          <label class="block font-bold text-stone-600 mb-1">Perfis com Acesso:</label>
-          <div class="flex gap-4 text-xs font-semibold">
-            <label><input type="checkbox" name="edit-chk-role" value="admin"> Admin</label>
-            <label><input type="checkbox" name="edit-chk-role" value="gerente"> Gerentes</label>
-            <label><input type="checkbox" name="edit-chk-role" value="operador"> Operadores</label>
-          </div>
-        </div>
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-          <div>
-            <label class="block font-bold text-stone-600 mb-1">Frequência:</label>
-            <select id="edit-model-frequency" onchange="toggleFrequencyFields('edit')" class="w-full border rounded p-2 bg-stone-50 font-semibold">
-              <option value="diario">Diário</option>
-              <option value="semanal">Semanal</option>
-              <option value="quinzenal">Quinzenal</option>
-              <option value="mensal">Mensal</option>
-              <option value="especifico">Data Específica / Anual</option>
-            </select>
-          </div>
-          <div id="edit-freq-weekday-box" class="hidden">
-            <label class="block font-bold text-stone-600 mb-1">Dia da Semana:</label>
-            <select id="edit-model-weekday" class="w-full border rounded p-2 bg-stone-50 font-semibold">
-              <option value="Segunda-feira">Segunda-feira</option>
-              <option value="Terça-feira">Terça-feira</option>
-              <option value="Quarta-feira">Quarta-feira</option>
-              <option value="Quinta-feira">Quinta-feira</option>
-              <option value="Sexta-feira">Sexta-feira</option>
-              <option value="Sábado">Sábado</option>
-              <option value="Domingo">Domingo</option>
-            </select>
-          </div>
-          <div id="edit-freq-date-box" class="hidden">
-            <label class="block font-bold text-stone-600 mb-1">Data Específica:</label>
-            <input type="date" id="edit-model-date" class="w-full border rounded p-2 bg-stone-50 font-semibold">
-          </div>
-          <div>
-            <label class="block font-bold text-stone-600 mb-1">Horário Previsto:</label>
-            <input type="time" id="edit-model-time" class="w-full border rounded p-2 bg-stone-50 font-semibold">
-          </div>
-        </div>
-        <div>
-          <label class="block font-bold text-stone-600 mb-1">Lojas Aplicáveis (Ctrl para múltiplas):</label>
-          <select id="edit-model-units" multiple class="w-full border rounded p-2 bg-stone-50 h-20"></select>
-        </div>
-        <div class="flex justify-end gap-2 pt-3 border-t">
-          <button onclick="closeEditModelModal()" class="px-4 py-2 border rounded font-bold text-stone-600">Cancelar</button>
-          <button onclick="saveEditedModel()" class="px-5 py-2 bg-cb-bordo text-white font-bold rounded">Salvar Alterações</button>
-        </div>
-      </div>
     </div>
   </div>
 
@@ -1067,7 +958,7 @@
         </div>
         <div class="flex items-center gap-2 pt-2">
           <input type="checkbox" id="edit-q-photo" class="rounded text-cb-bordo">
-          <label for="edit-q-photo" class="font-bold text-stone-700">Exigir foto quando responder "Não" / Não Conforme</label>
+          <label for="edit-q-photo" class="font-bold text-stone-700">Exigir foto obrigatoriamente</label>
         </div>
         <div class="flex justify-end gap-2 pt-3 border-t">
           <button onclick="closeEditQuestionModal()" class="px-4 py-2 border rounded font-bold text-stone-600">Cancelar</button>
@@ -1115,6 +1006,7 @@
       console.warn("Erro Firebase:", err);
     }
 
+    // Utilitário para compactação de fotos via Canvas antes do salvamento
     function compressImageFile(file, maxWidth = 1024, quality = 0.7) {
       return new Promise((resolve, reject) => {
         if (!file.type.startsWith('image/')) {
@@ -1190,6 +1082,7 @@
 
     let savedReports = JSON.parse(localStorage.getItem("CB_LOCAL_REPORTS")) || [];
 
+    // Higienização inicial
     savedReports = savedReports.filter(r => r && r.id && !reportsTrashList.some(t => t.id === r.id));
     try { localStorage.setItem("CB_LOCAL_REPORTS", JSON.stringify(savedReports)); } catch(e){}
 
@@ -1201,9 +1094,6 @@
         id: "cb-supervisao",
         name: "Casa Bauducco - Rota de Supervisão",
         roles: ["admin", "gerente", "operador"],
-        frequency: "diario",
-        scheduledTime: "09:00",
-        units: [],
         categories: [
           {
             category: "1. Estrutura, Salão & Visual",
@@ -1588,26 +1478,6 @@
           listContainer.appendChild(item);
         });
       }
-
-      renderConfigUnitsSelects();
-    }
-
-    function renderConfigUnitsSelects() {
-      const newSelect = document.getElementById("new-checklist-units");
-      const editSelect = document.getElementById("edit-model-units");
-      [newSelect, editSelect].forEach(sel => {
-        if (sel) {
-          const selectedValues = Array.from(sel.selectedOptions).map(o => o.value);
-          sel.innerHTML = "";
-          presetUnits.forEach(u => {
-            const opt = document.createElement("option");
-            opt.value = u;
-            opt.innerText = u;
-            if (selectedValues.includes(u)) opt.selected = true;
-            sel.appendChild(opt);
-          });
-        }
-      });
     }
 
     function adminAddNewUnit() {
@@ -2085,7 +1955,7 @@
     function finishChecklistEvaluation() {
       const missingPhotos = validatePhotos();
       if (missingPhotos.length > 0) {
-        alert(`Atenção: As seguintes perguntas exigem foto obrigatoriamente quando respondidas como Não Conforme / Manutenção:\n\n- ${missingPhotos.join('\n- ')}`);
+        alert(`Atenção: As seguintes perguntas exigem foto obrigatória:\n\n- ${missingPhotos.join('\n- ')}`);
         return;
       }
 
@@ -2360,6 +2230,7 @@
       }
     }
 
+    // CORREÇÃO APLICADA: Tratamento da exceção de Quota Exceeded do LocalStorage
     function saveReportToCloud(reportData) {
       if (!savedReports.some(r => r.id === reportData.id)) {
         savedReports.unshift(reportData);
@@ -3381,15 +3252,6 @@
       });
     }
 
-    function sendChatMessage() {
-      const input = document.getElementById("chat-input-msg");
-      const text = input.value.trim();
-      if (!text || !activeChatActionId || !isFirebaseReady) return;
-      db.collection("chats").doc(activeChatActionId).collection("messages").add({
-        text: text, sender: currentUser.name, seen: false, time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }), createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      }).then(() => input.value = "");
-    }
-
     // 📅 Agenda & Calendário
     function changeCalendarView(view) {
       currentCalendarView = view;
@@ -4015,40 +3877,20 @@
       }
     }
 
-    function toggleFrequencyFields(prefix) {
-      const freqSelect = document.getElementById(`${prefix}-checklist-frequency` || `${prefix}-model-frequency`);
-      const freq = freqSelect ? freqSelect.value : '';
-      const wBox = document.getElementById(`${prefix}-freq-weekday-box`);
-      const dBox = document.getElementById(`${prefix}-freq-date-box`);
-
-      if (wBox) {
-        if (freq === 'semanal') wBox.classList.remove('hidden');
-        else wBox.classList.add('hidden');
-      }
-      if (dBox) {
-        if (freq === 'especifico') dBox.classList.remove('hidden');
-        else dBox.classList.add('hidden');
-      }
-    }
-
     function renderModelsListInConfig() {
       const container = document.getElementById("models-list-container");
       container.innerHTML = "";
       allChecklists.forEach((c, idx) => {
         let rolesStr = c.roles ? c.roles.join(", ") : "todos";
-        let freqText = c.frequency || "diario";
-        if (c.frequency === 'semanal' && c.weekday) freqText += ` (${c.weekday})`;
-        if (c.frequency === 'especifico' && c.specificDate) freqText += ` (${c.specificDate})`;
-
         const div = document.createElement("div");
         div.className = "flex justify-between items-center p-2.5 bg-stone-50 rounded border text-xs";
         div.innerHTML = `
           <div>
             <span class="font-bold block">${c.name}</span>
-            <span class="text-[10px] text-stone-500 block">Acessos: [${rolesStr}] | Freq: ${freqText} | Horário: ${c.scheduledTime || '09:00'}</span>
+            <span class="text-[10px] text-stone-500">Acessos: [${rolesStr}]</span>
           </div>
           <div class="flex gap-2">
-            <button onclick="openEditModelModal(${idx})" class="text-blue-600 font-bold underline">Editar</button>
+            <button onclick="editChecklistName(${idx})" class="text-blue-600 font-bold underline">Editar</button>
             <button onclick="activeChecklistId='${c.id}'; switchConfigTab('items');" class="text-cb-bordo font-bold underline">Perguntas</button>
             ${allChecklists.length > 1 ? `<button onclick="deleteModel('${c.id}')" class="text-rose-600 font-bold">Excluir</button>` : ''}
           </div>`;
@@ -4056,74 +3898,18 @@
       });
     }
 
-    function openEditModelModal(idx) {
-      const model = allChecklists[idx];
-      document.getElementById("edit-model-idx").value = idx;
-      document.getElementById("edit-model-name").value = model.name;
-
-      document.querySelectorAll('input[name="edit-chk-role"]').forEach(cb => {
-        cb.checked = model.roles ? model.roles.includes(cb.value) : true;
-      });
-
-      document.getElementById("edit-model-frequency").value = model.frequency || 'diario';
-      document.getElementById("edit-model-weekday").value = model.weekday || 'Segunda-feira';
-      document.getElementById("edit-model-date").value = model.specificDate || '';
-      document.getElementById("edit-model-time").value = model.scheduledTime || '09:00';
-
-      const unitsSelect = document.getElementById("edit-model-units");
-      unitsSelect.innerHTML = "";
-      presetUnits.forEach(u => {
-        const opt = document.createElement("option");
-        opt.value = u;
-        opt.innerText = u;
-        if (model.units && model.units.includes(u)) opt.selected = true;
-        unitsSelect.appendChild(opt);
-      });
-
-      toggleFrequencyFields('edit');
-      document.getElementById("edit-model-modal").classList.remove("hidden");
+    function editChecklistName(idx) {
+      const currentName = allChecklists[idx].name;
+      const newName = prompt("Editar nome do checklist:", currentName);
+      if (newName && newName.trim()) {
+        allChecklists[idx].name = newName.trim();
+        localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
+        syncConfigToCloud();
+        renderModelsListInConfig();
+        renderHomeChecklistSelect();
+        alert("Nome atualizado com sucesso!");
+      }
     }
-
-    function closeEditModelModal() {
-      document.getElementById("edit-model-modal").classList.add("hidden");
-    }
-
-    function saveEditedModel() {
-      const idx = parseInt(document.getElementById("edit-model-idx").value);
-      const name = document.getElementById("edit-model-name").value.trim();
-      if (!name) return alert("O nome não pode ser vazio.");
-
-      let selectedRoles = [];
-      document.querySelectorAll('input[name="edit-chk-role"]:checked').forEach(cb => {
-        selectedRoles.push(cb.value);
-      });
-
-      const frequency = document.getElementById("edit-model-frequency").value;
-      const weekday = document.getElementById("edit-model-weekday").value;
-      const specificDate = document.getElementById("edit-model-date").value;
-      const scheduledTime = document.getElementById("edit-model-time").value;
-
-      const unitsSelect = document.getElementById("edit-model-units");
-      let selectedUnits = Array.from(unitsSelect.selectedOptions).map(o => o.value);
-
-      allChecklists[idx].name = name;
-      allChecklists[idx].roles = selectedRoles;
-      allChecklists[idx].frequency = frequency;
-      allChecklists[idx].weekday = frequency === 'semanal' ? weekday : null;
-      allChecklists[idx].specificDate = frequency === 'especifico' ? specificDate : null;
-      allChecklists[idx].scheduledTime = scheduledTime;
-      allChecklists[idx].units = selectedUnits;
-
-      localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
-      syncConfigToCloud();
-      closeEditModelModal();
-      renderModelsListInConfig();
-      renderHomeChecklistSelect();
-      alert("Modelo atualizado com sucesso!");
-    }
-
-    let draggedCategoryIndex = null;
-    let draggedItemIndices = null;
 
     function renderModalItems() {
       const container = document.getElementById("modal-item-list");
@@ -4133,77 +3919,26 @@
 
       current.categories.forEach((sec, sIdx) => {
         const opt = document.createElement("option"); opt.value = sIdx; opt.innerText = sec.category; catSelect.appendChild(opt);
-        
         const secBox = document.createElement("div");
-        secBox.className = "border rounded-xl p-3 bg-white space-y-2 text-xs draggable-item";
-        secBox.draggable = true;
-        secBox.ondragstart = (e) => {
-          draggedCategoryIndex = sIdx;
-          secBox.classList.add("dragging");
-          e.stopPropagation();
-        };
-        secBox.ondragend = () => secBox.classList.remove("dragging");
-        secBox.ondragover = (e) => e.preventDefault();
-        secBox.ondrop = (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          if (draggedCategoryIndex !== null && draggedCategoryIndex !== sIdx) {
-            const movedCat = current.categories.splice(draggedCategoryIndex, 1)[0];
-            current.categories.splice(sIdx, 0, movedCat);
-            draggedCategoryIndex = null;
-            saveAndReloadItems();
-          }
-        };
-
-        secBox.innerHTML = `
-          <div class="flex justify-between items-center border-b pb-1">
-            <span class="font-bold uppercase flex items-center gap-1"><span class="cursor-move text-stone-400">⠿</span> ${sec.category}</span>
-            <button onclick="editCategory(${sIdx})" class="underline font-bold">Editar Seção</button>
-          </div>`;
+        secBox.className = "border rounded-xl p-3 bg-white space-y-2 text-xs";
+        secBox.innerHTML = `<div class="flex justify-between items-center border-b pb-1"><span class="font-bold uppercase">${sec.category}</span><button onclick="editCategory(${sIdx})" class="underline font-bold">Editar Seção</button></div>`;
 
         sec.items.forEach((item, iIdx) => {
           let typeLabel = item.type === 'maintenance' ? 'Manutenção' : item.type === 'stars' ? 'Estrelas' : item.type === 'text' ? 'Texto' : 'Sim/Não';
-          
-          const itemDiv = document.createElement("div");
-          itemDiv.className = "bg-stone-50 p-2.5 rounded border flex justify-between items-center gap-2 draggable-item";
-          itemDiv.draggable = true;
-          itemDiv.ondragstart = (e) => {
-            draggedItemIndices = { sIdx, iIdx };
-            itemDiv.classList.add("dragging");
-            e.stopPropagation();
-          };
-          itemDiv.ondragend = () => itemDiv.classList.remove("dragging");
-          itemDiv.ondragover = (e) => e.preventDefault();
-          itemDiv.ondrop = (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            if (draggedItemIndices && (draggedItemIndices.sIdx !== sIdx || draggedItemIndices.iIdx !== iIdx)) {
-              const movedItem = current.categories[draggedItemIndices.sIdx].items.splice(draggedItemIndices.iIdx, 1)[0];
-              current.categories[sIdx].items.splice(iIdx, 0, movedItem);
-              draggedItemIndices = null;
-              saveAndReloadItems();
-            }
-          };
-
-          itemDiv.innerHTML = `
-            <div class="space-y-0.5">
-              <span class="font-bold text-stone-900 flex items-center gap-1"><span class="cursor-move text-stone-400">⠿</span> ${item.title}</span>
-              <span class="text-[10px] text-stone-500 font-medium">[Tipo: ${typeLabel}] • [Foto: ${item.requirePhoto ? 'Obrigatória em Não Conforme' : 'Opcional'}]</span>
-            </div>
-            <div class="flex gap-2 shrink-0">
-              <button onclick="openEditQuestionModal(${sIdx}, ${iIdx})" class="text-blue-600 font-bold hover:underline">Configurar</button>
-              <button onclick="removeItem(${sIdx}, ${iIdx})" class="text-rose-600 font-bold hover:underline">Remover</button>
+          secBox.innerHTML += `
+            <div class="bg-stone-50 p-2.5 rounded border flex justify-between items-center gap-2">
+              <div class="space-y-0.5">
+                <span class="font-bold text-stone-900 block">${item.title}</span>
+                <span class="text-[10px] text-stone-500 font-medium">[Tipo: ${typeLabel}] • [Foto: ${item.requirePhoto ? 'Obrigatória' : 'Opcional'}]</span>
+              </div>
+              <div class="flex gap-2 shrink-0">
+                <button onclick="openEditQuestionModal(${sIdx}, ${iIdx})" class="text-blue-600 font-bold hover:underline">Configurar</button>
+                <button onclick="removeItem(${sIdx}, ${iIdx})" class="text-rose-600 font-bold hover:underline">Remover</button>
+              </div>
             </div>`;
-          secBox.appendChild(itemDiv);
         });
         container.appendChild(secBox);
       });
-    }
-
-    function saveAndReloadItems() {
-      localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
-      syncConfigToCloud();
-      renderModalItems();
     }
 
     function openEditQuestionModal(sIdx, iIdx) {
@@ -4398,26 +4133,8 @@
         return alert("Operadores não podem criar ou gerenciar modelos de checklist.");
       }
 
-      const frequency = document.getElementById("new-checklist-frequency").value;
-      const weekday = document.getElementById("new-checklist-weekday").value;
-      const specificDate = document.getElementById("new-checklist-date").value;
-      const scheduledTime = document.getElementById("new-checklist-time").value;
-
-      const unitsSelect = document.getElementById("new-checklist-units");
-      let selectedUnits = Array.from(unitsSelect.selectedOptions).map(o => o.value);
-
       const newId = "checklist-" + Date.now();
-      allChecklists.push({ 
-        id: newId, 
-        name: name, 
-        roles: selectedRoles, 
-        frequency: frequency,
-        weekday: frequency === 'semanal' ? weekday : null,
-        specificDate: frequency === 'especifico' ? specificDate : null,
-        scheduledTime: scheduledTime,
-        units: selectedUnits,
-        categories: [{ category: "1. Itens Gerais", items: [] }] 
-      });
+      allChecklists.push({ id: newId, name: name, roles: selectedRoles, categories: [{ category: "1. Itens Gerais", items: [] }] });
       activeChecklistId = newId;
       localStorage.setItem("CB_LOCAL_CHECKLISTS", JSON.stringify(allChecklists));
       localStorage.setItem("CB_LOCAL_ACTIVE_ID", activeChecklistId);
@@ -4592,4 +4309,143 @@
       current.categories.forEach((sec, sIdx) => {
         if (sec.items.length === 0) return;
         const secEl = document.createElement("div");
-        secEl.className =I encountered an error doing what you asked. Could you try again?
+        secEl.className = "bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden";
+
+        let itemsHtml = sec.items.map((item, iIdx) => {
+          const itemKey = `${sIdx}-${iIdx}`;
+          const itemType = item.type || "boolean";
+          const photosArr = getPhotosArray(itemKey);
+          const planData = actionPlans[itemKey] || { action: '', date: '' };
+          const omData = maintenanceOrders[itemKey] || { equipment: '', action: '', date: '' };
+          const savedAnswer = customAnswers[itemKey];
+          let controlHtml = "";
+
+          if (itemType === "boolean") {
+            let isConf = savedAnswer === 'conforme' ? 'checked' : '';
+            let isNaoConf = savedAnswer === 'nao-conforme' ? 'checked' : '';
+            let isNa = savedAnswer === 'na' ? 'checked' : '';
+            let planHidden = savedAnswer === 'nao-conforme' ? '' : 'hidden';
+
+            controlHtml = `
+              <div class="flex gap-2 text-xs">
+                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="conforme" ${isConf} class="hidden peer" onchange="handleEvaluationChange('${itemKey}', 'conforme')"><div class="text-center py-2 rounded-md border peer-checked:bg-emerald-600 peer-checked:text-white font-bold">Sim</div></label>
+                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="nao-conforme" ${isNaoConf} class="hidden peer" onchange="handleEvaluationChange('${itemKey}', 'nao-conforme')"><div class="text-center py-2 rounded-md border peer-checked:bg-rose-700 peer-checked:text-white font-bold">Não</div></label>
+                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="na" ${isNa} class="hidden peer" onchange="handleEvaluationChange('${itemKey}', 'na')"><div class="text-center py-2 rounded-md border peer-checked:bg-stone-500 peer-checked:text-white font-bold">N/A</div></label>
+              </div>
+              <div id="plan-box-${itemKey}" class="${planHidden} p-3 bg-rose-50 border rounded-lg space-y-2 text-xs">
+                <span class="block font-bold text-rose-800 uppercase text-[10px]">⚠️ Plano de Ação</span>
+                <input type="text" value="${planData.action}" placeholder="Ação..." oninput="updateActionPlan('${itemKey}', 'action', this.value)" class="w-full border p-2 bg-white rounded">
+                <input type="date" value="${planData.date}" oninput="updateActionPlan('${itemKey}', 'date', this.value)" class="w-full border p-2 bg-white rounded">
+              </div>`;
+          } else if (itemType === "maintenance") {
+            let isAbrir = savedAnswer === 'abrir' ? 'checked' : '';
+            let isReg = savedAnswer === 'regular' ? 'checked' : '';
+            let isNa = savedAnswer === 'na' ? 'checked' : '';
+            let omHidden = savedAnswer === 'abrir' ? '' : 'hidden';
+
+            controlHtml = `
+              <div class="flex gap-2 text-xs">
+                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="abrir" ${isAbrir} class="hidden peer" onchange="handleMaintenanceChange('${itemKey}', 'abrir')"><div class="text-center py-2 rounded-md border peer-checked:bg-amber-600 peer-checked:text-white font-bold">Abrir</div></label>
+                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="regular" ${isReg} class="hidden peer" onchange="handleMaintenanceChange('${itemKey}', 'regular')"><div class="text-center py-2 rounded-md border peer-checked:bg-emerald-600 peer-checked:text-white font-bold">Regular / Ok</div></label>
+                <label class="flex-1 cursor-pointer"><input type="radio" name="item-${itemKey}" value="na" ${isNa} class="hidden peer" onchange="handleMaintenanceChange('${itemKey}', 'na')"><div class="text-center py-2 rounded-md border peer-checked:bg-stone-500 peer-checked:text-white font-bold">N/A</div></label>
+              </div>
+              <div id="maintenance-box-${itemKey}" class="${omHidden} p-3 bg-amber-50 border rounded-lg space-y-2 text-xs">
+                <span class="block font-bold text-amber-900 uppercase text-[10px]">Abertura de Ordem de Manutenção</span>
+                <input type="text" value="${omData.equipment}" placeholder="Equipamento..." oninput="updateMaintenanceOrder('${itemKey}', 'equipment', this.value)" class="w-full border p-2 bg-white rounded">
+                <input type="text" value="${omData.action}" placeholder="Defeito..." oninput="updateMaintenanceOrder('${itemKey}', 'action', this.value)" class="w-full border p-2 bg-white rounded">
+                <input type="date" value="${omData.date}" oninput="updateMaintenanceOrder('${itemKey}', 'date', this.value)" class="w-full border p-2 bg-white rounded">
+              </div>`;
+          } else if (itemType === "stars") {
+            let currentStars = parseInt(savedAnswer) || 0;
+            let starsSpans = "";
+            for (let s = 1; s <= 5; s++) starsSpans += `<button type="button" id="star-${itemKey}-${s}" onclick="setStarRating('${itemKey}', ${s})" class="text-xl ${s <= currentStars ? 'text-amber-400' : 'text-stone-300'}">★</button>`;
+            controlHtml = `<div class="flex items-center justify-between bg-stone-50 p-2.5 rounded border"><div class="flex gap-2">${starsSpans}</div><span id="star-label-${itemKey}" class="text-xs font-bold">${currentStars ? currentStars + ' de 5' : 'Avalie'}</span></div>`;
+          } else if (itemType === "text") {
+            controlHtml = `<div><textarea rows="2" placeholder="Digite..." oninput="updateTextInput('${itemKey}', this.value)" class="w-full border p-2 text-xs bg-stone-50 rounded">${savedAnswer || ''}</textarea></div>`;
+          }
+
+          let thumbsHtml = photosArr.map((url, pIdx) => `
+            <div class="relative inline-block border rounded-lg overflow-hidden bg-white shadow-xs">
+              <img src="${url}" onclick="openImageViewer('${url}')" class="h-12 w-12 object-cover cursor-pointer hover:opacity-90" alt="Miniatura">
+              <button onclick="removePhotoFromItem('${itemKey}', ${pIdx})" class="absolute top-0 right-0 bg-rose-600 text-white rounded-full w-3.5 h-3.5 flex items-center justify-center text-[9px] font-bold">✕</button>
+            </div>
+          `).join('');
+
+          return `
+          <div class="p-3.5 border-t flex flex-col gap-2.5">
+            <div class="flex justify-between items-start gap-2"><span class="text-sm font-medium">${item.title}</span>${item.requirePhoto ? '<span class="text-[10px] bg-amber-50 text-amber-800 border px-1.5 rounded font-bold">Foto Obrigatória</span>' : ''}</div>
+            ${controlHtml}
+            
+            <div class="space-y-1.5 pt-1">
+              <div class="flex items-center gap-2">
+                <label class="cursor-pointer inline-flex items-center gap-1.5 text-xs font-semibold bg-cb-cream px-3 py-1.5 rounded border">
+                  <span>+ Anexar Fotos</span>
+                  <input type="file" accept="image/*" multiple class="hidden" onchange="handleMultiplePhotosUpload(event, '${itemKey}')">
+                </label>
+                <span class="text-xs text-stone-500 font-medium">${photosArr.length} foto(s) anexada(s)</span>
+              </div>
+              <div class="flex gap-2 flex-wrap">${thumbsHtml}</div>
+            </div>
+          </div>`;
+        }).join("");
+
+        secEl.innerHTML = `<div class="bg-cb-cream px-4 py-2.5 font-bold text-xs uppercase text-cb-bordo border-b"><span>${sec.category}</span></div><div>${itemsHtml}</div>`;
+        container.appendChild(secEl);
+      });
+
+      calculateScore();
+    }
+
+    async function handleMultiplePhotosUpload(event, key) {
+      if (isAuditFinished) return;
+      const files = event.target.files;
+      if (!files || files.length === 0) return;
+
+      if (!attachedPhotos[key] || !Array.isArray(attachedPhotos[key])) {
+        attachedPhotos[key] = attachedPhotos[key] ? [attachedPhotos[key]] : [];
+      }
+
+      for (let i = 0; i < files.length; i++) {
+        try {
+          const compressed = await compressImageFile(files[i], 1024, 0.7);
+          attachedPhotos[key].push(compressed);
+        } catch(e) {
+          console.error("Erro ao compactar foto do checklist:", e);
+        }
+      }
+
+      saveDraft();
+      renderChecklist();
+    }
+
+    function removePhotoFromItem(key, pIdx) {
+      if (isAuditFinished) return;
+      if (attachedPhotos[key] && Array.isArray(attachedPhotos[key])) {
+        attachedPhotos[key].splice(pIdx, 1);
+        if (attachedPhotos[key].length === 0) delete attachedPhotos[key];
+        saveDraft();
+        renderChecklist();
+      }
+    }
+
+    function validatePhotos() {
+      let missing = [];
+      const current = getCurrentChecklist();
+      current.categories.forEach((sec, sIdx) => {
+        sec.items.forEach((item, iIdx) => {
+          const key = `${sIdx}-${iIdx}`;
+          const photos = getPhotosArray(key);
+          if (item.requirePhoto && photos.length === 0) {
+            const isNc = customAnswers[key] === 'nao-conforme';
+            const isOm = customAnswers[key] === 'abrir';
+            if (isNc || isOm) missing.push(item.title);
+          }
+        });
+      });
+      return missing;
+    }
+
+    initApp();
+  </script>
+</body>
+</html>
