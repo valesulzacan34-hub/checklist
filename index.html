@@ -1201,6 +1201,7 @@
           renderPresetUnits();
           renderHomeChecklistSelect();
           renderAgendaCalendar();
+          renderCentralizedActions();
           updateSyncUI("🟢 Sincronizado na Nuvem", new Date().toLocaleTimeString('pt-BR'));
         } else {
           syncConfigToCloud();
@@ -1346,7 +1347,6 @@
       if (lastDeletedItem.type === 'report') {
         if (!savedReports.some(r => r.id === lastDeletedItem.data.id)) {
           savedReports.unshift(lastDeletedItem.data);
-          localStorage.setItem("CB_LOCAL_REPORTS", JSON.stringify(savedReports));
           try { localStorage.setItem("CB_LOCAL_REPORTS", JSON.stringify(savedReports)); } catch(e){}
           if (isFirebaseReady) {
             db.collection("reports").doc(lastDeletedItem.data.id).set(lastDeletedItem.data);
@@ -1854,7 +1854,6 @@
       if (confirm("Deseja mover este relatório para a lixeira?")) {
         const itemToDelete = savedReports.find(r => r.id === docId);
         savedReports = savedReports.filter(r => r.id !== docId);
-        localStorage.setItem("CB_LOCAL_REPORTS", JSON.stringify(savedReports));
         try { localStorage.setItem("CB_LOCAL_REPORTS", JSON.stringify(savedReports)); } catch(e){}
 
         if (itemToDelete) {
@@ -1913,7 +1912,6 @@
       if (rep) {
         if (!savedReports.some(r => r.id === rep.id)) {
           savedReports.unshift(rep);
-          localStorage.setItem("CB_LOCAL_REPORTS", JSON.stringify(savedReports));
           try { localStorage.setItem("CB_LOCAL_REPORTS", JSON.stringify(savedReports)); } catch(e){}
           if (isFirebaseReady) db.collection("reports").doc(rep.id).set(rep);
         }
@@ -2235,17 +2233,12 @@
 
     // CORREÇÃO APLICADA: Tratamento da exceção de Quota Exceeded do LocalStorage
     function saveReportToCloud(reportData) {
-      if (!isFirebaseReady) {
       if (!savedReports.some(r => r.id === reportData.id)) {
         savedReports.unshift(reportData);
       }
 
       try {
         localStorage.setItem("CB_LOCAL_REPORTS", JSON.stringify(savedReports));
-        updateHistoryBadge();
-        updateNotificationBadgeCount();
-        renderHistoryList();
-        return;
       } catch (e) {
         console.warn("Aviso: LocalStorage excedeu o limite de quota. O relatório foi mantido na memória/Firestore.", e);
       }
@@ -2255,15 +2248,11 @@
       renderHistoryList();
 
       if (isFirebaseReady) {
-        reportData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-        db.collection("reports").doc(reportData.id).set(reportData).then(() => {
+        let firebaseRep = { ...reportData, createdAt: firebase.firestore.FieldValue.serverTimestamp() };
+        db.collection("reports").doc(reportData.id).set(firebaseRep).then(() => {
           renderHistoryList();
         }).catch(err => console.error("Erro ao salvar relatório no Firestore:", err));
       }
-      reportData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-      db.collection("reports").doc(reportData.id).set(reportData).then(() => {
-        renderHistoryList();
-      }).catch(err => console.error(err));
     }
 
     function switchActionsTab(tab) {
@@ -2636,7 +2625,6 @@
             deletedData = { ...rep.maintenanceOrders[index], fullReportId, type, index };
             rep.maintenanceOrders.splice(index, 1);
           }
-          localStorage.setItem("CB_LOCAL_REPORTS", JSON.stringify(savedReports));
           try { localStorage.setItem("CB_LOCAL_REPORTS", JSON.stringify(savedReports)); } catch(e){}
           if (isFirebaseReady) {
             db.collection("reports").doc(fullReportId).update({
@@ -2727,7 +2715,6 @@
         if (rep) {
           if (item.type === 'nc') rep.nonConformities.push(item);
           if (item.type === 'om') rep.maintenanceOrders.push(item);
-          localStorage.setItem("CB_LOCAL_REPORTS", JSON.stringify(savedReports));
           try { localStorage.setItem("CB_LOCAL_REPORTS", JSON.stringify(savedReports)); } catch(e){}
         }
       }
