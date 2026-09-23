@@ -2231,7 +2231,6 @@
       }
     }
 
-    // CORREÇÃO APLICADA: Tratamento da exceção de Quota Exceeded do LocalStorage
     function saveReportToCloud(reportData) {
       if (!savedReports.some(r => r.id === reportData.id)) {
         savedReports.unshift(reportData);
