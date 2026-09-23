@@ -437,7 +437,7 @@
       <div class="bg-gradient-to-r from-cb-bordo to-rose-900 p-4 rounded-xl shadow-lg border border-cb-gold/30 space-y-2">
         <h3 class="text-white font-bold text-xs flex items-center gap-2">🤖 Agendamento Inteligente (IA)</h3>
         <div class="flex gap-2">
-          <input type="text" id="ia-input" placeholder="Ex: Treinamento na Aricanduva dia 25/08 às 10h" class="flex-1 text-xs border rounded-lg p-2.5 bg-white/90">
+          <input type="text" id="ia-input" placeholder="Ex: Treinamento CRM Arantina dia 25/08 às 10h" class="flex-1 text-xs border rounded-lg p-2.5 bg-white/90">
           <button onclick="processarAgendaIA()" class="px-4 py-2 bg-cb-gold text-cb-bordo font-bold text-xs rounded-lg hover:bg-yellow-500 transition shadow-md">Processar</button>
         </div>
       </div>
@@ -666,7 +666,7 @@
       <div class="space-y-3">
         <div>
           <label class="block font-bold text-stone-600 mb-1">Título do Evento:</label>
-          <input type="text" id="event-title" placeholder="Ex: Treinamento CRM, Promoção..." class="w-full border rounded p-2 bg-stone-50 font-semibold">
+          <input type="text" id="event-title" placeholder="Ex: Treinamento CRM Arantina, Promoção..." class="w-full border rounded p-2 bg-stone-50 font-semibold">
         </div>
         <div class="grid grid-cols-2 gap-2">
           <div>
@@ -4445,9 +4445,8 @@
           const key = `${sIdx}-${iIdx}`;
           const photos = getPhotosArray(key);
           if (item.requirePhoto && photos.length === 0) {
-            const isNc = customAnswers[key] === 'nao-conforme';
-            const isOm = customAnswers[key] === 'abrir';
-            if (isNc || isOm) missing.push(item.title);
+            const ans = customAnswers[key];
+            if (ans && ans !== 'na') missing.push(item.title);
           }
         });
       });
