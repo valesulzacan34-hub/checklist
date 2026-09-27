@@ -1628,11 +1628,17 @@
         pInput.value = "";
       } catch (err) {
         const code = err?.code || "";
-        let msg = "Usuário ou senha incorretos.";
-        if (code.includes("too-many-requests")) msg = "Muitas tentativas. Aguarde alguns minutos e tente de novo.";
+        console.error("Falha no login:", code, err?.message);
+        let msg;
+        if (["auth/invalid-credential", "auth/invalid-login-credentials", "auth/wrong-password", "auth/user-not-found"].includes(code)) {
+          msg = `Usuário ou senha incorretos. (O sistema procurou a conta ${usernameToEmail(username)} no Firebase.)`;
+        } else if (code.includes("too-many-requests")) msg = "Muitas tentativas. Aguarde alguns minutos e tente de novo.";
         else if (code.includes("network")) msg = "Sem conexão com a internet.";
         else if (code.includes("invalid-email")) msg = "Usuário inválido. Use apenas letras, números, ponto, hífen ou sublinhado.";
         else if (code.includes("operation-not-allowed")) msg = "Login por senha não está ativado no Firebase (Authentication → Método de login).";
+        else if (code.includes("api-key") || code.includes("internal-error") || code.includes("unauthorized-domain") || code.includes("requests-from-referer")) {
+          msg = `O Firebase recusou a conexão (${code}). Verifique as restrições da chave de API e os domínios autorizados.`;
+        } else msg = `Não foi possível entrar (${code || err?.message || "erro desconhecido"}).`;
         errEl.innerText = msg;
         errEl.classList.remove("hidden");
       } finally {
