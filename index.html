@@ -42,8 +42,8 @@
       .btn-success { @apply inline-flex items-center justify-center gap-2 h-11 px-4 rounded-xl text-sm font-bold transition active:scale-[.98] disabled:opacity-50 select-none whitespace-nowrap bg-emerald-600 text-white hover:bg-emerald-700; }
       .btn-sm { @apply h-9 px-3 text-xs rounded-lg; }
       .icon-btn { @apply inline-flex items-center justify-center w-11 h-11 rounded-full text-stone-600 hover:bg-stone-100 transition shrink-0; }
-      .field { @apply w-full h-11 px-3.5 rounded-xl border border-stone-200 bg-white text-sm text-cb-ink placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-cb-bordo/25 focus:border-cb-bordo transition; }
-      .field-area { @apply w-full px-3.5 py-2.5 rounded-xl border border-stone-200 bg-white text-sm text-cb-ink placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-cb-bordo/25 focus:border-cb-bordo transition; }
+      .field { @apply w-full min-w-0 h-11 px-3.5 rounded-xl border border-stone-200 bg-white text-base md:text-sm text-cb-ink placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-cb-bordo/25 focus:border-cb-bordo transition; }
+      .field-area { @apply w-full min-w-0 px-3.5 py-2.5 rounded-xl border border-stone-200 bg-white text-base md:text-sm text-cb-ink placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-cb-bordo/25 focus:border-cb-bordo transition; }
       .label { @apply block text-xs font-semibold text-stone-600 mb-1.5; }
       .chip { @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold whitespace-nowrap; }
       .section-title { @apply text-[17px] font-extrabold tracking-tight text-cb-ink; }
@@ -62,7 +62,16 @@
     }
   </style>
   <style>
-    html { -webkit-tap-highlight-color: transparent; }
+    html { -webkit-tap-highlight-color: transparent; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+    html, body { max-width: 100%; overflow-x: clip; }
+    img, svg, video { max-width: 100%; }
+    /* Itens de grade e flex podem encolher (senão selects e datas empurram a tela) */
+    .grid > *, .flex > .flex-1 { min-width: 0; }
+    /* Campos de data/hora do iPhone têm largura mínima própria: libera para encolher */
+    input[type="date"], input[type="time"] { -webkit-appearance: none; appearance: none; min-width: 0; display: block; text-align: left; }
+    input[type="date"]::-webkit-date-and-time-value, input[type="time"]::-webkit-date-and-time-value { text-align: left; }
+    /* Qualquer campo de texto no celular com 16px, para o iPhone não ampliar a tela */
+    @media (max-width: 767px) { input, select, textarea { font-size: 16px !important; } }
     body { font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif; }
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .check-chip:has(input:checked) { background: #4A0E17; color: #fff; border-color: #4A0E17; }
@@ -254,7 +263,7 @@
           </div>
 
           <div class="flex items-center gap-2">
-            <div id="date-strip" class="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 md:mx-0 md:px-0 py-1 flex-1"></div>
+            <div id="date-strip" class="flex gap-2 overflow-x-auto no-scrollbar py-1 flex-1 min-w-0"></div>
             <label class="relative w-11 h-[68px] shrink-0 rounded-2xl border border-dashed border-stone-300 text-stone-600 flex items-center justify-center cursor-pointer hover:bg-white" title="Escolher outra data">
               <span data-icon="calendar" class="w-5 h-5"></span>
               <span class="sr-only">Escolher outra data</span>
@@ -2668,7 +2677,9 @@
             <span class="text-xl font-extrabold leading-none">${d.getDate()}</span>
           </button>`;
       }).join("");
-      strip.querySelector('[aria-current="date"]')?.scrollIntoView({ inline: "center", block: "nearest" });
+      // Centraliza o dia selecionado rolando só a faixa (scrollIntoView arrastava a página inteira).
+      const sel = strip.querySelector('[aria-current="date"]');
+      if (sel) strip.scrollLeft = Math.max(0, sel.offsetLeft - strip.offsetLeft - (strip.clientWidth - sel.offsetWidth) / 2);
     }
 
     function greeting() {
