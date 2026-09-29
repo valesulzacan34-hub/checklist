@@ -272,6 +272,7 @@
           </div>
 
           <div id="draft-slot"></div>
+          <div id="past-pending-slot"></div>
 
           <div class="flex items-center justify-between">
             <h2 id="schedule-title" class="section-title">Checklists de hoje</h2>
@@ -336,9 +337,12 @@
               <h1 class="text-[26px] font-extrabold tracking-tight">Relatórios</h1>
               <p id="history-count" class="text-sm text-cb-muted">Checklists executados</p>
             </div>
-            <button id="btn-reports-trash" onclick="toggleReportsTrashModal()" class="btn-secondary btn-sm hidden">
-              <span data-icon="trash" class="w-4 h-4"></span> Lixeira (<span id="reports-trash-count">0</span>)
-            </button>
+            <div class="flex gap-2 shrink-0">
+              <button onclick="exportReportsExcel()" class="btn-secondary btn-sm"><span data-icon="sheet" class="w-4 h-4"></span> Excel</button>
+              <button id="btn-reports-trash" onclick="toggleReportsTrashModal()" class="btn-secondary btn-sm hidden">
+                <span data-icon="trash" class="w-4 h-4"></span><span class="hidden sm:inline">Lixeira</span> (<span id="reports-trash-count">0</span>)
+              </button>
+            </div>
           </div>
 
           <div class="card p-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -356,6 +360,7 @@
             </div>
           </div>
 
+          <div id="reports-window-info"></div>
           <div id="history-list-container" class="space-y-2.5"></div>
         </section>
 
@@ -439,12 +444,79 @@
               Selecionar todos <span class="text-stone-400 font-medium">(<span id="selected-actions-count">0</span>)</span>
             </label>
             <div class="flex gap-2">
+              <button onclick="exportActionsExcel()" class="btn-secondary btn-sm"><span data-icon="sheet" class="w-4 h-4"></span> Excel</button>
               <button onclick="sendWhatsAppFollowUpBatch()" class="btn-secondary btn-sm"><span data-icon="message" class="w-4 h-4"></span> Follow-up</button>
               <button onclick="deleteSelectedActionsBatch()" id="btn-delete-batch" class="btn-secondary btn-sm !text-rose-700 hidden"><span data-icon="trash" class="w-4 h-4"></span> Excluir</button>
             </div>
           </div>
 
+          <div id="closed-window-info"></div>
           <div id="centralized-actions-list" class="space-y-3"></div>
+        </section>
+
+        <!-- ============ INDICADORES ============ -->
+        <section id="view-dashboard" class="view space-y-4 hidden">
+          <div>
+            <h1 class="text-[26px] font-extrabold tracking-tight">Indicadores</h1>
+            <p class="text-sm text-cb-muted">Conformidade, programação e planos de ação</p>
+          </div>
+
+          <div class="card p-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div>
+              <label for="dash-period" class="label">Período</label>
+              <select id="dash-period" onchange="renderDashboard()" class="field">
+                <option value="7">Últimos 7 dias</option>
+                <option value="30" selected>Últimos 30 dias</option>
+                <option value="90">Últimos 90 dias</option>
+                <option value="180">Últimos 6 meses</option>
+                <option value="365">Últimos 12 meses</option>
+              </select>
+            </div>
+            <div>
+              <label for="dash-store" class="label">Loja</label>
+              <select id="dash-store" onchange="renderDashboard()" class="field"><option value="">Todas</option></select>
+            </div>
+            <div class="col-span-2 sm:col-span-1">
+              <label for="dash-model" class="label">Modelo</label>
+              <select id="dash-model" onchange="renderDashboard()" class="field"><option value="">Todos</option></select>
+            </div>
+          </div>
+
+          <div id="dash-kpis" class="grid grid-cols-2 lg:grid-cols-4 gap-2.5"></div>
+
+          <div class="card p-4 space-y-3">
+            <div class="flex items-center justify-between gap-2">
+              <h2 class="font-extrabold">Conformidade por semana</h2>
+              <span class="text-xs text-cb-muted">média dos checklists</span>
+            </div>
+            <div id="dash-trend"></div>
+          </div>
+
+          <div class="grid lg:grid-cols-2 gap-4">
+            <div class="card p-4 space-y-3">
+              <div class="flex items-center justify-between gap-2">
+                <h2 class="font-extrabold">Ranking das lojas</h2>
+                <span class="text-xs text-cb-muted">toque para filtrar</span>
+              </div>
+              <div id="dash-ranking" class="space-y-2.5"></div>
+            </div>
+            <div class="card p-4 space-y-3">
+              <h2 class="font-extrabold">Não conformidades mais frequentes</h2>
+              <div id="dash-topnc" class="space-y-2.5"></div>
+            </div>
+          </div>
+
+          <div class="grid lg:grid-cols-2 gap-4">
+            <div class="card p-4 space-y-3">
+              <h2 class="font-extrabold">Programação cumprida por loja</h2>
+              <div id="dash-adherence" class="space-y-2.5"></div>
+            </div>
+            <div class="card p-4 space-y-3">
+              <h2 class="font-extrabold">Planos em aberto por loja</h2>
+              <div id="dash-actions" class="space-y-2.5"></div>
+            </div>
+          </div>
+          <p id="dash-footnote" class="text-xs text-stone-500 px-1"></p>
         </section>
 
         <!-- ============ MANUTENÇÃO ============ -->
@@ -806,6 +878,8 @@
           <button id="admin-tab-units" onclick="switchAdminTab('units')" class="shrink-0 h-9 px-3.5 rounded-full text-sm font-bold">Lojas</button>
           <button id="admin-tab-status" onclick="switchAdminTab('status')" class="shrink-0 h-9 px-3.5 rounded-full text-sm font-bold">Status</button>
           <button id="admin-tab-priorities" onclick="switchAdminTab('priorities')" class="shrink-0 h-9 px-3.5 rounded-full text-sm font-bold">Tarjas</button>
+          <button id="admin-tab-photos" onclick="switchAdminTab('photos')" class="shrink-0 h-9 px-3.5 rounded-full text-sm font-bold">Fotos</button>
+          <button id="admin-tab-data" onclick="switchAdminTab('data')" class="shrink-0 h-9 px-3.5 rounded-full text-sm font-bold">Dados</button>
           <button id="admin-tab-migration" onclick="switchAdminTab('migration')" class="shrink-0 h-9 px-3.5 rounded-full text-sm font-bold">Migração</button>
         </div>
       </div>
@@ -903,6 +977,70 @@
           <button onclick="adminAddNewPriority()" class="btn-primary w-full">Adicionar tarja</button>
         </div>
         <div id="admin-priorities-list" class="space-y-2"></div>
+      </div>
+
+      <div id="admin-content-photos" class="sheet-body flex-1 bg-cb-bg hidden">
+        <div class="card p-4 space-y-1">
+          <h4 class="font-extrabold">Fotos e localização dos checklists</h4>
+          <p class="text-sm text-cb-muted">Vale para todos os usuários a partir do próximo checklist.</p>
+        </div>
+        <label class="card p-4 flex items-start gap-3 cursor-pointer">
+          <input type="checkbox" id="pp-stamp" class="w-5 h-5 mt-0.5 accent-[#4A0E17] shrink-0">
+          <span><span class="block text-sm font-bold">Gravar carimbo na foto</span><span class="block text-xs text-cb-muted">Loja, nome de quem enviou, horário em que a foto foi tirada e horário do envio. Fotos tiradas mais de 15 minutos antes aparecem marcadas "DA GALERIA".</span></span>
+        </label>
+        <label class="card p-4 flex items-start gap-3 cursor-pointer">
+          <input type="checkbox" id="pp-camera" class="w-5 h-5 mt-0.5 accent-[#4A0E17] shrink-0">
+          <span><span class="block text-sm font-bold">Exigir câmera (bloquear galeria)</span><span class="block text-xs text-cb-muted">No celular, o botão de foto abre direto a câmera, uma foto por vez. No computador, continua abrindo a escolha de arquivo.</span></span>
+        </label>
+        <label class="card p-4 flex items-start gap-3 cursor-pointer">
+          <input type="checkbox" id="pp-gps" class="w-5 h-5 mt-0.5 accent-[#4A0E17] shrink-0">
+          <span><span class="block text-sm font-bold">Registrar localização</span><span class="block text-xs text-cb-muted">Guarda onde o checklist foi iniciado e finalizado, com link para o mapa no relatório. O celular pede permissão na primeira vez; se a pessoa negar, o checklist funciona normalmente.</span></span>
+        </label>
+        <button onclick="savePhotoPolicy()" class="btn-primary w-full">Salvar</button>
+      </div>
+
+      <div id="admin-content-data" class="sheet-body flex-1 bg-cb-bg hidden">
+        <div class="card p-4 space-y-3">
+          <div class="flex items-center gap-3">
+            <span class="w-10 h-10 rounded-xl bg-cb-soft text-cb-bordo flex items-center justify-center shrink-0"><span data-icon="database" class="w-5 h-5"></span></span>
+            <div class="flex-1 min-w-0">
+              <h4 class="font-extrabold">Espaço usado</h4>
+              <p id="storage-status" class="text-xs text-cb-muted">Ainda não calculado.</p>
+            </div>
+          </div>
+          <div class="h-2.5 rounded-full bg-stone-100 overflow-hidden"><div id="storage-bar" class="h-full rounded-full bg-cb-bordo" style="width:0%"></div></div>
+          <button id="btn-storage" onclick="calculateStorage()" class="btn-secondary w-full">Calcular agora</button>
+          <p class="text-[11px] text-stone-500">O plano gratuito tem 1 GB. O cálculo lê a lista de arquivos (1 leitura por foto), então use de vez em quando.</p>
+        </div>
+
+        <div class="card p-4 space-y-3">
+          <h4 class="font-extrabold">Limpar fotos antigas</h4>
+          <p class="text-sm text-cb-muted">Apaga as fotos de relatórios e de planos concluídos mais antigos que o período escolhido. Os relatórios continuam com respostas, notas e planos; só as imagens são removidas. Fotos ligadas a planos ainda em aberto são preservadas.</p>
+          <div class="flex gap-2">
+            <select id="cleanup-months" class="field">
+              <option value="6">Mais antigas que 6 meses</option>
+              <option value="12" selected>Mais antigas que 12 meses</option>
+              <option value="18">Mais antigas que 18 meses</option>
+              <option value="24">Mais antigas que 24 meses</option>
+            </select>
+            <button onclick="runPhotoCleanup()" class="btn-danger shrink-0">Limpar</button>
+          </div>
+          <p class="text-[11px] text-stone-500">Recomendado: fazer um backup antes. As fotos apagadas não podem ser recuperadas.</p>
+        </div>
+
+        <div class="card p-4 space-y-3">
+          <h4 class="font-extrabold">Backup</h4>
+          <p class="text-sm text-cb-muted">Baixa um arquivo com usuários, lojas, modelos, relatórios, planos, conversas, prestadores e garantias. As fotos não entram (ocupariam muito espaço). Guarde o arquivo no seu computador ou Google Drive.</p>
+          <p id="backup-status" class="text-sm font-semibold text-stone-700">Nenhum backup registrado.</p>
+          <button id="btn-backup" onclick="downloadBackup()" class="btn-primary w-full"><span data-icon="download" class="w-4 h-4"></span> Baixar backup completo</button>
+        </div>
+
+        <div class="card p-4 space-y-3">
+          <h4 class="font-extrabold">Otimização dos planos</h4>
+          <p id="optimize-status" class="text-sm text-cb-muted"></p>
+          <button onclick="runOptimizeActions()" class="btn-secondary w-full">Otimizar novamente</button>
+        </div>
+        <pre id="data-log" class="bg-stone-900 text-emerald-200 p-3 rounded-xl text-[11px] whitespace-pre-wrap max-h-64 overflow-y-auto hidden"></pre>
       </div>
 
       <div id="admin-content-migration" class="sheet-body flex-1 bg-cb-bg hidden">
@@ -1309,7 +1447,24 @@
       });
     }
 
-    function compressImageFile(file, maxWidth = 1280, quality = 0.72) {
+    // Carimbo gravado na própria foto (loja, pessoa, horário da foto e do envio).
+    function drawPhotoStamp(ctx, width, height, lines) {
+      if (!lines || !lines.length) return;
+      const fs = Math.max(13, Math.round(width * 0.026));
+      const pad = Math.round(fs * 0.6);
+      const lh = Math.round(fs * 1.3);
+      const boxH = pad * 2 + lh * lines.length;
+      ctx.fillStyle = "rgba(0,0,0,0.55)";
+      ctx.fillRect(0, height - boxH, width, boxH);
+      ctx.font = `600 ${fs}px Arial, sans-serif`;
+      ctx.textBaseline = "top";
+      lines.forEach((line, i) => {
+        ctx.fillStyle = /GALERIA/.test(line) ? "#FCA5A5" : "#FFFFFF";
+        ctx.fillText(String(line).slice(0, 90), pad, height - boxH + pad + i * lh);
+      });
+    }
+
+    function compressImageFile(file, maxWidth = 1280, quality = 0.72, stampLines = null) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onerror = reject;
@@ -1321,7 +1476,9 @@
             if (width > maxWidth) { height = Math.round((height * maxWidth) / width); width = maxWidth; }
             const canvas = document.createElement("canvas");
             canvas.width = width; canvas.height = height;
-            canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(img, 0, 0, width, height);
+            drawPhotoStamp(ctx, width, height, stampLines);
             resolve(canvas.toDataURL("image/jpeg", quality));
           };
           img.src = e.target.result;
@@ -1359,11 +1516,11 @@
     }
 
     // Comprime a foto até caber em um único pedaço.
-    async function compressToFit(file) {
+    async function compressToFit(file, stampLines = null) {
       const attempts = [[1280, 0.72], [1024, 0.62], [900, 0.5], [720, 0.45]];
       let dataUrl = "";
       for (const [w, q] of attempts) {
-        dataUrl = await compressImageFile(file, w, q);
+        dataUrl = await compressImageFile(file, w, q, stampLines);
         if (dataUrl.length <= IMAGE_TARGET_SIZE) break;
       }
       return dataUrl;
@@ -1401,11 +1558,11 @@
       return saveDataUrl(dataUrl, { name: String(path || "").split("/").pop() });
     }
 
-    async function uploadAnyFile(file) {
+    async function uploadAnyFile(file, opts = {}) {
       const type = file.type || "";
       if (!ALLOWED_FILE_TYPES.test(type)) throw new Error("Tipo de arquivo não permitido. Use imagem, PDF ou Word.");
       if (type.startsWith("image/")) {
-        return saveDataUrl(await compressToFit(file), { name: file.name });
+        return saveDataUrl(await compressToFit(file, opts.stamp), { name: file.name });
       }
       if (file.size > 2.5 * 1024 * 1024) throw new Error("Arquivo maior que 2,5 MB. Reduza o PDF/Word ou envie uma foto do documento.");
       return saveDataUrl(await readFileAsDataUrl(file), { name: file.name });
@@ -1649,6 +1806,20 @@
     let scheduleDoneDate = null;
     let unsubScheduleDone = null;
     let signupInProgress = false;
+    let pastScheduleItems = [];
+
+    // Janela de dados carregados (economia de leituras do plano gratuito)
+    const REPORT_WINDOW_DAYS = 90;
+    let recentReports = [];         // ouvidos em tempo real (janela de 90 dias, ou todos do operador)
+    let olderReports = [];          // carregados sob demanda
+    let reportsFromMs = 0;          // desde quando os relatórios estão carregados (0 = todos)
+    let openActions = [];           // planos em aberto (tempo real)
+    let closedActions = [];         // concluídos, carregados sob demanda
+    let closedFromMs = null;        // null = ainda não carregados; 0 = todos
+    let dbFlags = {};               // meta/dbv
+    let backupInfo = null;          // meta/backup
+    let storageInfo = null;         // meta/storage
+    let photoPolicy = { stamp: true, cameraOnly: false, gps: true };
     let currentView = "home";
 
     function isAdmin() { return currentUser?.role === "admin"; }
@@ -1712,7 +1883,12 @@
       phone: '<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/>',
       store: '<path d="M3 9 4.5 4h15L21 9"/><path d="M4 9v11h16V9M3 9h18M9 20v-6h6v6"/>',
       star: '<path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/>',
-      image: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/>'
+      image: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/>',
+      chart: '<path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/>',
+      download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>',
+      "map-pin": '<path d="M12 22s7-6.2 7-12a7 7 0 0 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/>',
+      database: '<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>',
+      sheet: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/>'
     };
 
     function icon(name, cls = "w-5 h-5") {
@@ -1831,14 +2007,14 @@
     /* =========================================================
        5. NAVEGAÇÃO
        ========================================================= */
-    const VIEW_TITLES = { home: "Início", audit: "Checklist", reports: "Relatórios", actions: "Planos de ação", maintenance: "Manutenção" };
+    const VIEW_TITLES = { home: "Início", audit: "Checklist", reports: "Relatórios", actions: "Planos de ação", dashboard: "Indicadores", maintenance: "Manutenção" };
 
     function navItems() {
       const items = [
         { id: "home", label: "Início", icon: "home" },
         { id: "reports", label: "Relatórios", icon: "folder" }
       ];
-      if (isManager()) items.push({ id: "actions", label: "Planos", icon: "list" });
+      if (isManager()) items.push({ id: "actions", label: "Planos", icon: "list" }, { id: "dashboard", label: "Indicadores", icon: "chart" });
       items.push({ id: "maintenance", label: "Manutenção", icon: "wrench" });
       return items;
     }
@@ -1848,9 +2024,9 @@
       const navTarget = currentView === "audit" ? "home" : currentView;
 
       document.getElementById("bottom-nav").innerHTML = items.map(it => `
-        <button onclick="go('${it.id}')" class="flex-1 max-w-[96px] flex flex-col items-center gap-1 py-1 rounded-xl ${navTarget === it.id ? "text-cb-bordo" : "text-stone-500"}" ${navTarget === it.id ? 'aria-current="page"' : ""}>
+        <button onclick="go('${it.id}')" class="flex-1 min-w-0 max-w-[96px] flex flex-col items-center gap-1 py-1 rounded-xl ${navTarget === it.id ? "text-cb-bordo" : "text-stone-500"}" ${navTarget === it.id ? 'aria-current="page"' : ""}>
           ${icon(it.icon, "w-6 h-6")}
-          <span class="text-[11px] ${navTarget === it.id ? "font-extrabold" : "font-semibold"}">${it.label}</span>
+          <span class="text-[11px] truncate max-w-full ${navTarget === it.id ? "font-extrabold" : "font-semibold"}">${it.label}</span>
         </button>`).join("");
 
       let side = items.map(it => `
@@ -1865,14 +2041,14 @@
 
     function go(view) {
       if (!currentUser) return;
-      if (view === "actions" && !isManager()) return toast("Planos de ação são restritos a gerentes e administradores.", "warn");
+      if ((view === "actions" || view === "dashboard") && !isManager()) return toast("Área restrita a gerentes e administradores.", "warn");
 
       if (view !== "audit" && isAuditFinished) {
         isAuditFinished = false;
         setAuditInputsDisabled(false);
       }
       currentView = view;
-      ["home", "audit", "reports", "actions", "maintenance"].forEach(v => document.getElementById(`view-${v}`).classList.toggle("hidden", v !== view));
+      ["home", "audit", "reports", "actions", "dashboard", "maintenance"].forEach(v => document.getElementById(`view-${v}`).classList.toggle("hidden", v !== view));
 
       const inAudit = view === "audit";
       document.getElementById("audit-footer").classList.toggle("hidden", !inAudit);
@@ -1883,7 +2059,8 @@
       if (view === "home") { renderHome(); }
       else if (view === "audit") { updateFooterFinishUI(); }
       else if (view === "reports") { renderHistoryList(); }
-      else if (view === "actions") { renderCentralizedActions(); }
+      else if (view === "actions") { renderCentralizedActions(); ensureClosedActionsLoaded(); }
+      else if (view === "dashboard") { ensureClosedActionsLoaded(); renderDashboard(); }
       else if (view === "maintenance") { renderTechniciansList(); }
       renderNavigation();
     }
@@ -2090,7 +2267,7 @@
       document.getElementById("btn-delete-batch").classList.toggle("hidden", !isAdmin());
       document.getElementById("btn-trash-actions").classList.toggle("hidden", !isAdmin());
       loadDraft();
-      startListeners();
+      startApp();
       go("home");
     }
 
@@ -2159,12 +2336,14 @@
       if (unsubChat) { unsubChat(); unsubChat = null; }
       if (unsubScheduleDone) { unsubScheduleDone(); unsubScheduleDone = null; }
       scheduleDoneDate = null;
+      recentReports = []; olderReports = []; openActions = []; closedActions = []; closedFromMs = null;
     }
 
     // Consulta limitada às lojas do usuário (o Firestore aceita até 30 valores em "in").
-    function listenScoped(collection, onData) {
+    function listenScoped(collection, onData, eqFilter = null) {
+      const base = () => eqFilter ? db.collection(collection).where(eqFilter[0], "==", eqFilter[1]) : db.collection(collection);
       if (hasAllUnits()) {
-        unsubscribers.push(db.collection(collection).onSnapshot(snap => { markSynced(snap); onData(mapDocs(snap)); }, err => onListenError(collection, err)));
+        unsubscribers.push(base().onSnapshot(snap => { markSynced(snap); onData(mapDocs(snap)); }, err => onListenError(collection, err)));
         return;
       }
       const units = currentUser.units;
@@ -2173,7 +2352,7 @@
       for (let i = 0; i < units.length; i += 30) chunks.push(units.slice(i, i + 30));
       const partial = chunks.map(() => []);
       chunks.forEach((chunk, ci) => {
-        unsubscribers.push(db.collection(collection).where("unit", "in", chunk).onSnapshot(snap => {
+        unsubscribers.push(base().where("unit", "in", chunk).onSnapshot(snap => {
           markSynced(snap);
           partial[ci] = mapDocs(snap);
           onData(partial.flat());
@@ -2181,8 +2360,15 @@
       });
     }
 
+    function mergeById(...lists) {
+      const map = new Map();
+      lists.forEach(l => l.forEach(x => map.set(x.id, x)));
+      return [...map.values()];
+    }
+
     function onReportsData(list) {
-      reports = list.sort((a, b) => tsToMillis(b.createdAt) - tsToMillis(a.createdAt));
+      if (list) recentReports = list;
+      reports = mergeById(olderReports, recentReports).sort((a, b) => tsToMillis(b.createdAt) - tsToMillis(a.createdAt));
       updateHistoryBadge();
       renderHistoryList();
       renderDailySchedule();
@@ -2190,6 +2376,137 @@
       updateNotificationBadgeCount();
       refreshLegacyLinkUI();
       renderHomeBanners();
+      renderReportsWindowInfo();
+      if (currentView === "dashboard") renderDashboard();
+    }
+
+    function onActionsData() {
+      const openIds = new Set(openActions.map(a => a.id));
+      actions = mergeById(closedActions.filter(a => !openIds.has(a.id)), openActions);
+      renderCentralizedActions();
+      renderTrashActionsList();
+      updateNotificationBadgeCount();
+      if (currentView === "dashboard") renderDashboard();
+    }
+
+    function tsFromMs(ms) { return firebase.firestore.Timestamp.fromMillis(ms); }
+    function daysAgoMs(days) { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - days); return d.getTime(); }
+
+    // Relatórios mais antigos que a janela atual (uma leitura única, sem ficar ouvindo).
+    let loadingOlder = false;
+    async function loadOlderReports(untilMs = 0) {
+      if (!isManager() || reportsFromMs === 0 || loadingOlder) return;
+      if (untilMs > 0 && untilMs >= reportsFromMs) return;
+      loadingOlder = true;
+      const target = Math.max(0, untilMs);
+      showBusy("Carregando relatórios antigos...");
+      try {
+        let q = db.collection("reports").where("createdAt", "<", tsFromMs(reportsFromMs));
+        if (target > 0) q = q.where("createdAt", ">=", tsFromMs(target));
+        const snap = await q.get();
+        olderReports = mergeById(olderReports, mapDocs(snap));
+        // Relatórios antigos sem data de criação só aparecem ao carregar "tudo".
+        if (target === 0) {
+          const all = await db.collection("reports").get();
+          olderReports = mergeById(olderReports, mapDocs(all).filter(r => !r.createdAt));
+        }
+        reportsFromMs = target;
+        onReportsData();
+      } catch (err) {
+        showError("Não foi possível carregar os relatórios antigos.", err);
+      } finally {
+        loadingOlder = false;
+        hideBusy();
+      }
+    }
+
+    function renderReportsWindowInfo() {
+      const box = document.getElementById("reports-window-info");
+      if (!box) return;
+      if (!isManager() || reportsFromMs === 0) { box.innerHTML = ""; return; }
+      const from = new Date(reportsFromMs).toLocaleDateString("pt-BR");
+      box.innerHTML = `
+        <div class="flex items-center justify-between gap-3 flex-wrap text-xs text-cb-muted px-1">
+          <span>Exibindo relatórios desde ${from}.</span>
+          <span class="flex gap-2">
+            <button onclick="loadOlderReports(${Math.max(0, reportsFromMs - 180 * 86400000)})" class="btn-secondary btn-sm">+ 6 meses</button>
+            <button onclick="loadOlderReports(0)" class="btn-secondary btn-sm">Carregar todos</button>
+          </span>
+        </div>`;
+    }
+
+    // Planos concluídos: carregados uma vez, quando alguém abre Planos ou Indicadores.
+    async function ensureClosedActionsLoaded() {
+      if (!isManager() || closedFromMs !== null || !dbFlags.actionsOpen) return;
+      await loadClosedActions(daysAgoMs(REPORT_WINDOW_DAYS));
+    }
+
+    async function loadClosedActions(fromMs) {
+      const prevFrom = closedFromMs;
+      closedFromMs = fromMs;
+      try {
+        let list = [];
+        if (hasAllUnits()) {
+          let q = db.collection("actions");
+          if (prevFrom) q = q.where("closedAt", "<", tsFromMs(prevFrom));
+          if (fromMs > 0) q = q.where("closedAt", ">=", tsFromMs(fromMs));
+          if (!prevFrom && fromMs === 0) q = db.collection("actions").where("open", "==", false);
+          list = mapDocs(await q.get());
+        } else {
+          // Com lojas restritas, a regra de segurança exige filtrar por loja: carrega todos os concluídos delas.
+          const units = currentUser.units;
+          for (let i = 0; i < units.length; i += 30) {
+            const snap = await db.collection("actions").where("unit", "in", units.slice(i, i + 30)).where("open", "==", false).get();
+            list.push(...mapDocs(snap));
+          }
+          closedFromMs = 0;
+        }
+        closedActions = mergeById(closedActions, list.filter(a => a.open === false));
+        onActionsData();
+      } catch (err) {
+        closedFromMs = prevFrom;
+        showError("Não foi possível carregar os planos concluídos.", err);
+      }
+    }
+
+    // Uma vez só, feita pelo admin: marca cada plano como aberto/fechado para permitir a consulta leve.
+    async function ensureActionsOpenField(force = false) {
+      if (!isAdmin() || (dbFlags.actionsOpen && !force)) return;
+      try {
+        const snap = await db.collection("actions").get();
+        const docs = snap.docs;
+        for (let i = 0; i < docs.length; i += 400) {
+          const batch = db.batch();
+          docs.slice(i, i + 400).forEach(d => {
+            const a = d.data();
+            const done = isDoneStatus(a.status);
+            batch.update(d.ref, { open: !done, closedAt: done ? (a.closedAt || a.statusUpdatedAt || a.createdAt || FieldValue.serverTimestamp()) : null });
+          });
+          await batch.commit();
+        }
+        await db.doc("meta/dbv").set({ actionsOpen: true, at: FieldValue.serverTimestamp() }, { merge: true });
+        console.info(`Planos otimizados: ${docs.length}`);
+        return docs.length;
+      } catch (err) {
+        console.error("Falha ao otimizar planos:", err);
+        if (force) showError("Não foi possível otimizar os planos.", err);
+      }
+    }
+
+    // Campos que marcam o plano como aberto/fechado quando o status muda.
+    function statusFields(statusName) {
+      const done = isDoneStatus(statusName);
+      return { open: !done, closedAt: done ? FieldValue.serverTimestamp() : null };
+    }
+
+    // Move o plano entre as listas local logo após a mudança de status.
+    function afterStatusChange(id, statusName) {
+      const done = isDoneStatus(statusName);
+      const act = actions.find(a => a.id === id);
+      if (!act) return;
+      if (done) closedActions = mergeById(closedActions, [{ ...act, status: statusName, open: false, closedAt: Date.now() }]);
+      else closedActions = closedActions.filter(a => a.id !== id);
+      onActionsData();
     }
 
     function startListeners() {
@@ -2201,6 +2518,7 @@
           if (Array.isArray(d.units) && d.units.length) presetUnits = d.units;
           if (Array.isArray(d.statuses) && d.statuses.length) actionStatuses = d.statuses;
           if (Array.isArray(d.priorities) && d.priorities.length) actionPriorities = d.priorities;
+          if (d.photoPolicy) photoPolicy = { ...photoPolicy, ...d.photoPolicy };
         } else if (isAdmin()) {
           saveSettings();
         }
@@ -2217,19 +2535,32 @@
         }
       }, err => onListenError("checklists", err)));
 
-      // Relatórios: admin e gerente veem todos; operador vê só os que ele executou.
+      // Relatórios: admin e gerente veem todos (últimos 90 dias ao vivo); operador vê só os que executou.
       if (isManager()) {
-        unsubscribers.push(db.collection("reports").onSnapshot(snap => { markSynced(snap); onReportsData(mapDocs(snap)); }, err => onListenError("relatórios", err)));
+        reportsFromMs = daysAgoMs(REPORT_WINDOW_DAYS);
+        unsubscribers.push(db.collection("reports").where("createdAt", ">=", tsFromMs(reportsFromMs))
+          .onSnapshot(snap => { markSynced(snap); onReportsData(mapDocs(snap)); }, err => onListenError("relatórios", err)));
       } else {
+        reportsFromMs = 0;
         unsubscribers.push(db.collection("reports").where("createdBy", "==", currentUser.uid).onSnapshot(snap => { markSynced(snap); onReportsData(mapDocs(snap)); }, err => onListenError("relatórios", err)));
       }
 
-      listenScoped("actions", list => {
-        actions = list;
-        renderCentralizedActions();
-        renderTrashActionsList();
-        updateNotificationBadgeCount();
-      });
+      // Planos: só os em aberto ficam ao vivo (depois que o banco foi otimizado pelo admin).
+      if (dbFlags.actionsOpen) {
+        listenScoped("actions", list => { openActions = list; onActionsData(); }, ["open", true]);
+      } else {
+        listenScoped("actions", list => { openActions = list; closedFromMs = 0; onActionsData(); });
+      }
+
+      // O próprio perfil: mudanças de perfil/lojas feitas pelo admin valem na hora.
+      unsubscribers.push(db.collection("users").doc(currentUser.uid).onSnapshot(doc => {
+        if (!doc.exists) return;
+        const p = doc.data();
+        const changed = p.active === false || p.role !== currentUser.role || JSON.stringify(p.units || []) !== JSON.stringify(currentUser.units || []);
+        if (!changed) return;
+        toast(p.active === false ? "Seu acesso foi desativado." : "Seu perfil de acesso foi atualizado. Recarregando...", "warn");
+        setTimeout(() => location.reload(), 2500);
+      }, () => {}));
 
       unsubscribers.push(db.collection("technicians").onSnapshot(snap => {
         technicians = mapDocs(snap).sort((a, b) => String(a.name).localeCompare(String(b.name), "pt-BR"));
@@ -2259,18 +2590,42 @@
         db.collection("app_config").doc("main").get()
           .then(doc => { legacyDataExists = doc.exists; refreshMigrationUI(); })
           .catch(() => {});
+
+        unsubscribers.push(db.doc("meta/backup").onSnapshot(doc => { backupInfo = doc.exists ? doc.data() : null; renderHomeBanners(); refreshDataToolsUI(); }, () => {}));
+        unsubscribers.push(db.doc("meta/storage").onSnapshot(doc => { storageInfo = doc.exists ? doc.data() : null; refreshDataToolsUI(); }, () => {}));
       }
 
       listenScheduleDone(document.getElementById("schedule-date-filter").value || hojeISO());
     }
 
-    // Conclusões dos checklists agendados da data exibida (visível para todos os perfis).
+    // Lê as marcações de otimização do banco antes de ligar os ouvintes.
+    async function startApp() {
+      try {
+        const snap = await db.doc("meta/dbv").get();
+        dbFlags = snap.exists ? snap.data() : {};
+      } catch (e) { dbFlags = {}; }
+      if (isAdmin() && !dbFlags.actionsOpen) {
+        updateSyncUI("wait", "Otimizando banco");
+        const n = await ensureActionsOpenField();
+        if (n !== undefined) dbFlags.actionsOpen = true;
+      }
+      startListeners();
+    }
+
+    // Conclusões dos checklists agendados: data exibida + últimos dias (para os pendentes atrasados).
+    const PAST_PENDING_DAYS = 7;
     function listenScheduleDone(dateIso) {
-      if (scheduleDoneDate === dateIso) return;
+      const today = hojeISO();
+      const d = new Date(); d.setDate(d.getDate() - PAST_PENDING_DAYS);
+      const weekAgo = hojeISO(d);
+      const from = dateIso < weekAgo ? dateIso : weekAgo;
+      const to = dateIso > today ? dateIso : today;
+      const key = `${from}|${to}`;
+      if (scheduleDoneDate === key) return;
       if (unsubScheduleDone) unsubScheduleDone();
-      scheduleDoneDate = dateIso;
+      scheduleDoneDate = key;
       scheduleDone = new Map();
-      unsubScheduleDone = db.collection("scheduleDone").where("date", "==", dateIso).onSnapshot(snap => {
+      unsubScheduleDone = db.collection("scheduleDone").where("date", ">=", from).where("date", "<=", to).onSnapshot(snap => {
         scheduleDone = new Map(snap.docs.map(d => [d.id, d.data()]));
         renderDailySchedule();
       }, err => onListenError("programação", err));
@@ -2487,7 +2842,7 @@
     function draftKey() { return `CB_DRAFT_V2_${currentUser?.uid || "anon"}`; }
 
     function emptyDraft(modelId, unit, scheduledFor = null) {
-      return { modelId, unit: unit || "", scheduledFor, supervisor: currentUser?.name || "", notes: "", answers: {}, plans: {}, maint: {}, photos: {}, startTime: new Date().toLocaleString("pt-BR") };
+      return { modelId, unit: unit || "", scheduledFor, supervisor: currentUser?.name || "", notes: "", answers: {}, plans: {}, maint: {}, photos: {}, galleryCount: 0, geo: {}, startTime: new Date().toLocaleString("pt-BR") };
     }
 
     function loadDraft() {
@@ -2572,7 +2927,22 @@
       draft = emptyDraft(modelId, unit || getAllowedUnits()[0] || "", scheduledFor);
       saveDraft();
       openAuditView();
+      captureGeo().then(g => { if (g && draft) { draft.geo.start = g; saveDraft(); } });
     }
+
+    // Localização do aparelho (se a política estiver ligada e a pessoa permitir).
+    function captureGeo() {
+      if (!photoPolicy.gps || !navigator.geolocation) return Promise.resolve(null);
+      return new Promise(resolve => {
+        navigator.geolocation.getCurrentPosition(
+          pos => resolve({ lat: +pos.coords.latitude.toFixed(6), lng: +pos.coords.longitude.toFixed(6), acc: Math.round(pos.coords.accuracy), at: Date.now() }),
+          () => resolve(null),
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+        );
+      });
+    }
+
+    function mapsLink(g) { return g ? `https://www.google.com/maps?q=${g.lat},${g.lng}` : ""; }
 
     function updateAuditSubtitle() {
       const sub = document.getElementById("audit-subtitle");
@@ -2717,6 +3087,14 @@
             ${icon("chevron-right", "w-5 h-5 text-amber-800")}
           </button>`);
       }
+      if (backupOverdue()) {
+        banners.push(`
+          <button onclick="toggleUsersModal(); switchAdminTab('data')" class="w-full card p-4 flex items-center gap-3 text-left">
+            <span class="w-11 h-11 rounded-xl bg-sky-100 text-sky-800 flex items-center justify-center shrink-0">${icon("download")}</span>
+            <span class="flex-1"><span class="block text-sm font-extrabold">Hora de fazer um backup</span><span class="block text-xs text-cb-muted">${backupInfo?.at ? `Último em ${new Date(tsToMillis(backupInfo.at)).toLocaleDateString("pt-BR")}` : "Nenhum backup feito ainda"}</span></span>
+            ${icon("chevron-right", "w-5 h-5 text-stone-400")}
+          </button>`);
+      }
       const unlinked = isAdmin() ? reports.filter(r => !r.createdBy).length : 0;
       if (unlinked) {
         banners.push(`
@@ -2741,6 +3119,21 @@
           if (isChecklistScheduledForDate(model, dateIso, unit) && !isScheduleDone(model, unit, dateIso)) scheduleItems.push({ model, unit });
         });
       });
+
+      // Pendentes dos últimos dias (só na visão de hoje).
+      pastScheduleItems = [];
+      if (dateIso === today) {
+        for (let back = PAST_PENDING_DAYS; back >= 1; back--) {
+          const d = new Date(); d.setDate(d.getDate() - back);
+          const iso = hojeISO(d);
+          getAllowedUnits().forEach(unit => {
+            allowedChecklistsForUser().forEach(model => {
+              if (isChecklistScheduledForDate(model, iso, unit) && !isScheduleDone(model, unit, iso)) pastScheduleItems.push({ model, unit, date: iso });
+            });
+          });
+        }
+      }
+      renderPastPending();
 
       const isToday = dateIso === today;
       document.getElementById("schedule-title").innerText = isToday ? "Checklists de hoje" : `Checklists de ${isoToBR(dateIso).slice(0, 5)}`;
@@ -2787,6 +3180,60 @@
             ${right}
           </button>`;
       }).join("");
+    }
+
+    function renderPastPending() {
+      const box = document.getElementById("past-pending-slot");
+      if (!box) return;
+      if (!pastScheduleItems.length) { box.innerHTML = ""; return; }
+      const rows = pastScheduleItems.map(({ model, unit, date }, i) => {
+        const d = new Date(date + "T00:00:00");
+        return `
+          <div class="flex items-center gap-3 py-2.5">
+            <span class="w-12 shrink-0 text-center rounded-xl bg-white py-1.5">
+              <span class="block text-[10px] font-bold text-rose-700 uppercase">${WEEKDAYS[d.getDay()]}</span>
+              <span class="block text-base font-extrabold leading-none">${d.getDate()}</span>
+            </span>
+            <button onclick="startPastChecklist(${i})" class="flex-1 min-w-0 text-left">
+              <span class="block text-sm font-bold truncate">${esc(unit)}</span>
+              <span class="block text-xs text-rose-800 truncate">${esc(model.name)} · ${isoToBR(date)}</span>
+            </button>
+            ${isManager() ? `<button onclick="dismissPastChecklist(${i})" class="btn-secondary btn-sm !bg-transparent">Dispensar</button>` : ""}
+            <button onclick="startPastChecklist(${i})" class="btn-primary btn-sm">Fazer</button>
+          </div>`;
+      }).join("");
+      box.innerHTML = `
+        <details class="card !bg-rose-50 ring-1 ring-rose-200 group" ${pastScheduleItems.length <= 3 ? "open" : ""}>
+          <summary class="list-none cursor-pointer px-4 h-14 flex items-center gap-3">
+            <span class="w-9 h-9 rounded-xl bg-rose-600 text-white flex items-center justify-center shrink-0">${icon("alert", "w-5 h-5")}</span>
+            <span class="flex-1 text-sm font-extrabold text-rose-900">${pastScheduleItems.length} pendente(s) de dias anteriores</span>
+            ${icon("chevron-down", "w-4 h-4 text-rose-700 transition group-open:rotate-180")}
+          </summary>
+          <div class="px-4 pb-2 divide-y divide-rose-200">${rows}</div>
+        </details>`;
+    }
+
+    function startPastChecklist(i) {
+      const it = pastScheduleItems[i];
+      if (it) startNewChecklist(it.model.id, it.unit, it.date);
+    }
+
+    // Gerente/admin registra que o checklist daquele dia não será feito (com motivo).
+    async function dismissPastChecklist(i) {
+      const it = pastScheduleItems[i];
+      if (!it || !isManager()) return;
+      const reason = await askPrompt("Dispensar checklist", "Motivo", "", { message: `${it.model.name} · ${it.unit} · ${isoToBR(it.date)}`, confirmText: "Dispensar", placeholder: "Ex.: loja fechada, feriado..." });
+      if (reason === null) return;
+      if (!reason.trim()) return toast("Informe o motivo para dispensar.", "warn");
+      try {
+        await db.collection("scheduleDone").add({
+          date: it.date, modelId: it.model.id, unit: it.unit, by: currentUser.uid, byName: currentUser.name,
+          skipped: true, reason: reason.trim().slice(0, 300), deleted: false, at: FieldValue.serverTimestamp()
+        });
+        toast("Checklist dispensado.", "success");
+      } catch (err) {
+        showError("Não foi possível dispensar.", err);
+      }
     }
 
     function startScheduledChecklist(index) {
@@ -3035,7 +3482,7 @@
                 ${thumbs}
                 <label class="w-16 h-16 rounded-xl border-[1.5px] border-dashed border-stone-300 text-stone-500 flex flex-col items-center justify-center gap-0.5 cursor-pointer hover:border-cb-bordo hover:text-cb-bordo transition">
                   ${icon("camera", "w-5 h-5")}<span class="text-[10px] font-bold">Foto</span>
-                  <input type="file" accept="image/*" multiple class="hidden" onchange="handleMultiplePhotosUpload(event, '${key}')">
+                  <input type="file" accept="image/*" ${photoPolicy.cameraOnly ? 'capture="environment"' : "multiple"} class="hidden" onchange="handleMultiplePhotosUpload(event, '${key}')">
                 </label>
               </div>
             </div>`;
@@ -3064,7 +3511,17 @@
       let fails = 0;
       for (const file of files) {
         try {
-          const url = await uploadAnyFile(file);
+          const now = Date.now();
+          const taken = file.lastModified || now;
+          const fromGallery = now - taken > 15 * 60000;
+          if (fromGallery) draft.galleryCount = (draft.galleryCount || 0) + 1;
+          const fmt = (ms) => new Date(ms).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+          const stamp = photoPolicy.stamp !== false ? [
+            `${draft.unit || ""} · ${currentUser.name}`,
+            `Foto: ${fmt(taken)}${fromGallery ? " · DA GALERIA" : ""}`,
+            `Enviada: ${fmt(now)}`
+          ] : null;
+          const url = await uploadAnyFile(file, { stamp });
           if (!Array.isArray(draft.photos[key])) draft.photos[key] = getPhotos(key);
           draft.photos[key].push(url);
           saveDraft();
@@ -3181,7 +3638,7 @@
             const plan = draft.plans[key] || {};
             const actionRef = db.collection("actions").doc();
             const entry = { actionId: actionRef.id, title: item.title, sector: sec.category, action: (plan.action || "").trim() || "Não descrita", date: plan.date || "" };
-            batch.set(actionRef, { unit, title: entry.title, action: entry.action, dueDate: entry.date, type: "nc", sector: sec.category, reportId: reportRef.id, photos, status: defaultStatus, priority: defaultPriority, deleted: false, ...meta });
+            batch.set(actionRef, { unit, title: entry.title, action: entry.action, dueDate: entry.date, type: "nc", sector: sec.category, reportId: reportRef.id, photos, status: defaultStatus, priority: defaultPriority, deleted: false, open: true, closedAt: null, ...meta });
             ncList.push(entry);
           }
           if (ans === "abrir") {
@@ -3189,17 +3646,24 @@
             const actionRef = db.collection("actions").doc();
             const equipment = (om.equipment || "").trim() || item.title;
             const entry = { actionId: actionRef.id, equipment, sector: sec.category, action: (om.action || "").trim() || "Não descrito", date: om.date || "" };
-            batch.set(actionRef, { unit, title: `Manutenção: ${equipment}`, equipment, action: entry.action, dueDate: entry.date, type: "om", sector: sec.category, reportId: reportRef.id, photos, status: defaultStatus, priority: defaultPriority, deleted: false, ...meta });
+            batch.set(actionRef, { unit, title: `Manutenção: ${equipment}`, equipment, action: entry.action, dueDate: entry.date, type: "om", sector: sec.category, reportId: reportRef.id, photos, status: defaultStatus, priority: defaultPriority, deleted: false, open: true, closedAt: null, ...meta });
             omList.push(entry);
           }
         });
         sections.push({ category: sec.category, items });
       });
 
+      let geoEnd = null;
+      if (photoPolicy.gps) {
+        showBusy("Registrando localização...");
+        geoEnd = await Promise.race([captureGeo(), new Promise(r => setTimeout(() => r(null), 4000))]);
+        hideBusy();
+      }
       const report = {
+        geo: { start: draft.geo?.start || null, end: geoEnd || null },
         modelId: chk.id, checklistName: chk.name, unit, supervisor, notes,
         date: dateStr, dateIso, scheduledFor, score, total, sections,
-        nonConformities: ncList, maintenanceOrders: omList, deleted: false, ...meta
+        nonConformities: ncList, maintenanceOrders: omList, galleryPhotos: draft.galleryCount || 0, deleted: false, ...meta
       };
       batch.set(reportRef, report);
       // Registro leve de conclusão, para a programação ficar correta para todos os perfis.
@@ -3221,7 +3685,7 @@
         return infoDialog("Sem conexão", "O relatório ainda não foi confirmado pelo servidor. Mantenha esta tela aberta e tente finalizar de novo quando a internet voltar. Seu rascunho foi preservado.");
       }
 
-      lastSavedReport = { ...report, id: reportRef.id, createdAt: now };
+      lastSavedReport = { ...report, id: reportRef.id, createdAt: now, geo: { start: draft.geo?.start || null, end: geoEnd || null } };
       scheduleDone.set(reportRef.id, { date: scheduledFor, modelId: chk.id, unit, deleted: false });
       clearDraft();
       isAuditFinished = true;
@@ -3312,6 +3776,8 @@
                 <strong>Data da auditoria:</strong> ${esc(rep.date)}${rep.scheduledFor && rep.scheduledFor !== rep.dateIso ? ` (agendado para ${isoToBR(rep.scheduledFor)})` : ""}<br>
                 <strong>Unidade:</strong> ${esc(rep.unit)} &nbsp;|&nbsp; <strong>Supervisor:</strong> ${esc(rep.supervisor)}<br>
                 <strong>Avaliados:</strong> ${esc(rep.total)} itens
+                ${rep.geo?.end || rep.geo?.start ? `<br><strong>Localização:</strong> <a href="${esc(mapsLink(rep.geo.end || rep.geo.start))}" target="_blank" style="color:#4A0E17;">ver no mapa</a> <span style="color:#888;">(precisão ~${esc((rep.geo.end || rep.geo.start).acc)} m)</span>` : ""}
+                ${rep.galleryPhotos ? `<br><strong style="color:#b91c1c;">Atenção:</strong> <span style="color:#b91c1c;">${esc(rep.galleryPhotos)} foto(s) enviada(s) da galeria (tiradas mais de 15 min antes)</span>` : ""}
               </div>
             </div>
             <div style="text-align:center;min-width:110px;background:#4A0E17;padding:8px 12px;border-radius:8px;color:#fff;border:1px solid #D4AF37;">
@@ -3407,16 +3873,11 @@
       return score >= 90 ? "bg-emerald-50 text-emerald-700" : score >= 75 ? "bg-amber-50 text-amber-700" : "bg-rose-50 text-rose-700";
     }
 
-    function renderHistoryList() {
-      const container = document.getElementById("history-list-container");
-      if (!container || !currentUser) return;
-      updateHistoryBadge();
-
+    function getFilteredReports() {
       const store = document.getElementById("filter-store").value;
       const start = document.getElementById("filter-date-start").value;
       const end = document.getElementById("filter-date-end").value;
-
-      const filtered = reports.filter(rep => {
+      return reports.filter(rep => {
         if (rep.deleted) return false;
         if (store && rep.unit !== store) return false;
         const iso = reportDateIso(rep);
@@ -3424,6 +3885,20 @@
         if (end && iso && iso > end) return false;
         return true;
       });
+    }
+
+    function renderHistoryList() {
+      const container = document.getElementById("history-list-container");
+      if (!container || !currentUser) return;
+      updateHistoryBadge();
+
+      // Filtro começando antes do período carregado: busca os relatórios que faltam.
+      const start = document.getElementById("filter-date-start").value;
+      if (start && reportsFromMs && new Date(start + "T00:00:00").getTime() < reportsFromMs) {
+        loadOlderReports(new Date(start + "T00:00:00").getTime());
+        return;
+      }
+      const filtered = getFilteredReports();
 
       document.getElementById("history-count").innerText = isManager()
         ? `${filtered.length} relatório(s) de todas as lojas`
@@ -3542,6 +4017,245 @@
     }
 
     /* =========================================================
+       16b. INDICADORES
+       ========================================================= */
+    function dashColor(score) {
+      return score >= 90 ? ["bg-emerald-500", "text-emerald-700"] : score >= 75 ? ["bg-amber-500", "text-amber-700"] : ["bg-rose-500", "text-rose-700"];
+    }
+
+    function reportModelId(rep) {
+      if (rep.modelId) return rep.modelId;
+      return allChecklists.find(c => c.name === rep.checklistName)?.id || "";
+    }
+
+    // Conjunto "modelo|loja|data" de agendamentos cumpridos (relatórios + conclusões + dispensas).
+    function buildDoneKeys() {
+      const keys = new Set();
+      reports.forEach(r => { if (!r.deleted) keys.add(`${reportModelId(r)}|${r.unit}|${r.scheduledFor || reportDateIso(r)}`); });
+      scheduleDone.forEach(d => { if (!d.deleted) keys.add(`${d.modelId}|${d.unit}|${d.date}`); });
+      return keys;
+    }
+
+    function fillDashFilters() {
+      const store = document.getElementById("dash-store");
+      const model = document.getElementById("dash-model");
+      const sv = store.value, mv = model.value;
+      const units = [...new Set([...getAllowedUnits(), ...reports.map(r => r.unit)])].filter(Boolean);
+      store.innerHTML = `<option value="">Todas</option>` + units.map(u => `<option value="${esc(u)}">${esc(u)}</option>`).join("");
+      model.innerHTML = `<option value="">Todos</option>` + allChecklists.map(c => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join("");
+      if (units.includes(sv)) store.value = sv;
+      if (allChecklists.some(c => c.id === mv)) model.value = mv;
+    }
+
+    let dashUnitList = [];
+    function dashUnitIdx(u) {
+      let i = dashUnitList.indexOf(u);
+      if (i < 0) { dashUnitList.push(u); i = dashUnitList.length - 1; }
+      return i;
+    }
+    function setDashStoreIdx(i) { if (dashUnitList[i] !== undefined) setDashStore(dashUnitList[i]); }
+
+    function setDashStore(unit) {
+      const sel = document.getElementById("dash-store");
+      sel.value = sel.value === unit ? "" : unit;
+      renderDashboard();
+    }
+
+    function barRow({ label, sub = "", value, max = 100, text, color = "bg-cb-bordo", onclick = "", active = false }) {
+      const pct = max > 0 ? Math.max(2, Math.round((value / max) * 100)) : 0;
+      const tag = onclick ? "button" : "div";
+      return `
+        <${tag} ${onclick ? `onclick="${onclick}"` : ""} class="w-full text-left block ${active ? "rounded-xl ring-2 ring-cb-bordo/40 p-1.5 -m-1.5" : ""}">
+          <div class="flex items-baseline justify-between gap-3 mb-1">
+            <span class="text-sm font-semibold truncate">${esc(label)}</span>
+            <span class="text-sm font-extrabold shrink-0">${text}</span>
+          </div>
+          <div class="h-2 rounded-full bg-stone-100 overflow-hidden"><div class="h-full rounded-full ${color}" style="width:${pct}%"></div></div>
+          ${sub ? `<p class="text-[11px] text-stone-500 mt-1">${sub}</p>` : ""}
+        </${tag}>`;
+    }
+
+    function emptyBox(msg) { return `<p class="text-sm text-stone-400 py-4 text-center">${msg}</p>`; }
+
+    // Gráfico de linha simples em SVG (sem bibliotecas).
+    function lineChartSvg(points) {
+      if (points.length === 0) return emptyBox("Sem checklists no período.");
+      const W = 640, H = 220, L = 34, R = 12, T = 14, B = 34;
+      const vals = points.map(p => p.v);
+      const yMin = Math.max(0, Math.floor((Math.min(...vals) - 5) / 10) * 10);
+      const yMax = 100;
+      const x = i => points.length === 1 ? (L + W - R) / 2 : L + (i * (W - L - R)) / (points.length - 1);
+      const y = v => T + ((yMax - v) * (H - T - B)) / (yMax - yMin || 1);
+      let grid = "";
+      for (let g = yMin; g <= yMax; g += (yMax - yMin) / 4) {
+        grid += `<line x1="${L}" x2="${W - R}" y1="${y(g)}" y2="${y(g)}" stroke="#ECEAE7" stroke-width="1"/><text x="${L - 6}" y="${y(g) + 4}" text-anchor="end" font-size="11" fill="#78716c">${Math.round(g)}</text>`;
+      }
+      const path = points.map((p, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(p.v).toFixed(1)}`).join(" ");
+      const area = `${path} L${x(points.length - 1).toFixed(1)},${H - B} L${x(0).toFixed(1)},${H - B} Z`;
+      const step = Math.ceil(points.length / 8);
+      const labels = points.map((p, i) => (i % step === 0 || i === points.length - 1)
+        ? `<text x="${x(i)}" y="${H - 12}" text-anchor="middle" font-size="11" fill="#78716c">${esc(p.label)}</text>` : "").join("");
+      const dots = points.map((p, i) => `<circle cx="${x(i)}" cy="${y(p.v)}" r="4" fill="#fff" stroke="#4A0E17" stroke-width="2"><title>${esc(p.label)}: ${p.v}% (${p.n} checklist${p.n > 1 ? "s" : ""})</title></circle>`).join("");
+      return `<svg viewBox="0 0 ${W} ${H}" class="w-full h-auto" role="img" aria-label="Conformidade média por período">
+        ${grid}
+        <path d="${area}" fill="#4A0E17" opacity="0.07"/>
+        <path d="${path}" fill="none" stroke="#4A0E17" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+        ${dots}${labels}
+      </svg>`;
+    }
+
+    function weekStartIso(iso) {
+      const d = new Date(iso + "T00:00:00");
+      const dow = (d.getDay() + 6) % 7; // segunda = 0
+      d.setDate(d.getDate() - dow);
+      return hojeISO(d);
+    }
+
+    function kpiCard(title, value, sub, tone = "text-cb-ink") {
+      return `
+        <div class="card p-4">
+          <p class="text-xs font-bold text-stone-500">${title}</p>
+          <p class="text-2xl font-extrabold tracking-tight mt-1 ${tone}">${value}</p>
+          <p class="text-[11px] text-stone-500 mt-0.5">${sub}</p>
+        </div>`;
+    }
+
+    function renderDashboard() {
+      if (!isManager() || currentView !== "dashboard") return;
+      fillDashFilters();
+      const days = parseInt(document.getElementById("dash-period").value, 10) || 30;
+      const store = document.getElementById("dash-store").value;
+      const modelId = document.getElementById("dash-model").value;
+
+      const fromMs = daysAgoMs(days - 1);
+      const prevFromMs = daysAgoMs(days * 2 - 1);
+      // Período (e o anterior, para comparação) precisa estar carregado.
+      if (reportsFromMs > 0 && prevFromMs < reportsFromMs) { loadOlderReports(prevFromMs); return; }
+
+      const today = hojeISO();
+      const fromIso = hojeISO(new Date(fromMs));
+      const prevFromIso = hojeISO(new Date(prevFromMs));
+      const matches = (r, a, b) => {
+        if (r.deleted) return false;
+        const iso = reportDateIso(r);
+        if (!iso || iso < a || iso > b) return false;
+        if (modelId && reportModelId(r) !== modelId) return false;
+        return true;
+      };
+      const periodAll = reports.filter(r => matches(r, fromIso, today));
+      const period = periodAll.filter(r => !store || r.unit === store);
+      const dayBefore = hojeISO(new Date(fromMs - 86400000));
+      const prev = reports.filter(r => matches(r, prevFromIso, dayBefore) && (!store || r.unit === store));
+      const avg = list => list.length ? Math.round(list.reduce((n, r) => n + (Number(r.score) || 0), 0) / list.length) : null;
+
+      // ---- Programação cumprida (até ontem) ----
+      const doneKeys = buildDoneKeys();
+      const units = getAllowedUnits();
+      const models = allowedChecklistsForUser().filter(m => !modelId || m.id === modelId);
+      const adherence = {};
+      const d = new Date(fromMs);
+      const yesterday = hojeISO(new Date(Date.now() - 86400000));
+      while (hojeISO(d) <= yesterday) {
+        const iso = hojeISO(d);
+        units.forEach(unit => models.forEach(m => {
+          if (!isChecklistScheduledForDate(m, iso, unit)) return;
+          const a = (adherence[unit] ||= { total: 0, done: 0 });
+          a.total++;
+          if (doneKeys.has(`${m.id}|${unit}|${iso}`)) a.done++;
+        }));
+        d.setDate(d.getDate() + 1);
+      }
+      const adhList = Object.entries(adherence).filter(([u]) => !store || u === store);
+      const adhTotal = adhList.reduce((n, [, a]) => n + a.total, 0);
+      const adhDone = adhList.reduce((n, [, a]) => n + a.done, 0);
+
+      // ---- Planos ----
+      const openList = actions.filter(a => !a.deleted && !isDoneStatus(a.status) && (!store || a.unit === store));
+      const lateList = openList.filter(a => { const due = brToISO(a.dueDate); return due && due < today; });
+      const closedInPeriod = actions.filter(a => !a.deleted && isDoneStatus(a.status) && (!store || a.unit === store) && tsToMillis(a.closedAt) >= fromMs && tsToMillis(a.createdAt));
+      const resDays = closedInPeriod.length
+        ? (closedInPeriod.reduce((n, a) => n + Math.max(0, tsToMillis(a.closedAt) - tsToMillis(a.createdAt)), 0) / closedInPeriod.length / 86400000).toFixed(1).replace(".", ",")
+        : null;
+
+      // ---- KPIs ----
+      const a1 = avg(period), a0 = avg(prev);
+      const delta = a1 !== null && a0 !== null ? a1 - a0 : null;
+      const deltaTxt = delta === null ? "sem período anterior para comparar"
+        : `${delta > 0 ? "▲" : delta < 0 ? "▼" : "="} ${Math.abs(delta)} pts vs. período anterior`;
+      const adhPct = adhTotal ? Math.round((adhDone / adhTotal) * 100) : null;
+      document.getElementById("dash-kpis").innerHTML =
+        kpiCard("Conformidade média", a1 === null ? "—" : `${a1}%`, deltaTxt, a1 === null ? "text-cb-ink" : dashColor(a1)[1]) +
+        kpiCard("Checklists realizados", period.length, `em ${days} dias`) +
+        kpiCard("Programação cumprida", adhPct === null ? "—" : `${adhPct}%`, adhTotal ? `${adhDone} de ${adhTotal} agendados` : "nenhum agendamento no período", adhPct === null ? "text-cb-ink" : dashColor(adhPct)[1]) +
+        kpiCard("Planos em aberto", openList.length, `${lateList.length} atrasado(s)${resDays ? ` · resolução média ${resDays} dias` : ""}`, lateList.length ? "text-rose-700" : "text-cb-ink");
+
+      // ---- Tendência ----
+      const byDay = days <= 14;
+      const groups = new Map();
+      period.forEach(r => {
+        const iso = reportDateIso(r);
+        const k = byDay ? iso : weekStartIso(iso);
+        const g = groups.get(k) || { sum: 0, n: 0 };
+        g.sum += Number(r.score) || 0; g.n++;
+        groups.set(k, g);
+      });
+      const points = [...groups.entries()].sort((a, b) => a[0].localeCompare(b[0]))
+        .map(([k, g]) => ({ label: isoToBR(k).slice(0, 5), v: Math.round(g.sum / g.n), n: g.n }));
+      document.getElementById("dash-trend").innerHTML = lineChartSvg(points) +
+        (points.length ? `<p class="text-[11px] text-stone-500">${byDay ? "Cada ponto é um dia." : "Cada ponto é uma semana (a partir de segunda-feira)."} Toque em um ponto para ver o valor.</p>` : "");
+
+      // ---- Ranking (todas as lojas, destacando a filtrada) ----
+      const byStore = new Map();
+      periodAll.forEach(r => { const g = byStore.get(r.unit) || { sum: 0, n: 0 }; g.sum += Number(r.score) || 0; g.n++; byStore.set(r.unit, g); });
+      const ranking = [...byStore.entries()].map(([u, g]) => ({ u, v: Math.round(g.sum / g.n), n: g.n })).sort((a, b) => b.v - a.v);
+      document.getElementById("dash-ranking").innerHTML = ranking.length
+        ? ranking.map((r, i) => barRow({ label: `${i + 1}º ${r.u}`, value: r.v, text: `${r.v}%`, color: dashColor(r.v)[0], sub: `${r.n} checklist(s)`, onclick: `setDashStoreIdx(${dashUnitIdx(r.u)})`, active: store === r.u })).join("")
+        : emptyBox("Sem checklists no período.");
+
+      // ---- NCs mais frequentes ----
+      const ncCount = new Map();
+      period.forEach(r => {
+        const titles = r.sections
+          ? r.sections.flatMap(s => s.items.filter(it => it.answer === "nao-conforme" || it.answer === "abrir").map(it => it.title))
+          : (r.nonConformities || []).map(n => n.title);
+        titles.forEach(t => {
+          const g = ncCount.get(t) || { n: 0, stores: new Set() };
+          g.n++; g.stores.add(r.unit);
+          ncCount.set(t, g);
+        });
+      });
+      const topNc = [...ncCount.entries()].sort((a, b) => b[1].n - a[1].n).slice(0, 8);
+      const maxNc = topNc[0]?.[1].n || 0;
+      document.getElementById("dash-topnc").innerHTML = topNc.length
+        ? topNc.map(([t, g]) => barRow({ label: t, value: g.n, max: maxNc, text: `${g.n}×`, color: "bg-rose-500", sub: `${g.stores.size} loja(s)${g.stores.size <= 3 ? `: ${[...g.stores].join(", ")}` : ""}` })).join("")
+        : emptyBox("Nenhuma não conformidade no período.");
+
+      // ---- Programação por loja ----
+      const adhRows = Object.entries(adherence).map(([u, a]) => ({ u, pct: Math.round((a.done / a.total) * 100), ...a })).sort((a, b) => a.pct - b.pct);
+      document.getElementById("dash-adherence").innerHTML = adhRows.length
+        ? adhRows.map(r => barRow({ label: r.u, value: r.pct, text: `${r.pct}%`, color: dashColor(r.pct)[0], sub: `${r.done} de ${r.total} agendados`, onclick: `setDashStoreIdx(${dashUnitIdx(r.u)})`, active: store === r.u })).join("")
+        : emptyBox("Nenhum checklist agendado no período.");
+
+      // ---- Planos em aberto por loja ----
+      const actByStore = new Map();
+      actions.filter(a => !a.deleted && !isDoneStatus(a.status)).forEach(a => {
+        const g = actByStore.get(a.unit) || { open: 0, late: 0 };
+        g.open++;
+        const due = brToISO(a.dueDate);
+        if (due && due < today) g.late++;
+        actByStore.set(a.unit, g);
+      });
+      const actRows = [...actByStore.entries()].sort((a, b) => b[1].late - a[1].late || b[1].open - a[1].open);
+      const maxOpen = Math.max(0, ...actRows.map(([, g]) => g.open));
+      document.getElementById("dash-actions").innerHTML = actRows.length
+        ? actRows.map(([u, g]) => barRow({ label: u, value: g.open, max: maxOpen, text: `${g.open}`, color: g.late ? "bg-rose-500" : "bg-amber-500", sub: g.late ? `${g.late} atrasado(s)` : "nenhum atrasado", onclick: `setDashStoreIdx(${dashUnitIdx(u)})`, active: store === u })).join("")
+        : emptyBox("Nenhum plano em aberto.");
+
+      document.getElementById("dash-footnote").innerText =
+        `Baseado em ${period.length} checklist(s) de ${isoToBR(fromIso)} a ${isoToBR(today)}. Os planos em aberto não dependem do período.`;
+    }
+
+    /* =========================================================
        17. PLANOS DE AÇÃO
        ========================================================= */
     function switchActionsTab(tab) {
@@ -3610,6 +4324,13 @@
       document.getElementById("counter-progress").innerText = counts.progress;
       document.getElementById("counter-completed").innerText = counts.completed;
 
+      const closedNote = document.getElementById("closed-window-info");
+      if (closedNote) {
+        closedNote.innerHTML = currentActionsTab === "completed" && closedFromMs
+          ? `<div class="flex items-center justify-between gap-3 text-xs text-cb-muted px-1"><span>Concluídos desde ${new Date(closedFromMs).toLocaleDateString("pt-BR")}.</span><button onclick="loadClosedActions(0)" class="btn-secondary btn-sm">Carregar todos</button></div>`
+          : "";
+      }
+
       const list = getFilteredActionsList();
       const validIds = new Set(list.map(a => a.id));
       [...selectedActionIds].forEach(id => { if (!validIds.has(id)) selectedActionIds.delete(id); });
@@ -3672,7 +4393,8 @@
       if (!act) return;
       if (isDoneStatus(newStatus) && act.type === "om") return openMaintenanceResolutionModal(id);
       try {
-        await db.collection("actions").doc(id).update({ status: newStatus, statusUpdatedAt: FieldValue.serverTimestamp(), statusUpdatedBy: currentUser.uid });
+        await db.collection("actions").doc(id).update({ status: newStatus, ...statusFields(newStatus), statusUpdatedAt: FieldValue.serverTimestamp(), statusUpdatedBy: currentUser.uid });
+        afterStatusChange(id, newStatus);
       } catch (err) {
         showError("Não foi possível alterar o status.", err);
         renderCentralizedActions();
@@ -3811,7 +4533,7 @@
           unit, title, action: desc, dueDate, type, photos,
           status: actionStatuses.find(s => s.name === "Pendente")?.name || actionStatuses[0]?.name || "Pendente",
           priority: actionPriorities[0]?.name || "Urgente",
-          deleted: false, createdAt: FieldValue.serverTimestamp(), createdBy: currentUser.uid, createdByName: currentUser.name
+          deleted: false, open: true, closedAt: null, createdAt: FieldValue.serverTimestamp(), createdBy: currentUser.uid, createdByName: currentUser.name
         }), 15000);
         toggleNewActionModal();
         toast("Plano de ação criado.", "success");
@@ -4003,13 +4725,15 @@
           gMao, gPecas, desc, dataConclusao, dataGarantiaFim, dataGarantiaFimIso: hojeISO(fim),
           createdAt: FieldValue.serverTimestamp(), createdBy: currentUser.uid
         });
+        const doneName = actionStatuses.find(s => isDoneStatus(s.name))?.name || "Concluído";
         batch.update(db.collection("actions").doc(actionId), {
-          status: actionStatuses.find(s => isDoneStatus(s.name))?.name || "Concluído",
+          status: doneName, open: false, closedAt: FieldValue.serverTimestamp(),
           resolution: { empresa, warrantyId: warrantyRef.id, dataConclusao, dataGarantiaFim },
           statusUpdatedAt: FieldValue.serverTimestamp(), statusUpdatedBy: currentUser.uid
         });
         if (addTech) batch.set(db.collection("technicians").doc(), { name: empresa, service: equipamento, region: "Geral", phone: contato || "", createdAt: FieldValue.serverTimestamp() });
         await commitWithTimeout(batch.commit(), 15000);
+        afterStatusChange(actionId, doneName);
         closeModal("maintenance-resolution-modal");
         toast("Manutenção concluída e garantia registrada.", "success");
       } catch (err) {
@@ -4274,7 +4998,7 @@
     }
 
     function switchAdminTab(tab) {
-      ["units", "users", "status", "priorities", "migration"].forEach(t => {
+      ["units", "users", "status", "priorities", "photos", "data", "migration"].forEach(t => {
         document.getElementById(`admin-content-${t}`).classList.toggle("hidden", t !== tab);
         document.getElementById(`admin-tab-${t}`).className = `shrink-0 h-9 px-3.5 rounded-full text-sm font-bold transition ${t === tab ? "bg-cb-bordo text-white" : "text-stone-600 hover:bg-stone-100"}`;
       });
@@ -4283,6 +5007,8 @@
       if (tab === "status") renderAdminStatusList();
       if (tab === "priorities") renderAdminPrioritiesList();
       if (tab === "migration") { refreshMigrationUI(); refreshLegacyLinkUI(); }
+      if (tab === "photos") loadPhotoPolicyForm();
+      if (tab === "data") refreshDataToolsUI();
     }
 
     function toggleUnitSelectionBox() {
@@ -4362,11 +5088,57 @@
             </div>
             ${isSelf ? "" : `
               <div class="flex flex-col gap-1.5 shrink-0">
+                <button onclick="toggleUserEditor('${jsId(u.id)}')" class="btn-soft btn-sm">Editar acesso</button>
                 <button onclick="toggleUserActive('${jsId(u.id)}')" class="btn-secondary btn-sm">${u.active === false ? "Reativar" : "Desativar"}</button>
                 <button onclick="removeUser('${jsId(u.id)}')" class="btn-secondary btn-sm !text-rose-700">Remover</button>
               </div>`}
-          </div>`;
+          </div>
+          <div id="user-editor-${jsId(u.id)}" class="hidden"></div>`;
       }).join("");
+    }
+
+    function toggleUserEditor(uid) {
+      const box = document.getElementById(`user-editor-${uid}`);
+      const u = usersList.find(x => x.id === uid);
+      if (!box || !u) return;
+      if (!box.classList.contains("hidden")) { box.classList.add("hidden"); box.innerHTML = ""; return; }
+      const units = u.units || [];
+      box.className = "card p-4 space-y-3 -mt-1 ring-1 ring-cb-soft";
+      box.innerHTML = `
+        <p class="text-sm font-extrabold">Editar acesso de ${esc(u.name)}</p>
+        <div>
+          <label for="edit-role-u-${uid}" class="label">Perfil</label>
+          <select id="edit-role-u-${uid}" class="field" onchange="document.getElementById('edit-units-box-${uid}').classList.toggle('hidden', this.value === 'admin')">
+            ${["operador", "gerente", "admin"].map(r => `<option value="${r}" ${u.role === r ? "selected" : ""}>${ROLE_LABELS[r]}</option>`).join("")}
+          </select>
+        </div>
+        <div id="edit-units-box-${uid}" class="${u.role === "admin" ? "hidden" : ""}">
+          <span class="label">Lojas <span class="font-normal text-stone-400">(nenhuma marcada = todas)</span></span>
+          <div id="edit-units-u-${uid}" class="flex flex-wrap gap-2">
+            ${presetUnits.map(un => `<label class="check-chip"><input type="checkbox" value="${esc(un)}" ${units.includes(un) ? "checked" : ""} class="sr-only">${esc(un)}</label>`).join("")}
+          </div>
+        </div>
+        <div class="flex gap-2">
+          <button onclick="toggleUserEditor('${uid}')" class="btn-secondary">Cancelar</button>
+          <button onclick="saveUserAccess('${uid}')" class="btn-primary flex-1">Salvar acesso</button>
+        </div>
+        <p class="text-[11px] text-stone-500">Se a pessoa estiver com o sistema aberto, ele recarrega sozinho com o novo acesso.</p>`;
+    }
+
+    async function saveUserAccess(uid) {
+      const u = usersList.find(x => x.id === uid);
+      if (!u) return;
+      const role = document.getElementById(`edit-role-u-${uid}`).value;
+      const units = role === "admin" ? [] : [...document.querySelectorAll(`#edit-units-u-${uid} input:checked`)].map(i => i.value);
+      if (u.role === "admin" && role !== "admin" && usersList.filter(x => x.role === "admin" && x.active !== false).length <= 1) {
+        return toast("Mantenha ao menos um administrador ativo.", "warn");
+      }
+      try {
+        await db.collection("users").doc(uid).update({ role, units, updatedAt: FieldValue.serverTimestamp(), updatedBy: currentUser.uid });
+        toast(`Acesso de ${u.name} atualizado.`, "success");
+      } catch (err) {
+        showError("Não foi possível atualizar o acesso.", err);
+      }
     }
 
     async function approveAccessRequest(uid) {
@@ -5019,12 +5791,350 @@
         }
 
         await db.doc("meta/migration").set({ done: true, at: now, by: currentUser.uid, skippedUsers: skipped });
+        migLog("Otimizando planos migrados...");
+        await ensureActionsOpenField(true);
         migLog("✅ Migração concluída.");
       } catch (err) {
         migLog("❌ Erro: " + friendlyError(err));
         showError("A migração foi interrompida. Você pode executá-la novamente; itens já migrados serão atualizados.", err);
       } finally {
         btn.disabled = false;
+      }
+    }
+
+    /* =========================================================
+       26. POLÍTICA DE FOTOS E LOCALIZAÇÃO
+       ========================================================= */
+    function loadPhotoPolicyForm() {
+      document.getElementById("pp-stamp").checked = photoPolicy.stamp !== false;
+      document.getElementById("pp-camera").checked = !!photoPolicy.cameraOnly;
+      document.getElementById("pp-gps").checked = photoPolicy.gps !== false;
+    }
+
+    async function savePhotoPolicy() {
+      if (!isAdmin()) return;
+      const policy = {
+        stamp: document.getElementById("pp-stamp").checked,
+        cameraOnly: document.getElementById("pp-camera").checked,
+        gps: document.getElementById("pp-gps").checked
+      };
+      try {
+        await db.doc("config/settings").set({ photoPolicy: policy, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+        photoPolicy = policy;
+        toast("Configuração de fotos salva.", "success");
+      } catch (err) {
+        showError("Não foi possível salvar.", err);
+      }
+    }
+
+    /* =========================================================
+       27. DADOS: ESPAÇO, LIMPEZA, BACKUP E OTIMIZAÇÃO
+       ========================================================= */
+    const FREE_QUOTA_BYTES = 1024 * 1024 * 1024;
+
+    function fmtBytes(b) {
+      if (b >= 1024 * 1024 * 1024) return `${(b / 1024 / 1024 / 1024).toFixed(2).replace(".", ",")} GB`;
+      if (b >= 1024 * 1024) return `${(b / 1024 / 1024).toFixed(1).replace(".", ",")} MB`;
+      return `${Math.round(b / 1024)} KB`;
+    }
+
+    function fmtMs(ms) { return ms ? new Date(ms).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"; }
+
+    function dataLog(msg) {
+      const el = document.getElementById("data-log");
+      if (!el) return;
+      el.classList.remove("hidden");
+      el.textContent += msg + "\n";
+      el.scrollTop = el.scrollHeight;
+    }
+
+    function refreshDataToolsUI() {
+      const st = document.getElementById("storage-status");
+      if (!st) return;
+      if (storageInfo) {
+        const pct = Math.min(100, (storageInfo.bytes / FREE_QUOTA_BYTES) * 100);
+        st.innerText = `${fmtBytes(storageInfo.bytes)} de 1 GB (${pct.toFixed(1).replace(".", ",")}%) · ${storageInfo.files} arquivo(s) · calculado em ${fmtMs(tsToMillis(storageInfo.at))}`;
+        const bar = document.getElementById("storage-bar");
+        bar.style.width = `${Math.max(1, pct)}%`;
+        bar.className = `h-full rounded-full ${pct > 80 ? "bg-rose-600" : pct > 60 ? "bg-amber-500" : "bg-emerald-600"}`;
+      }
+      const bs = document.getElementById("backup-status");
+      bs.innerText = backupInfo?.at ? `Último backup: ${fmtMs(tsToMillis(backupInfo.at))} por ${backupInfo.byName || "admin"} (${backupInfo.docs || "?"} registros).` : "Nenhum backup registrado.";
+      document.getElementById("optimize-status").innerText = dbFlags.actionsOpen
+        ? "Os planos estão otimizados: só os em aberto ficam ao vivo; os concluídos carregam quando alguém abre Planos ou Indicadores."
+        : "Os planos ainda não foram otimizados.";
+    }
+
+    function backupOverdue() {
+      if (!isAdmin()) return false;
+      const last = tsToMillis(backupInfo?.at);
+      return !last || Date.now() - last > 30 * 86400000;
+    }
+
+    // Soma o tamanho de todos os arquivos (fotos, NFs, anexos) e estima o restante do banco.
+    async function calculateStorage() {
+      if (!isAdmin()) return;
+      const btn = document.getElementById("btn-storage");
+      btn.disabled = true;
+      showBusy("Calculando espaço usado...");
+      try {
+        const files = await db.collection("files").get();
+        let bytes = 0;
+        files.forEach(d => { bytes += Number(d.data().size) || 0; });
+        // Estimativa do restante (relatórios, planos, conversas): valores médios por documento.
+        const [rc, ac] = await Promise.all([
+          db.collection("reports").get({ source: "cache" }).then(s => s.size).catch(() => reports.length),
+          Promise.resolve(actions.length)
+        ]);
+        const other = Math.max(rc, reports.length) * 6000 + ac * 1500;
+        const info = { bytes: bytes + other, filesBytes: bytes, files: files.size, at: FieldValue.serverTimestamp(), by: currentUser.uid };
+        await db.doc("meta/storage").set(info);
+        storageInfo = { ...info, at: Date.now() };
+        refreshDataToolsUI();
+        toast(`Uso estimado: ${fmtBytes(bytes + other)}.`, "success");
+      } catch (err) {
+        showError("Não foi possível calcular o espaço.", err);
+      } finally {
+        btn.disabled = false;
+        hideBusy();
+      }
+    }
+
+    async function deleteStoredFile(id) {
+      const ref = db.collection("files").doc(id);
+      const snap = await ref.get();
+      if (!snap.exists) return 0;
+      const info = snap.data();
+      const batch = db.batch();
+      for (let i = 0; i < (info.chunkCount || 1); i++) batch.delete(ref.collection("chunks").doc(String(i)));
+      batch.delete(ref);
+      await batch.commit();
+      return Number(info.size) || 0;
+    }
+
+    async function runPhotoCleanup() {
+      if (!isAdmin()) return;
+      const months = parseInt(document.getElementById("cleanup-months").value, 10);
+      const cut = new Date(); cut.setMonth(cut.getMonth() - months);
+      const cutMs = cut.getTime();
+
+      showBusy("Procurando fotos antigas...");
+      let oldReports, oldActions, openSnap;
+      try {
+        [oldReports, oldActions, openSnap] = await Promise.all([
+          db.collection("reports").where("createdAt", "<", tsFromMs(cutMs)).get(),
+          db.collection("actions").where("closedAt", "<", tsFromMs(cutMs)).get(),
+          db.collection("actions").where("open", "==", true).get()
+        ]);
+      } catch (err) {
+        hideBusy();
+        return showError("Não foi possível buscar os dados antigos.", err);
+      }
+      hideBusy();
+
+      // Fotos que planos em aberto ainda usam não podem ser apagadas.
+      const keep = new Set();
+      openSnap.forEach(d => (d.data().photos || []).forEach(p => keep.add(p)));
+
+      const refs = new Set();
+      const repUpdates = [], actUpdates = [];
+      oldReports.forEach(d => {
+        const r = d.data();
+        let has = false;
+        (r.sections || []).forEach(sec => sec.items.forEach(it => (it.photos || []).forEach(p => { if (isFsRef(p) && !keep.has(p)) { refs.add(p); has = true; } })));
+        if (has) repUpdates.push(d);
+      });
+      oldActions.forEach(d => {
+        const a = d.data();
+        const ps = (a.photos || []).filter(p => isFsRef(p) && !keep.has(p));
+        if (ps.length) { ps.forEach(p => refs.add(p)); actUpdates.push(d); }
+      });
+
+      if (!refs.size) return infoDialog("Nada para limpar", `Não há fotos em relatórios ou planos concluídos com mais de ${months} meses.`);
+      if (!(await askConfirm(`Serão apagadas ${refs.size} foto(s) de ${repUpdates.length} relatório(s) e ${actUpdates.length} plano(s) concluído(s) com mais de ${months} meses.\n\nOs relatórios continuam disponíveis, sem as imagens. Esta ação não pode ser desfeita.`, { title: "Apagar fotos antigas?", confirmText: "Apagar fotos", danger: true }))) return;
+
+      const log = document.getElementById("data-log");
+      log.textContent = "";
+      dataLog(`Apagando ${refs.size} foto(s)...`);
+      showBusy("Apagando fotos antigas...");
+      let freed = 0, done = 0, fails = 0;
+      try {
+        for (const ref of refs) {
+          try { freed += await deleteStoredFile(fsId(ref)); } catch (e) { fails++; }
+          done++;
+          if (done % 25 === 0) { dataLog(`${done}/${refs.size}...`); document.getElementById("busy-text").innerText = `Apagando fotos (${done}/${refs.size})...`; }
+        }
+        const removed = new Set(refs);
+        const strip = arr => (arr || []).filter(p => !removed.has(p));
+        const writes = [
+          ...repUpdates.map(d => [d.ref, { sections: d.data().sections.map(sec => ({ ...sec, items: sec.items.map(it => ({ ...it, photos: strip(it.photos) })) })), photosRemovedAt: FieldValue.serverTimestamp() }]),
+          ...actUpdates.map(d => [d.ref, { photos: strip(d.data().photos), photosRemovedAt: FieldValue.serverTimestamp() }])
+        ];
+        for (let i = 0; i < writes.length; i += 400) {
+          const batch = db.batch();
+          writes.slice(i, i + 400).forEach(([ref, data]) => batch.update(ref, data));
+          await batch.commit();
+        }
+        dataLog(`Concluído. Liberado aproximadamente ${fmtBytes(freed)}.${fails ? ` ${fails} foto(s) não puderam ser apagadas.` : ""}`);
+        toast(`Fotos antigas apagadas. Liberado ~${fmtBytes(freed)}.`, "success");
+        if (storageInfo) db.doc("meta/storage").update({ bytes: Math.max(0, storageInfo.bytes - freed), files: Math.max(0, storageInfo.files - refs.size + fails) }).catch(() => {});
+      } catch (err) {
+        showError("A limpeza foi interrompida. Você pode executá-la novamente.", err);
+      } finally {
+        hideBusy();
+      }
+    }
+
+    // Converte datas do Firestore em texto ISO para o arquivo de backup.
+    function plainForBackup(v) {
+      if (v === null || v === undefined) return v;
+      if (typeof v.toDate === "function") return { __date: v.toDate().toISOString() };
+      if (Array.isArray(v)) return v.map(plainForBackup);
+      if (typeof v === "object") { const o = {}; Object.keys(v).forEach(k => { o[k] = plainForBackup(v[k]); }); return o; }
+      return v;
+    }
+
+    async function downloadBackup() {
+      if (!isAdmin()) return;
+      const btn = document.getElementById("btn-backup");
+      btn.disabled = true;
+      showBusy("Gerando backup...");
+      try {
+        const cols = ["users", "reports", "actions", "technicians", "warranties", "scheduleDone", "meta", "config"];
+        const out = { app: "Casa Bauducco - Supervisão", version: 3, createdAt: new Date().toISOString(), createdBy: currentUser.name, collections: {} };
+        let total = 0;
+        for (const c of cols) {
+          document.getElementById("busy-text").innerText = `Gerando backup (${c})...`;
+          const snap = await db.collection(c).get();
+          out.collections[c] = snap.docs.map(d => ({ id: d.id, ...plainForBackup(d.data()) }));
+          total += snap.size;
+        }
+        document.getElementById("busy-text").innerText = "Gerando backup (conversas)...";
+        const msgs = await db.collectionGroup("messages").get();
+        out.collections.chatMessages = msgs.docs.map(d => ({ id: d.id, chatId: d.ref.parent.parent?.id || "", ...plainForBackup(d.data()) }));
+        total += msgs.size;
+
+        const blob = new Blob([JSON.stringify(out)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `backup-casa-bauducco-${hojeISO()}.json`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
+
+        await db.doc("meta/backup").set({ at: FieldValue.serverTimestamp(), by: currentUser.uid, byName: currentUser.name, docs: total, sizeBytes: blob.size });
+        toast(`Backup gerado com ${total} registros (${fmtBytes(blob.size)}).`, "success");
+      } catch (err) {
+        showError("Não foi possível gerar o backup.", err);
+      } finally {
+        btn.disabled = false;
+        hideBusy();
+      }
+    }
+
+    async function runOptimizeActions() {
+      if (!(await askConfirm("Recalcula quais planos estão em aberto ou concluídos. Use se algum plano parecer fora do lugar.", { title: "Otimizar planos?", confirmText: "Otimizar" }))) return;
+      showBusy("Otimizando planos...");
+      const n = await ensureActionsOpenField(true);
+      hideBusy();
+      if (n !== undefined) {
+        toast(`${n} plano(s) verificados. Recarregando...`, "success");
+        setTimeout(() => location.reload(), 1500);
+      }
+    }
+
+    /* =========================================================
+       28. EXPORTAÇÃO PARA EXCEL
+       ========================================================= */
+    let xlsxLoading = null;
+    function loadXlsx() {
+      if (window.XLSX) return Promise.resolve(window.XLSX);
+      if (!xlsxLoading) {
+        xlsxLoading = new Promise((resolve, reject) => {
+          const s = document.createElement("script");
+          s.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+          s.onload = () => resolve(window.XLSX);
+          s.onerror = () => { xlsxLoading = null; reject(new Error("Não foi possível carregar o gerador de Excel. Verifique a internet.")); };
+          document.head.appendChild(s);
+        });
+      }
+      return xlsxLoading;
+    }
+
+    function sheetFrom(XLSX, rows, widths) {
+      const ws = XLSX.utils.json_to_sheet(rows);
+      if (widths) ws["!cols"] = widths.map(w => ({ wch: w }));
+      return ws;
+    }
+
+    const ANSWER_LABELS = { conforme: "Conforme", "nao-conforme": "Não conforme", na: "N/A", abrir: "OM aberta", regular: "Regular" };
+
+    async function exportReportsExcel() {
+      const list = getFilteredReports();
+      if (!list.length) return toast("Nenhum relatório para exportar com os filtros atuais.", "warn");
+      showBusy("Gerando Excel...");
+      try {
+        const XLSX = await loadXlsx();
+        const resumo = list.map(r => ({
+          "Data": r.date || "", "Agendado para": r.scheduledFor ? isoToBR(r.scheduledFor) : "", "Loja": r.unit,
+          "Modelo": r.checklistName || "", "Supervisor": r.supervisor || "", "Conformidade (%)": Number(r.score) || 0,
+          "Itens avaliados": Number(r.total) || 0, "Não conformidades": (r.nonConformities || []).length,
+          "Ordens de manutenção": (r.maintenanceOrders || []).length, "Fotos da galeria": r.galleryPhotos || 0,
+          "Localização": r.geo?.end || r.geo?.start ? mapsLink(r.geo.end || r.geo.start) : "", "Observações": r.notes || ""
+        }));
+        const ncs = [];
+        list.forEach(r => {
+          (r.nonConformities || []).forEach(n => ncs.push({ "Data": r.date || "", "Loja": r.unit, "Tipo": "Não conformidade", "Item": n.title, "Setor": n.sector || "", "Plano / defeito": n.action || "", "Prazo": fmtDue(n.date) }));
+          (r.maintenanceOrders || []).forEach(n => ncs.push({ "Data": r.date || "", "Loja": r.unit, "Tipo": "Manutenção", "Item": n.equipment, "Setor": n.sector || "", "Plano / defeito": n.action || "", "Prazo": fmtDue(n.date) }));
+        });
+        const respostas = [];
+        list.forEach(r => (r.sections || []).forEach(sec => sec.items.forEach(it => respostas.push({
+          "Data": r.date || "", "Loja": r.unit, "Modelo": r.checklistName || "", "Seção": sec.category, "Pergunta": it.title,
+          "Resposta": ANSWER_LABELS[it.answer] || (it.type === "stars" && it.answer ? `${it.answer}/5` : (it.answer ?? "")), "Fotos": (it.photos || []).length
+        }))));
+
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, sheetFrom(XLSX, resumo, [18, 12, 26, 30, 22, 14, 10, 12, 12, 10, 40, 40]), "Relatórios");
+        if (ncs.length) XLSX.utils.book_append_sheet(wb, sheetFrom(XLSX, ncs, [18, 26, 16, 40, 22, 40, 12]), "NCs e manutenção");
+        if (respostas.length) XLSX.utils.book_append_sheet(wb, sheetFrom(XLSX, respostas, [18, 26, 26, 24, 50, 14, 8]), "Respostas");
+        XLSX.writeFile(wb, `relatorios-casa-bauducco-${hojeISO()}.xlsx`);
+      } catch (err) {
+        showError("Não foi possível gerar o Excel.", err);
+      } finally {
+        hideBusy();
+      }
+    }
+
+    async function exportActionsExcel() {
+      const selected = getFilteredActionsList().filter(a => selectedActionIds.has(a.id));
+      const list = selected.length ? selected : getFilteredActionsList();
+      if (!list.length) return toast("Nenhum plano para exportar com os filtros atuais.", "warn");
+      showBusy("Gerando Excel...");
+      try {
+        const XLSX = await loadXlsx();
+        const today = hojeISO();
+        const typeNames = { nc: "Não conformidade", om: "Manutenção", avulso: "Avulso" };
+        const rows = list.map(a => {
+          const due = brToISO(a.dueDate);
+          const late = !isDoneStatus(a.status) && due && due < today ? daysBetween(due, today) : 0;
+          return {
+            "Loja": a.unit, "Tipo": typeNames[a.type] || "Avulso", "Ocorrência": a.title, "Ação": a.action || "", "Setor": a.sector || "",
+            "Prazo": fmtDue(a.dueDate), "Status": a.status || "", "Tarja": a.priority || "", "Dias de atraso": late,
+            "Criado em": tsToMillis(a.createdAt) ? new Date(tsToMillis(a.createdAt)).toLocaleDateString("pt-BR") : "",
+            "Criado por": a.createdByName || "", "Concluído em": tsToMillis(a.closedAt) ? new Date(tsToMillis(a.closedAt)).toLocaleDateString("pt-BR") : "",
+            "Prestador": a.resolution?.empresa || "", "Garantia até": a.resolution?.dataGarantiaFim || ""
+          };
+        });
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, sheetFrom(XLSX, rows, [26, 16, 40, 40, 20, 12, 16, 12, 10, 12, 20, 12, 22, 12]), "Planos de ação");
+        XLSX.writeFile(wb, `planos-casa-bauducco-${hojeISO()}.xlsx`);
+        if (!selected.length) toast(`${list.length} plano(s) exportado(s) (aba e filtros atuais).`, "success");
+      } catch (err) {
+        showError("Não foi possível gerar o Excel.", err);
+      } finally {
+        hideBusy();
       }
     }
 
