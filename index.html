@@ -875,6 +875,7 @@
       <div class="px-5 pb-3 border-b border-cb-line">
         <div class="flex gap-1 overflow-x-auto no-scrollbar">
           <button id="admin-tab-users" onclick="switchAdminTab('users')" class="shrink-0 h-9 px-3.5 rounded-full text-sm font-bold">Usuários <span id="pending-count" class="chip bg-rose-600 text-white !px-1.5 !py-0 ml-1 hidden">0</span></button>
+          <button id="admin-tab-access" onclick="switchAdminTab('access')" class="shrink-0 h-9 px-3.5 rounded-full text-sm font-bold">Acessos</button>
           <button id="admin-tab-units" onclick="switchAdminTab('units')" class="shrink-0 h-9 px-3.5 rounded-full text-sm font-bold">Lojas</button>
           <button id="admin-tab-status" onclick="switchAdminTab('status')" class="shrink-0 h-9 px-3.5 rounded-full text-sm font-bold">Status</button>
           <button id="admin-tab-priorities" onclick="switchAdminTab('priorities')" class="shrink-0 h-9 px-3.5 rounded-full text-sm font-bold">Tarjas</button>
@@ -923,6 +924,19 @@
           </div>
           <button onclick="addNewUser()" class="btn-primary w-full"><span data-icon="user-plus" class="w-4 h-4"></span> Criar acesso</button>
           <p class="text-[11px] text-stone-500">As senhas ficam protegidas no Firebase e não aparecem aqui. Para redefinir a senha de alguém, use o console do Firebase (Authentication → Usuários).</p>
+        </div>
+      </div>
+
+      <div id="admin-content-access" class="flex-1 flex flex-col overflow-hidden bg-cb-bg hidden">
+        <div class="px-5 pt-4 pb-2 space-y-1">
+          <h4 class="font-extrabold">Acesso de cada pessoa às lojas</h4>
+          <p class="text-xs text-cb-muted">Gerentes e operadores só veem as lojas marcadas. "Todas" libera todas as lojas, inclusive as que forem criadas depois. Administradores sempre veem tudo.</p>
+        </div>
+        <div id="access-matrix" class="flex-1 overflow-auto px-5 pb-4"></div>
+        <div id="access-savebar" class="hidden px-5 py-3 border-t border-cb-line bg-white flex items-center gap-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <span id="access-dirty-count" class="text-sm font-semibold flex-1"></span>
+          <button onclick="discardAccessChanges()" class="btn-secondary btn-sm">Descartar</button>
+          <button onclick="saveAccessChanges()" class="btn-primary btn-sm">Salvar alterações</button>
         </div>
       </div>
 
@@ -1138,7 +1152,8 @@
           </div>
         </details>
 
-        <button onclick="restoreDefaultChecklist()" class="text-xs font-bold text-rose-700 hover:underline">Restaurar modelos padrão</button>
+        <p id="config-scope-note" class="text-xs text-cb-muted hidden"></p>
+        <button id="btn-restore-default" onclick="restoreDefaultChecklist()" class="text-xs font-bold text-rose-700 hover:underline">Restaurar modelos padrão</button>
       </div>
 
       <div id="tab-content-items" class="hidden flex-1 flex flex-col overflow-hidden">
@@ -1147,7 +1162,7 @@
         </div>
         <div id="modal-item-list" class="flex-1 overflow-y-auto px-5 py-4 space-y-3 bg-cb-bg"></div>
 
-        <div class="px-5 py-4 border-t border-cb-line bg-white space-y-3 pb-[max(1rem,env(safe-area-inset-bottom))]">
+        <div id="item-add-box" class="px-5 py-4 border-t border-cb-line bg-white space-y-3 pb-[max(1rem,env(safe-area-inset-bottom))]">
           <div class="flex items-center justify-between">
             <span class="text-sm font-extrabold">Adicionar pergunta</span>
             <button onclick="toggleNewCategoryInput()" class="text-xs font-bold text-cb-bordo hover:underline">+ Nova seção</button>
@@ -1993,10 +2008,10 @@
     function closeModal(id) { document.getElementById(id)?.classList.add("hidden"); }
 
     // Seletor de lojas em "chips" com checkbox.
-    function renderUnitChecks(containerId, selected = [], name = containerId) {
+    function renderUnitChecks(containerId, selected = [], name = containerId, units = presetUnits) {
       const el = document.getElementById(containerId);
       if (!el) return;
-      el.innerHTML = presetUnits.map(u => `
+      el.innerHTML = units.map(u => `
         <label class="check-chip"><input type="checkbox" name="${esc(name)}" value="${esc(u)}" ${selected.includes(u) ? "checked" : ""} class="sr-only">${esc(u)}</label>`).join("")
         || `<span class="text-xs text-stone-400">Nenhuma loja cadastrada.</span>`;
     }
@@ -2536,10 +2551,14 @@
       }, err => onListenError("checklists", err)));
 
       // Relatórios: admin e gerente veem todos (últimos 90 dias ao vivo); operador vê só os que executou.
-      if (isManager()) {
+      if (isManager() && hasAllUnits()) {
         reportsFromMs = daysAgoMs(REPORT_WINDOW_DAYS);
         unsubscribers.push(db.collection("reports").where("createdAt", ">=", tsFromMs(reportsFromMs))
           .onSnapshot(snap => { markSynced(snap); onReportsData(mapDocs(snap)); }, err => onListenError("relatórios", err)));
+      } else if (isManager()) {
+        // Gerente de lojas específicas: todos os relatórios das lojas dele (volume menor, sem janela).
+        reportsFromMs = 0;
+        listenScoped("reports", list => onReportsData(list));
       } else {
         reportsFromMs = 0;
         unsubscribers.push(db.collection("reports").where("createdBy", "==", currentUser.uid).onSnapshot(snap => { markSynced(snap); onReportsData(mapDocs(snap)); }, err => onListenError("relatórios", err)));
@@ -2567,10 +2586,10 @@
         renderTechniciansList();
       }, err => onListenError("prestadores", err)));
 
-      unsubscribers.push(db.collection("warranties").onSnapshot(snap => {
-        warranties = mapDocs(snap).sort((a, b) => tsToMillis(b.createdAt) - tsToMillis(a.createdAt));
+      listenScoped("warranties", list => {
+        warranties = list.sort((a, b) => tsToMillis(b.createdAt) - tsToMillis(a.createdAt));
         renderWarrantyList();
-      }, err => onListenError("garantias", err)));
+      });
 
       if (isAdmin()) {
         unsubscribers.push(db.collection("users").onSnapshot(snap => {
@@ -2992,8 +3011,24 @@
 
     function reportDateIso(rep) { return rep.dateIso || brToISO(rep.date); }
 
+    // Modelo visível para o usuário: geral (todas as lojas) ou aplicado a alguma loja dele.
+    function modelVisible(m) {
+      if (hasAllUnits()) return true;
+      const units = m.applicableUnits || [];
+      return units.length === 0 || units.some(u => currentUser.units.includes(u));
+    }
+
+    // Pode editar: admin, gerente de todas as lojas, ou modelo aplicado só às lojas do gerente.
+    function canEditModel(m) {
+      if (isAdmin()) return true;
+      if (!isManager() || !m) return false;
+      if (hasAllUnits()) return true;
+      const units = m.applicableUnits || [];
+      return units.length > 0 && units.every(u => currentUser.units.includes(u));
+    }
+
     function allowedChecklistsForUser() {
-      return allChecklists.filter(c => !c.roles || c.roles.length === 0 || c.roles.includes(currentUser?.role));
+      return allChecklists.filter(c => (!c.roles || c.roles.length === 0 || c.roles.includes(currentUser?.role)) && modelVisible(c));
     }
 
     // Um agendamento está feito se existe conclusão registrada para aquela data
@@ -3284,7 +3319,7 @@
       if (draft?.unit && allowed.includes(draft.unit)) unitSel.value = draft.unit;
       fill("avulso-unit", allowed);
       fill("manual-action-unit", allowed);
-      fill("filter-store", isManager() ? presetUnits : allowed, "Todas as lojas");
+      fill("filter-store", allowed, hasAllUnits() ? "Todas as lojas" : "Todas as minhas lojas");
       fill("filter-action-store", allowed, "Todas as lojas");
 
       const listContainer = document.getElementById("admin-units-list");
@@ -3901,7 +3936,7 @@
       const filtered = getFilteredReports();
 
       document.getElementById("history-count").innerText = isManager()
-        ? `${filtered.length} relatório(s) de todas as lojas`
+        ? `${filtered.length} relatório(s) ${hasAllUnits() ? "de todas as lojas" : `de ${currentUser.units.length === 1 ? currentUser.units[0] : "suas lojas"}`}`
         : `${filtered.length} checklist(s) executado(s) por você`;
 
       if (filtered.length === 0) {
@@ -4998,11 +5033,13 @@
     }
 
     function switchAdminTab(tab) {
-      ["units", "users", "status", "priorities", "photos", "data", "migration"].forEach(t => {
+      ["units", "users", "access", "status", "priorities", "photos", "data", "migration"].forEach(t => {
         document.getElementById(`admin-content-${t}`).classList.toggle("hidden", t !== tab);
+        if (t === "access") document.getElementById("admin-content-access").classList.toggle("flex", t === tab);
         document.getElementById(`admin-tab-${t}`).className = `shrink-0 h-9 px-3.5 rounded-full text-sm font-bold transition ${t === tab ? "bg-cb-bordo text-white" : "text-stone-600 hover:bg-stone-100"}`;
       });
       if (tab === "units") renderPresetUnits();
+      if (tab === "access") renderAccessMatrix();
       if (tab === "users") { renderUsersList(); renderUserUnitsOptions(); toggleUnitSelectionBox(); }
       if (tab === "status") renderAdminStatusList();
       if (tab === "priorities") renderAdminPrioritiesList();
@@ -5024,6 +5061,7 @@
 
     function renderUsersList() {
       if (!isAdmin()) return;
+      if (!document.getElementById("admin-content-access").classList.contains("hidden")) renderAccessMatrix();
       const pend = pendingUsers();
       const badge = document.getElementById("pending-count");
       badge.innerText = pend.length;
@@ -5130,6 +5168,7 @@
       if (!u) return;
       const role = document.getElementById(`edit-role-u-${uid}`).value;
       const units = role === "admin" ? [] : [...document.querySelectorAll(`#edit-units-u-${uid} input:checked`)].map(i => i.value);
+      if (role !== "admin" && units.length === 0 && !(await askConfirm(`Nenhuma loja marcada: ${u.name} terá acesso a TODAS as lojas.`, { title: "Liberar todas as lojas?", confirmText: "Liberar todas" }))) return;
       if (u.role === "admin" && role !== "admin" && usersList.filter(x => x.role === "admin" && x.active !== false).length <= 1) {
         return toast("Mantenha ao menos um administrador ativo.", "warn");
       }
@@ -5141,11 +5180,106 @@
       }
     }
 
+    /* Grade de acesso: pessoas x lojas (alterações ficam pendentes até salvar). */
+    let accessDraft = {};
+
+    function accessState(u) {
+      return accessDraft[u.id] || { role: u.role, all: !(u.units || []).length, units: [...(u.units || [])] };
+    }
+
+    function renderAccessMatrix() {
+      const box = document.getElementById("access-matrix");
+      if (!box) return;
+      const people = usersList.filter(u => !u.pending && !u.rejected && u.role !== "admin");
+      const admins = usersList.filter(u => u.role === "admin" && u.active !== false);
+      if (!presetUnits.length) { box.innerHTML = `<p class="text-sm text-stone-400 py-6 text-center">Cadastre as lojas primeiro.</p>`; return; }
+      const cell = "px-2 py-2 text-center border-b border-cb-line";
+      box.innerHTML = `
+        <div class="card overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm border-collapse">
+              <thead>
+                <tr class="bg-cb-cream">
+                  <th class="sticky left-0 z-10 bg-cb-cream text-left px-3 py-2 min-w-[190px] font-extrabold border-b border-cb-line">Pessoa</th>
+                  <th class="${cell} font-extrabold text-cb-bordo min-w-[64px]">Todas</th>
+                  ${presetUnits.map(u => `<th class="${cell} font-semibold text-[11px] leading-tight min-w-[84px] max-w-[110px]">${esc(u.replace(/^(SP - )?CB /i, ""))}</th>`).join("")}
+                </tr>
+              </thead>
+              <tbody>
+                ${people.map(u => {
+                  const st = accessState(u);
+                  const dirty = !!accessDraft[u.id];
+                  const id = jsId(u.id);
+                  return `
+                  <tr class="${dirty ? "bg-amber-50" : u.active === false ? "opacity-60" : ""}">
+                    <td class="sticky left-0 z-10 ${dirty ? "bg-amber-50" : "bg-white"} px-3 py-2 border-b border-cb-line">
+                      <p class="font-bold leading-tight">${esc(u.name)}</p>
+                      <select onchange="setAccessRole('${id}', this.value)" class="mt-1 h-8 rounded-lg border border-stone-200 bg-white text-xs px-2" aria-label="Perfil de ${esc(u.name)}">
+                        <option value="operador" ${st.role === "operador" ? "selected" : ""}>Operador</option>
+                        <option value="gerente" ${st.role === "gerente" ? "selected" : ""}>Gerente</option>
+                      </select>
+                      ${u.active === false ? `<span class="chip bg-stone-200 text-stone-600 ml-1">Desativado</span>` : ""}
+                    </td>
+                    <td class="${cell}"><input type="checkbox" ${st.all ? "checked" : ""} onchange="setAccessAll('${id}', this.checked)" class="w-5 h-5 accent-[#4A0E17]" aria-label="${esc(u.name)}: todas as lojas"></td>
+                    ${presetUnits.map((un, i) => `<td class="${cell}"><input type="checkbox" ${st.all || st.units.includes(un) ? "checked" : ""} ${st.all ? "disabled" : ""} onchange="toggleAccessUnit('${id}', ${i}, this.checked)" class="w-5 h-5 accent-[#4A0E17] disabled:opacity-40" aria-label="${esc(u.name)}: ${esc(un)}"></td>`).join("")}
+                  </tr>`;
+                }).join("") || `<tr><td colspan="${presetUnits.length + 2}" class="px-3 py-6 text-center text-stone-400">Nenhum gerente ou operador cadastrado.</td></tr>`}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        ${admins.length ? `<p class="text-xs text-stone-500 mt-3">${icon("shield", "w-3.5 h-3.5 inline -mt-0.5")} Acesso total (administradores): ${admins.map(a => esc(a.name)).join(", ")}.</p>` : ""}`;
+      const n = Object.keys(accessDraft).length;
+      document.getElementById("access-savebar").classList.toggle("hidden", n === 0);
+      document.getElementById("access-savebar").classList.toggle("flex", n > 0);
+      document.getElementById("access-dirty-count").innerText = `${n} pessoa(s) com alteração`;
+    }
+
+    function touchAccess(uid, fn) {
+      const u = usersList.find(x => x.id === uid);
+      if (!u) return;
+      const st = accessState(u);
+      fn(st);
+      const orig = { role: u.role, all: !(u.units || []).length, units: [...(u.units || [])].sort() };
+      const same = st.role === orig.role && st.all === orig.all && (st.all || JSON.stringify([...st.units].sort()) === JSON.stringify(orig.units));
+      if (same) delete accessDraft[uid]; else accessDraft[uid] = st;
+      renderAccessMatrix();
+    }
+    function setAccessRole(uid, role) { touchAccess(uid, st => { st.role = role; }); }
+    function setAccessAll(uid, all) { touchAccess(uid, st => { st.all = all; if (all) st.units = []; }); }
+    function toggleAccessUnit(uid, i, on) {
+      const un = presetUnits[i];
+      touchAccess(uid, st => { st.units = on ? [...new Set([...st.units, un])] : st.units.filter(x => x !== un); });
+    }
+    function discardAccessChanges() { accessDraft = {}; renderAccessMatrix(); }
+
+    async function saveAccessChanges() {
+      const entries = Object.entries(accessDraft);
+      const empty = entries.filter(([, st]) => !st.all && st.units.length === 0).map(([uid]) => usersList.find(u => u.id === uid)?.name);
+      if (empty.length) return infoDialog("Falta marcar lojas", `Marque ao menos uma loja (ou "Todas") para: ${empty.join(", ")}.`);
+      showBusy("Salvando acessos...");
+      try {
+        const batch = db.batch();
+        entries.forEach(([uid, st]) => batch.update(db.collection("users").doc(uid), {
+          role: st.role, units: st.all ? [] : st.units, updatedAt: FieldValue.serverTimestamp(), updatedBy: currentUser.uid
+        }));
+        await batch.commit();
+        accessDraft = {};
+        toast(`Acesso de ${entries.length} pessoa(s) atualizado. Quem estiver com o sistema aberto recarrega sozinho.`, "success");
+      } catch (err) {
+        showError("Não foi possível salvar os acessos.", err);
+      } finally {
+        hideBusy();
+        renderAccessMatrix();
+      }
+    }
+
     async function approveAccessRequest(uid) {
       const u = usersList.find(x => x.id === uid);
       if (!u) return;
       const role = document.getElementById(`appr-role-${uid}`).value;
       const units = role === "admin" ? [] : [...document.querySelectorAll(`#appr-units-${uid} input:checked`)].map(i => i.value);
+      if (role !== "admin" && units.length === 0 && !(await askConfirm(`Nenhuma loja marcada: ${u.name} terá acesso a TODAS as lojas.`, { title: "Liberar todas as lojas?", confirmText: "Liberar todas" }))) return;
       try {
         await db.collection("users").doc(uid).update({
           role, units, active: true, pending: false, rejected: false,
@@ -5194,6 +5328,7 @@
       const name = document.getElementById("new-user-fullname").value.trim();
       const role = document.getElementById("new-user-role").value;
       const units = role === "admin" ? [] : getCheckedUnits("new-user-units");
+      if (role !== "admin" && units.length === 0 && !(await askConfirm("Nenhuma loja marcada: a pessoa terá acesso a TODAS as lojas.", { title: "Liberar todas as lojas?", confirmText: "Liberar todas" }))) return;
 
       if (!username || !pass || !name) return toast("Preencha nome, usuário e senha.", "warn");
       if (!/^[a-z0-9._-]{3,40}$/.test(username)) return toast("O usuário precisa ter de 3 a 40 letras minúsculas, números, ponto, hífen ou sublinhado.", "warn");
@@ -5237,6 +5372,14 @@
       const modal = document.getElementById("config-modal");
       modal.classList.toggle("hidden");
       if (!modal.classList.contains("hidden")) {
+        if (!canEditModel(getCurrentChecklist())) {
+          const own = allChecklists.find(c => canEditModel(c)) || allChecklists.find(c => modelVisible(c));
+          if (own) activeChecklistId = own.id;
+        }
+        document.getElementById("btn-restore-default").classList.toggle("hidden", !isAdmin());
+        const note = document.getElementById("config-scope-note");
+        note.classList.toggle("hidden", hasAllUnits());
+        note.innerText = hasAllUnits() ? "" : `Você vê os modelos gerais e os das suas lojas (${currentUser.units.join(", ")}). Modelos gerais só o administrador edita.`;
         switchConfigTab("models");
         renderNewModelUnitsSelect();
       }
@@ -5262,15 +5405,22 @@
       document.getElementById(`${prefix}-specificdate-box`)?.classList.toggle("hidden", freq !== "specific_date");
     }
 
+    function unitsHint() { return hasAllUnits() ? "(nenhuma marcada = todas)" : "(nenhuma marcada = todas as suas lojas)"; }
+
     function renderNewModelUnitsSelect() {
-      renderUnitChecks("new-chk-units", []);
+      renderUnitChecks("new-chk-units", [], "new-chk-units", getAllowedUnits());
+      const lbl = document.getElementById("new-chk-units").previousElementSibling;
+      if (lbl) lbl.innerHTML = `Lojas <span class="font-normal text-stone-400">${unitsHint()}</span>`;
       document.getElementById("new-chk-startdate").value = hojeISO();
       toggleFrequencyFields("new-chk");
     }
 
     function renderModelsListInConfig() {
       document.getElementById("models-list-container").innerHTML = allChecklists.map((c, idx) => {
+        if (!modelVisible(c)) return "";
+        const editable = canEditModel(c);
         const count = c.categories.reduce((n, s) => n + s.items.length, 0);
+        const scope = (c.applicableUnits || []).length ? c.applicableUnits.join(", ") : "Todas as lojas";
         return `
           <div class="card p-4 space-y-3">
             <div class="flex items-start gap-3">
@@ -5282,12 +5432,14 @@
                   ${(c.roles || ["admin", "gerente", "operador"]).map(r => `<span class="chip bg-stone-100 text-stone-600">${esc(ROLE_LABELS[r] || r)}</span>`).join("")}
                   ${c.recurrenceActive === false ? `<span class="chip bg-amber-100 text-amber-800">Agendamento pausado</span>` : ""}
                 </div>
+                <p class="text-[11px] text-stone-500 mt-1">${icon("store", "w-3 h-3 inline -mt-0.5")} ${esc(scope)}</p>
+                ${editable ? "" : `<p class="text-[11px] font-semibold text-amber-800 mt-0.5">Modelo geral: só o administrador edita.</p>`}
               </div>
             </div>
             <div class="flex gap-2">
-              <button onclick="openModelQuestions(${idx})" class="btn-soft btn-sm flex-1">${icon("list", "w-4 h-4")} Perguntas</button>
-              <button onclick="openEditModelModal(${idx})" class="btn-secondary btn-sm flex-1">${icon("calendar", "w-4 h-4")} Agendamento</button>
-              ${allChecklists.length > 1 ? `<button onclick="deleteModel(${idx})" class="icon-btn !w-9 !h-9 !text-rose-600" aria-label="Excluir modelo">${icon("trash", "w-4 h-4")}</button>` : ""}
+              <button onclick="openModelQuestions(${idx})" class="btn-soft btn-sm flex-1">${icon("list", "w-4 h-4")} ${editable ? "Perguntas" : "Ver perguntas"}</button>
+              ${editable ? `<button onclick="openEditModelModal(${idx})" class="btn-secondary btn-sm flex-1">${icon("calendar", "w-4 h-4")} Agendamento</button>` : ""}
+              ${editable && allChecklists.length > 1 ? `<button onclick="deleteModel(${idx})" class="icon-btn !w-9 !h-9 !text-rose-600" aria-label="Excluir modelo">${icon("trash", "w-4 h-4")}</button>` : ""}
             </div>
           </div>`;
       }).join("");
@@ -5301,6 +5453,7 @@
     function openEditModelModal(idx) {
       const c = allChecklists[idx];
       if (!c) return;
+      if (!canEditModel(c)) return toast("Este modelo é geral: só o administrador pode editar.", "warn");
       document.getElementById("edit-model-idx").value = idx;
       document.getElementById("edit-model-name").value = c.name || "";
       ["admin", "gerente", "operador"].forEach(r => { document.getElementById(`edit-role-${r}`).checked = c.roles ? c.roles.includes(r) : true; });
@@ -5311,7 +5464,9 @@
       document.getElementById("edit-model-weekday").value = c.weekday !== undefined ? String(c.weekday) : "1";
       document.getElementById("edit-model-specificdate").value = c.specificDate || "";
       toggleFrequencyFields("edit-model");
-      renderUnitChecks("edit-model-units", c.applicableUnits || []);
+      renderUnitChecks("edit-model-units", c.applicableUnits || [], "edit-model-units", getAllowedUnits());
+      const lbl = document.getElementById("edit-model-units").previousElementSibling;
+      if (lbl) lbl.innerHTML = `Lojas <span class="font-normal text-stone-400">${unitsHint()}</span>`;
       openModal("edit-model-modal");
     }
 
@@ -5331,7 +5486,7 @@
         frequency: document.getElementById("edit-model-frequency").value,
         weekday: document.getElementById("edit-model-weekday").value,
         specificDate: document.getElementById("edit-model-specificdate").value,
-        applicableUnits: getCheckedUnits("edit-model-units")
+        applicableUnits: scopedUnits(getCheckedUnits("edit-model-units"))
       });
       saveChecklists();
       closeEditModelModal();
@@ -5340,10 +5495,29 @@
       toast("Modelo atualizado.", "success");
     }
 
+    // Gerente de lojas específicas nunca cria modelo "para todas as lojas".
+    function scopedUnits(units) {
+      if (hasAllUnits()) return units;
+      const mine = units.filter(u => currentUser.units.includes(u));
+      return mine.length ? mine : [...currentUser.units];
+    }
+
     const TYPE_LABELS = { boolean: "Sim/Não", okko: "OK/Não OK", maintenance: "Manutenção", stars: "Estrelas", text: "Texto" };
 
     function renderModalItems() {
       const current = getCurrentChecklist();
+      const editable = canEditModel(current);
+      document.getElementById("item-add-box").classList.toggle("hidden", !editable);
+      if (!editable) {
+        document.getElementById("modal-item-list").innerHTML = `
+          <div class="rounded-xl bg-amber-50 text-amber-900 text-xs font-semibold p-3">Modelo geral: você pode consultar as perguntas, mas só o administrador edita.</div>` +
+          current.categories.map(sec => `
+            <div class="card p-3 space-y-1.5">
+              <h4 class="text-sm font-extrabold text-cb-bordo px-1">${esc(sec.category)}</h4>
+              ${sec.items.map(it => `<p class="text-sm px-1 py-1.5 border-t border-cb-line">${esc(it.title)}</p>`).join("") || '<p class="text-sm text-stone-400 px-1">Sem perguntas.</p>'}
+            </div>`).join("");
+        return;
+      }
       document.getElementById("new-item-category").innerHTML = current.categories.map((sec, sIdx) => `<option value="${sIdx}">${esc(sec.category)}</option>`).join("");
 
       document.getElementById("modal-item-list").innerHTML = current.categories.map((sec, sIdx) => {
@@ -5390,6 +5564,7 @@
     }
 
     function commitChecklistEdit() {
+      if (!canEditModel(getCurrentChecklist())) return toast("Sem permissão para editar este modelo.", "warn");
       saveChecklists();
       renderModalItems();
     }
@@ -5470,7 +5645,7 @@
 
     async function deleteModel(idx) {
       const c = allChecklists[idx];
-      if (!c || allChecklists.length <= 1) return;
+      if (!c || allChecklists.length <= 1 || !canEditModel(c)) return;
       if (!(await askConfirm(`O modelo "${c.name}" será excluído. Os relatórios já salvos continuam disponíveis.`, { title: "Excluir modelo?", confirmText: "Excluir", danger: true }))) return;
       allChecklists = allChecklists.filter((_, i) => i !== idx);
       if (activeChecklistId === c.id) activeChecklistId = allChecklists[0].id;
@@ -5498,7 +5673,8 @@
         frequency: document.getElementById("new-chk-frequency").value,
         weekday: document.getElementById("new-chk-weekday").value || "1",
         specificDate: document.getElementById("new-chk-specificdate").value || "",
-        applicableUnits: getCheckedUnits("new-chk-units"),
+        applicableUnits: scopedUnits(getCheckedUnits("new-chk-units")),
+        createdBy: currentUser.uid,
         categories: [{ category: "1. Itens gerais", items: [] }]
       }];
       activeChecklistId = newId;
@@ -5542,7 +5718,7 @@
     }
 
     async function restoreDefaultChecklist() {
-      if (!isManager()) return;
+      if (!isAdmin()) return;
       if (!(await askConfirm("Todos os modelos personalizados serão substituídos pelos modelos padrão.", { title: "Restaurar padrões?", confirmText: "Restaurar", danger: true }))) return;
       allChecklists = clone(defaultTemplates);
       activeChecklistId = allChecklists[0].id;
