@@ -1849,6 +1849,7 @@
     // Ponte para o módulo Vendas e metas (vendas.html, aberto dentro do app)
     window.CB_APP = {
       db, auth, FieldValue,
+      parse: s => JSON.parse(s), // cria os objetos nesta janela (exigência do Firestore)
       user: () => currentUser ? { uid: currentUser.uid, name: currentUser.name, username: currentUser.username, role: currentUser.role, units: [...(currentUser.units || [])] } : null,
       units: () => [...presetUnits]
     };

@@ -627,24 +627,32 @@ async function flushSave() {
   try {
     for (let i = 0; i < ops.length; i += 400) {
       const batch = APP.db.batch();
-      ops.slice(i, i + 400).forEach(o => { const ref = APP.db.doc(o.id); if (o.del) batch.delete(ref); else batch.set(ref, { ...JSON.parse(o.j), updatedAt: APP.FieldValue.serverTimestamp(), updatedBy: APP.user()?.uid || null }); });
+      ops.slice(i, i + 400).forEach(o => {
+        const ref = APP.db.doc(o.id);
+        if (o.del) { batch.delete(ref); return; }
+        // os dados precisam ser objetos criados na janela do app (o Firestore recusa objetos vindos do iframe)
+        const data = toAppObject(o.j); data.updatedAt = APP.FieldValue.serverTimestamp(); data.updatedBy = APP.user()?.uid || null;
+        batch.set(ref, data);
+      });
       await batch.commit();
       ops.slice(i, i + 400).forEach(o => { if (o.del) delete FS.last[o.id]; else FS.last[o.id] = o.j; });
     }
     setSync("ok");
   } catch (e) {
     console.error(e); setSync("err");
-    toast(e?.code === "permission-denied" ? "Sem permissão para salvar no servidor. Verifique as regras do Firestore (vendas)." : "Não foi possível salvar agora. Verifique a conexão; vamos tentar de novo.", "warn");
-    if (e?.code !== "permission-denied") FS.timer = setTimeout(flushSave, 8000);
+    const perm = e?.code === "permission-denied", bad = e?.code === "invalid-argument";
+    toast(perm ? "Sem permissão para salvar no servidor. Verifique as regras do Firestore (vendas)." : bad ? `Dados recusados pelo servidor: ${e.message || e.code}` : `Não foi possível salvar agora (${e?.code || "erro"}). Vamos tentar de novo.`, "warn");
+    if (!perm && !bad) FS.timer = setTimeout(flushSave, 8000);
   } finally { FS.saving = false; }
 }
+function toAppObject(json) { return APP.parse ? APP.parse(json) : JSON.parse(json); }
 function setSync(st) { const el = document.getElementById("sync-state"); if (!el) return; el.textContent = { saving: "Salvando…", ok: "Salvo", err: "Erro ao salvar", load: "Carregando…" }[st] || ""; el.className = "text-[11px] font-bold " + ({ saving: "text-amber-700", ok: "text-emerald-700", err: "text-rose-700", load: "text-stone-500" }[st] || ""); }
 
 async function loadAll() {
   const db = APP.db;
   setSync("load");
   const salesQ = USER.role === "admin" || !USER.units?.length ? db.collection("vendas_sales").get()
-    : Promise.all(chunk(USER.units, 30).map(c => db.collection("vendas_sales").where("unit", "in", c).get())).then(snaps => ({ docs: snaps.flatMap(s => s.docs) }));
+    : Promise.all(chunk(USER.units, 30).map(c => db.collection("vendas_sales").where("unit", "in", toAppObject(JSON.stringify(c))).get())).then(snaps => ({ docs: snaps.flatMap(s => s.docs) }));
   const [cfg, sales, loy, nps, hist] = await Promise.all([db.doc("vendas/config").get(), salesQ, db.collection("vendas_loyalty").get(), db.collection("vendas_nps").get(), db.collection("vendas_hist").get()]);
   const view = S.view; S = emptyState(); S.view = view; FS.last = {};
   const strip = o => { const c = { ...o }; delete c.updatedAt; delete c.updatedBy; return c; };
@@ -669,7 +677,7 @@ async function seedFromFile() {
     S.imports = [{ at: Date.now(), file: "Carga inicial (protótipo)", rows: Object.keys(d.sales || {}).length, by: "Administração" }];
     FS.ready = true; FS.last = {};
     await flushSave();
-    if (!FS.last["vendas/config"]) throw new Error("falha ao gravar");
+    if (!FS.last["vendas/config"]) throw new Error("falha ao gravar (veja o aviso acima)");
     toast("Dados iniciais carregados.");
     boot();
   } catch (e) { toast("Não foi possível carregar os dados iniciais: " + (e.message || e), "warn"); if (btn) { btn.disabled = false; btn.textContent = "Carregar dados iniciais"; } }
