@@ -1,0 +1,31 @@
+// ============================================================
+// Regras do módulo "Vendas e metas" (vendas.html)
+// Cole estas linhas DENTRO do bloco:
+//   match /databases/{database}/documents { ... }
+// das regras atuais do Firestore (Console Firebase > Firestore > Regras)
+// e clique em Publicar. Não apague as regras que já existem.
+// ============================================================
+
+    function vUser() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data; }
+    function vOn() { return request.auth != null && vUser().active != false; }
+    function vAdmin() { return vOn() && vUser().role == 'admin'; }
+    function vGerente() { return vOn() && vUser().role == 'gerente'; }
+    function vTodas() { return !('units' in vUser()) || vUser().units.size() == 0; }
+    function vMinha(unit) { return vTodas() || unit in vUser().units; }
+
+    // Metas, níveis, prêmios, metas de TM / fidelidade / NPS: todos leem, só admin altera
+    match /vendas/{doc} {
+      allow read: if vAdmin() || vGerente();
+      allow write: if vAdmin();
+    }
+    // Vendas do dia por loja e mês: gerente lê e lança só das lojas vinculadas a ele
+    match /vendas_sales/{id} {
+      allow read: if vAdmin() || (vGerente() && vMinha(resource.data.unit));
+      allow create: if vAdmin() || (vGerente() && vMinha(request.resource.data.unit));
+      allow update: if vAdmin() || (vGerente() && vMinha(resource.data.unit) && request.resource.data.unit == resource.data.unit);
+      allow delete: if vAdmin();
+    }
+    // Extratos de cashback, pesquisa NPS e vendas de 2025: só admin importa
+    match /vendas_loyalty/{id} { allow read: if vAdmin() || vGerente(); allow write: if vAdmin(); }
+    match /vendas_nps/{id}     { allow read: if vAdmin() || vGerente(); allow write: if vAdmin(); }
+    match /vendas_hist/{id}    { allow read: if vAdmin() || vGerente(); allow write: if vAdmin(); }

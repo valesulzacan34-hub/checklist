@@ -91,6 +91,8 @@
       .overlay:not(.hidden), .overlay:not(.hidden) > .sheet, .toast, .view:not(.hidden) { animation: none; }
       .spinner { animation-duration: 2s; }
     }
+    .vendas-frame { height: calc(100dvh - 11rem); min-height: 520px; }
+    @media (min-width: 768px) { .vendas-frame { height: calc(100dvh - 7.5rem); } }
   </style>
 </head>
 <body class="bg-cb-bg text-cb-ink antialiased">
@@ -251,7 +253,7 @@
     </header>
 
     <main class="md:ml-64 px-4 md:px-8 pt-5 pb-32 md:pb-12">
-      <div class="max-w-4xl mx-auto">
+      <div id="main-container" class="max-w-4xl mx-auto">
 
         <!-- ============ INÍCIO ============ -->
         <section id="view-home" class="view space-y-5">
@@ -558,6 +560,11 @@
           </div>
 
           <div id="technicians-list-container" class="space-y-4"></div>
+        </section>
+
+        <!-- ============ VENDAS E METAS ============ -->
+        <section id="view-vendas" class="view hidden">
+          <iframe id="vendas-frame" title="Vendas e metas" class="vendas-frame w-full border-0 rounded-2xl bg-cb-bg block"></iframe>
         </section>
       </div>
     </main>
@@ -1838,6 +1845,21 @@
     let currentView = "home";
 
     function isAdmin() { return currentUser?.role === "admin"; }
+
+    // Ponte para o módulo Vendas e metas (vendas.html, aberto dentro do app)
+    window.CB_APP = {
+      db, auth, FieldValue,
+      user: () => currentUser ? { uid: currentUser.uid, name: currentUser.name, username: currentUser.username, role: currentUser.role, units: [...(currentUser.units || [])] } : null,
+      units: () => [...presetUnits]
+    };
+    let vendasMountedFor = null;
+    function mountVendas() {
+      const f = document.getElementById("vendas-frame");
+      if (!f) return;
+      if (vendasMountedFor !== currentUser?.uid) { vendasMountedFor = currentUser?.uid; f.src = "vendas.html?v=" + Date.now(); return; }
+      try { f.contentWindow?.VENDAS_REFRESH?.(); } catch (e) {}
+    }
+    function unmountVendas() { const f = document.getElementById("vendas-frame"); if (f) f.src = "about:blank"; vendasMountedFor = null; }
     function isManager() { return currentUser?.role === "admin" || currentUser?.role === "gerente"; }
     function hasAllUnits() { return !!currentUser && (currentUser.role === "admin" || !currentUser.units || currentUser.units.length === 0); }
 
@@ -2022,14 +2044,14 @@
     /* =========================================================
        5. NAVEGAÇÃO
        ========================================================= */
-    const VIEW_TITLES = { home: "Início", audit: "Checklist", reports: "Relatórios", actions: "Planos de ação", dashboard: "Indicadores", maintenance: "Manutenção" };
+    const VIEW_TITLES = { home: "Início", audit: "Checklist", reports: "Relatórios", actions: "Planos de ação", dashboard: "Indicadores", maintenance: "Manutenção", vendas: "Vendas e metas" };
 
     function navItems() {
       const items = [
         { id: "home", label: "Início", icon: "home" },
         { id: "reports", label: "Relatórios", icon: "folder" }
       ];
-      if (isManager()) items.push({ id: "actions", label: "Planos", icon: "list" }, { id: "dashboard", label: "Indicadores", icon: "chart" });
+      if (isManager()) items.push({ id: "actions", label: "Planos", icon: "list" }, { id: "dashboard", label: "Indicadores", icon: "chart" }, { id: "vendas", label: "Vendas", icon: "star" });
       items.push({ id: "maintenance", label: "Manutenção", icon: "wrench" });
       return items;
     }
@@ -2046,7 +2068,7 @@
 
       let side = items.map(it => `
         <button onclick="go('${it.id}')" class="nav-item ${navTarget === it.id ? "nav-item-active" : ""}" ${navTarget === it.id ? 'aria-current="page"' : ""}>
-          ${icon(it.icon)} ${it.label === "Planos" ? "Planos de ação" : it.label}
+          ${icon(it.icon)} ${it.label === "Planos" ? "Planos de ação" : it.label === "Vendas" ? "Vendas e metas" : it.label}
         </button>`).join("");
       if (isManager() || isAdmin()) side += `<div class="pt-4 pb-1 px-3 text-[11px] font-bold uppercase tracking-wider text-stone-400">Administração</div>`;
       if (isManager()) side += `<button onclick="toggleConfigModal()" class="nav-item">${icon("sliders")} Modelos de checklist</button>`;
@@ -2056,14 +2078,16 @@
 
     function go(view) {
       if (!currentUser) return;
-      if ((view === "actions" || view === "dashboard") && !isManager()) return toast("Área restrita a gerentes e administradores.", "warn");
+      if ((view === "actions" || view === "dashboard" || view === "vendas") && !isManager()) return toast("Área restrita a gerentes e administradores.", "warn");
 
       if (view !== "audit" && isAuditFinished) {
         isAuditFinished = false;
         setAuditInputsDisabled(false);
       }
       currentView = view;
-      ["home", "audit", "reports", "actions", "dashboard", "maintenance"].forEach(v => document.getElementById(`view-${v}`).classList.toggle("hidden", v !== view));
+      ["home", "audit", "reports", "actions", "dashboard", "maintenance", "vendas"].forEach(v => document.getElementById(`view-${v}`).classList.toggle("hidden", v !== view));
+      document.getElementById("main-container").classList.toggle("max-w-4xl", view !== "vendas");
+      document.getElementById("main-container").classList.toggle("max-w-7xl", view === "vendas");
 
       const inAudit = view === "audit";
       document.getElementById("audit-footer").classList.toggle("hidden", !inAudit);
@@ -2077,6 +2101,7 @@
       else if (view === "actions") { renderCentralizedActions(); ensureClosedActionsLoaded(); }
       else if (view === "dashboard") { ensureClosedActionsLoaded(); renderDashboard(); }
       else if (view === "maintenance") { renderTechniciansList(); }
+      else if (view === "vendas") { mountVendas(); }
       renderNavigation();
     }
 
@@ -2212,6 +2237,7 @@
     auth.onAuthStateChanged(async user => {
       if (signupInProgress) return;
       stopAllListeners();
+      unmountVendas();
       if (!user) {
         currentUser = null;
         showLoginScreen();
