@@ -375,7 +375,7 @@
     let days, names = {};
     try {
       const q = await db.collection("comport_dias").where("date", ">=", MONTH + "-01").where("date", "<=", MONTH + "-31").get();
-      days = q.docs.map(d => { existing[d.id] = true; return d.data(); });
+      days = q.docs.map(d => { existing[d.id] = true; const x = d.data(); for (const k of ["p", "t", "i"]) if (typeof x[k] === "string") x[k] = JSON.parse(x[k]); return x; });
       // nomes dos atendentes: admin vê todos; gerente só os da(s) sua(s) loja(s) (regra do Firestore)
       let an;
       if (!scope) an = await db.collection("comport_atend").where("ym", "==", MONTH).get();
@@ -409,8 +409,8 @@
     for (let i = 0; i < ids.length; i += 8) {
       const b = db.batch();
       for (const id of ids.slice(i, i + 8)) { const d = docs[id], ym = d.date.slice(0, 7), dd = d.date.slice(8, 10); months[ym] = true;
-        const { a, ...rest } = d;
-        b.set(db.doc("comport_dias/" + id), toApp({ ...rest, a: [], na: a.length, unit: unitOf(d.s), importedAt: new Date().toISOString(), importedBy: AU.uid || null }));
+        const { a, p, t, i: it, ...rest } = d;
+        b.set(db.doc("comport_dias/" + id), toApp({ ...rest, p: JSON.stringify(p), t: JSON.stringify(t), i: JSON.stringify(it), enc: "json", a: [], na: a.length, unit: unitOf(d.s), importedAt: new Date().toISOString(), importedBy: AU.uid || null }));
         b.set(db.doc("comport_atend/" + ym + "-" + SIG[d.s]), toApp({ ym, s: d.s, unit: unitOf(d.s), days: { [dd]: a } }), toApp({ merge: true }));
       }
       await b.commit(); onStep(Math.min(ids.length, i + 8));
