@@ -562,6 +562,11 @@
           <div id="technicians-list-container" class="space-y-4"></div>
         </section>
 
+        <!-- ============ ANÁLISE DE VENDAS (comportamento de venda) ============ -->
+        <section id="view-comportamento" class="view hidden">
+          <iframe id="comport-frame" title="Análise de vendas" class="vendas-frame w-full border-0 rounded-2xl bg-cb-bg block"></iframe>
+        </section>
+
         <!-- ============ VENDAS E METAS ============ -->
         <section id="view-vendas" class="view hidden">
           <iframe id="vendas-frame" title="Vendas e metas" class="vendas-frame w-full border-0 rounded-2xl bg-cb-bg block"></iframe>
@@ -1860,7 +1865,15 @@
       if (vendasMountedFor !== currentUser?.uid) { vendasMountedFor = currentUser?.uid; f.src = "vendas.html?v=" + Date.now(); return; }
       try { f.contentWindow?.VENDAS_REFRESH?.(); } catch (e) {}
     }
-    function unmountVendas() { const f = document.getElementById("vendas-frame"); if (f) f.src = "about:blank"; vendasMountedFor = null; }
+    function unmountVendas() { const f = document.getElementById("vendas-frame"); if (f) f.src = "about:blank"; vendasMountedFor = null; unmountComport(); }
+    // Módulo Análise de vendas (comportamento.html): mesma ponte CB_APP; admin vê todas as lojas, gerente a sua (as outras só como referência)
+    let comportMountedFor = null;
+    function mountComport() {
+      const f = document.getElementById("comport-frame");
+      if (!f || comportMountedFor === currentUser?.uid) return;
+      comportMountedFor = currentUser?.uid; f.src = "comportamento.html?v=" + Date.now();
+    }
+    function unmountComport() { const f = document.getElementById("comport-frame"); if (f) f.src = "about:blank"; comportMountedFor = null; }
     function isManager() { return currentUser?.role === "admin" || currentUser?.role === "gerente"; }
     function hasAllUnits() { return !!currentUser && (currentUser.role === "admin" || !currentUser.units || currentUser.units.length === 0); }
 
@@ -1920,6 +1933,7 @@
       info: '<circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/>',
       phone: '<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/>',
       store: '<path d="M3 9 4.5 4h15L21 9"/><path d="M4 9v11h16V9M3 9h18M9 20v-6h6v6"/>',
+      pulse: '<path d="M3 12h4l3-8 4 16 3-8h4"/>',
       star: '<path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/>',
       image: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/>',
       chart: '<path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/>',
@@ -2045,14 +2059,14 @@
     /* =========================================================
        5. NAVEGAÇÃO
        ========================================================= */
-    const VIEW_TITLES = { home: "Início", audit: "Checklist", reports: "Relatórios", actions: "Planos de ação", dashboard: "Indicadores", maintenance: "Manutenção", vendas: "Vendas e metas" };
+    const VIEW_TITLES = { home: "Início", audit: "Checklist", reports: "Relatórios", actions: "Planos de ação", dashboard: "Indicadores", maintenance: "Manutenção", vendas: "Vendas e metas", comportamento: "Análise de vendas" };
 
     function navItems() {
       const items = [
         { id: "home", label: "Início", icon: "home" },
         { id: "reports", label: "Relatórios", icon: "folder" }
       ];
-      if (isManager()) items.push({ id: "actions", label: "Planos", icon: "list" }, { id: "dashboard", label: "Indicadores", icon: "chart" }, { id: "vendas", label: "Vendas", icon: "star" });
+      if (isManager()) items.push({ id: "actions", label: "Planos", icon: "list" }, { id: "dashboard", label: "Indicadores", icon: "chart" }, { id: "vendas", label: "Vendas", icon: "star" }, { id: "comportamento", label: "Análise", icon: "pulse" });
       items.push({ id: "maintenance", label: "Manutenção", icon: "wrench" });
       return items;
     }
@@ -2064,12 +2078,12 @@
       document.getElementById("bottom-nav").innerHTML = items.map(it => `
         <button onclick="go('${it.id}')" class="flex-1 min-w-0 max-w-[96px] flex flex-col items-center gap-1 py-1 rounded-xl ${navTarget === it.id ? "text-cb-bordo" : "text-stone-500"}" ${navTarget === it.id ? 'aria-current="page"' : ""}>
           ${icon(it.icon, "w-6 h-6")}
-          <span class="text-[11px] truncate max-w-full ${navTarget === it.id ? "font-extrabold" : "font-semibold"}">${it.label}</span>
+          <span class="${items.length > 6 ? "text-[10px] tracking-tight" : "text-[11px]"} truncate max-w-full ${navTarget === it.id ? "font-extrabold" : "font-semibold"}">${it.label}</span>
         </button>`).join("");
 
       let side = items.map(it => `
         <button onclick="go('${it.id}')" class="nav-item ${navTarget === it.id ? "nav-item-active" : ""}" ${navTarget === it.id ? 'aria-current="page"' : ""}>
-          ${icon(it.icon)} ${it.label === "Planos" ? "Planos de ação" : it.label === "Vendas" ? "Vendas e metas" : it.label}
+          ${icon(it.icon)} ${it.label === "Planos" ? "Planos de ação" : it.label === "Vendas" ? "Vendas e metas" : it.label === "Análise" ? "Análise de vendas" : it.label}
         </button>`).join("");
       if (isManager() || isAdmin()) side += `<div class="pt-4 pb-1 px-3 text-[11px] font-bold uppercase tracking-wider text-stone-400">Administração</div>`;
       if (isManager()) side += `<button onclick="toggleConfigModal()" class="nav-item">${icon("sliders")} Modelos de checklist</button>`;
@@ -2079,16 +2093,17 @@
 
     function go(view) {
       if (!currentUser) return;
-      if ((view === "actions" || view === "dashboard" || view === "vendas") && !isManager()) return toast("Área restrita a gerentes e administradores.", "warn");
+      if ((view === "actions" || view === "dashboard" || view === "vendas" || view === "comportamento") && !isManager()) return toast("Área restrita a gerentes e administradores.", "warn");
 
       if (view !== "audit" && isAuditFinished) {
         isAuditFinished = false;
         setAuditInputsDisabled(false);
       }
       currentView = view;
-      ["home", "audit", "reports", "actions", "dashboard", "maintenance", "vendas"].forEach(v => document.getElementById(`view-${v}`).classList.toggle("hidden", v !== view));
-      document.getElementById("main-container").classList.toggle("max-w-4xl", view !== "vendas");
-      document.getElementById("main-container").classList.toggle("max-w-7xl", view === "vendas");
+      ["home", "audit", "reports", "actions", "dashboard", "maintenance", "vendas", "comportamento"].forEach(v => document.getElementById(`view-${v}`).classList.toggle("hidden", v !== view));
+      const wide = view === "vendas" || view === "comportamento";
+      document.getElementById("main-container").classList.toggle("max-w-4xl", !wide);
+      document.getElementById("main-container").classList.toggle("max-w-7xl", wide);
 
       const inAudit = view === "audit";
       document.getElementById("audit-footer").classList.toggle("hidden", !inAudit);
@@ -2103,6 +2118,7 @@
       else if (view === "dashboard") { ensureClosedActionsLoaded(); renderDashboard(); }
       else if (view === "maintenance") { renderTechniciansList(); }
       else if (view === "vendas") { mountVendas(); }
+      else if (view === "comportamento") { mountComport(); }
       renderNavigation();
     }
 

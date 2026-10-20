@@ -29,3 +29,24 @@
     match /vendas_loyalty/{id} { allow read: if vAdmin() || vGerente(); allow write: if vAdmin(); }
     match /vendas_nps/{id}     { allow read: if vAdmin() || vGerente(); allow write: if vAdmin(); }
     match /vendas_hist/{id}    { allow read: if vAdmin() || vGerente(); allow write: if vAdmin(); }
+
+// ============================================================
+// Regras do módulo "Análise de vendas" (comportamento.html)
+// Cole também DENTRO do mesmo bloco match /databases/{database}/documents { ... }
+// (usa as funções vAdmin / vGerente / vMinha definidas acima)
+// ============================================================
+    // Números de venda por dia e loja: admin e gerentes leem (gerente usa as outras lojas só como referência); só admin importa
+    match /comport_dias/{id} {
+      allow read: if vAdmin() || vGerente();
+      allow write: if vAdmin();
+    }
+    // Nomes dos atendentes por mês e loja: gerente só vê os da(s) loja(s) vinculada(s)
+    match /comport_atend/{id} {
+      allow read: if vAdmin() || (vGerente() && vMinha(resource.data.unit));
+      allow write: if vAdmin();
+    }
+    // Classificação de produtos (categoria › grupo › subgrupo) e meses importados: só admin altera
+    match /comport/{doc} {
+      allow read: if vAdmin() || vGerente();
+      allow write: if vAdmin();
+    }
