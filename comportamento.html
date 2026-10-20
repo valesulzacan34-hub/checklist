@@ -340,7 +340,7 @@
       setTimeout(() => { if (!done) { done = true; try { un(); } catch (e) {} res(out); } }, 12000);
     });
   }
-  function msg(html) { $("view").innerHTML = `<div class="card p-8 md:p-10 text-center max-w-xl mx-auto">${html}</div>`; }
+  function msg(html) { $("view").innerHTML = `<div class="card p-8 md:p-10 text-center max-w-xl mx-auto">${html}</div>`; const tb = $("topbar"); if (tb) tb.classList.add("hidden"); }
   /* ---------- modo app: dentro do app Casa Bauducco (Firebase), com o login do app ---------- */
   const APP = (() => { try { return window.parent && window.parent !== window ? window.parent.CB_APP || null : null; } catch (e) { return null; } })();
   const SIG = ["BSHAR", "BSHCV", "BJORI", "BSMOG", "BSHVS"];
@@ -2136,6 +2136,7 @@ function renderFilters() {
   document.getElementById("period-label").textContent = `${SCOPE ? SCOPE.map(i => "CB " + SHORT[i]).join(", ") : "Casa Bauducco"} · ${dlabel(DAYS[0])} a ${dlabel(DAYS[DAYS.length - 1])}/${new Date(Y, MO, DAYS[DAYS.length - 1]).getFullYear()} · ${nf(myT.length)} vendas · ${nf(myI)} itens${miss.length ? ` · sem dados: ${miss.length > 6 ? miss.length + " dias" : miss.map(dlabel).join(", ")}` : ""}`;
 }
 function render() {
+  document.getElementById("topbar").classList.remove("hidden");
   renderFilters();
   CW = Math.min(1232, document.getElementById("view").clientWidth) - (innerWidth >= 768 ? 40 : 32);
   const pc = window.__CAN ? pendingCount() : 0;
