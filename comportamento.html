@@ -389,6 +389,10 @@
     let CFG = {}, TR = null;
     try { const cs = await db.doc("comport/categorias").get(); if (cs.exists) { const x = cs.data() || {}; CFG = x.items || {}; TR = x.tree || null; } else if (CAN) { const r = await seedCategorias(db); if (r) { CFG = r.items || {}; TR = r.tree || null; } } } catch (e) { }
     TREE = treeFrom(CFG, TR);
+    // frases da venda sugerida: o admin pode trocar o texto; sem edição, vale a frase padrão
+    window.__CVFRASES = {};
+    try { const fr = await db.doc("comport/frases").get(); if (fr.exists) window.__CVFRASES = (fr.data() || {}).items || {}; } catch (e) { }
+    if (CAN) window.__CVSAVEFRASES = (items) => db.doc("comport/frases").set(toApp({ items, updatedAt: new Date().toISOString(), updatedBy: AU.uid || null }));
     // metas de faturamento e de TM: as mesmas do módulo Vendas e metas
     const METAS = {};
     try { const vc = await db.doc("vendas/config").get(); if (vc.exists) { const c = vc.data() || {}, G = c.goals || {}, TM = c.tmGoals || {};
@@ -1842,7 +1846,32 @@ function ticketSets() {
     { id: "pq", title: "Polenguinho no pão de queijo", base: t => has(t, id => pq.elig.has(id)), hit: t => has(t, id => pq.add.has(id)), value: price(pq.add), metric: "salgados de queijo com Polenguinho",
       when: "Pão de queijo e fatia salgada", say: "\"Vai querer um Polenguinho para acompanhar?\"" },
   ];
+  const FR = window.__CVFRASES || {};
+  S_.forEach(x => { x.sayDef = x.say.replace(/^"|"$/g, ""); x.custom = !!FR[x.id]; x.sayTxt = FR[x.id] || x.sayDef; });
   return S_;
+}
+// frase sugerida: todos veem; só o admin edita (grava no Firebase para todas as lojas)
+function sayBox(x) {
+  const canEd = window.__CAN && window.__CVSAVEFRASES;
+  if (canEd && S.frEdit === x.id) return `<div class="mt-1.5 rounded-lg bg-cb-cream p-2"><label class="sr-only" for="fr-in">Frase sugerida</label>
+    <textarea id="fr-in" rows="2" maxlength="200" class="w-full rounded-md border border-stone-300 bg-white px-2 py-1.5 text-sm font-semibold text-cb-bordo">${esc(x.sayTxt)}</textarea>
+    <div class="flex flex-wrap items-center gap-2 mt-1.5"><button class="h-8 px-3 rounded-lg bg-cb-bordo text-white text-xs font-bold" data-fr="save" data-id="${x.id}">Salvar</button><button class="h-8 px-3 rounded-lg border border-stone-200 bg-white text-xs font-bold text-stone-600" data-fr="cancel">Cancelar</button>${x.custom ? `<button class="h-8 px-3 rounded-lg text-xs font-bold text-cb-bordo hover:bg-white ml-auto" data-fr="reset" data-id="${x.id}">Voltar à frase padrão</button>` : ""}</div>
+    <p id="fr-msg" class="text-[11px] text-cb-muted mt-1">A frase vale para todas as lojas.</p></div>`;
+  return `<div class="mt-1.5 flex items-start gap-2 rounded-lg bg-cb-cream px-3 py-2"><p class="flex-1 text-sm font-semibold text-cb-bordo">"${esc(x.sayTxt)}"</p>${canEd ? `<button class="shrink-0 text-[11px] font-bold text-cb-bordo opacity-60 hover:opacity-100 hover:underline" data-fr="edit" data-id="${x.id}" aria-label="Editar frase">Editar</button>` : ""}</div>`;
+}
+async function frAction(a, id) {
+  const FR = window.__CVFRASES || (window.__CVFRASES = {});
+  if (a === "edit") { S.frEdit = id; rerender(); const t = document.getElementById("fr-in"); if (t) { t.focus(); t.setSelectionRange(t.value.length, t.value.length); } return; }
+  if (a === "cancel") { S.frEdit = null; rerender(); return; }
+  const prev = JSON.parse(JSON.stringify(FR));
+  if (a === "reset") delete FR[id];
+  if (a === "save") { const def = (ticketSets().find(x => x.id === id) || {}).sayDef || "";
+    const v = (document.getElementById("fr-in").value || "").trim().replace(/^["“”']+|["“”']+$/g, "").trim();
+    if (!v) { const m = document.getElementById("fr-msg"); if (m) { m.textContent = "Escreva a frase ou use Cancelar."; m.className = "text-[11px] text-rose-700 font-semibold mt-1"; } return; }
+    if (v === def) delete FR[id]; else FR[id] = v; }
+  const bs = document.querySelectorAll("[data-fr]"); bs.forEach(b => b.disabled = true);
+  try { await window.__CVSAVEFRASES(FR); S.frEdit = null; rerender(); }
+  catch (e) { window.__CVFRASES = prev; bs.forEach(b => b.disabled = false); const m = document.getElementById("fr-msg"); if (m) { m.textContent = "Não foi possível salvar. Tente de novo."; m.className = "text-[11px] text-rose-700 font-semibold mt-1"; } }
 }
 function storeQuality(ts) {
   const V = ts.filter(t => t.v > 0);
@@ -1996,7 +2025,7 @@ function viewSugest(ts) {
       <div class="flex items-start gap-3"><span class="w-8 h-8 rounded-full bg-cb-bordo text-white font-extrabold flex items-center justify-center shrink-0">${i + 1}</span>
       <div class="flex-1 min-w-0"><div class="flex flex-wrap items-baseline justify-between gap-x-2"><p class="font-extrabold">${x.title}</p><p class="text-sm font-extrabold text-emerald-700">+${brl(x.gain)}/mês</p></div>
         <p class="text-xs text-cb-muted mt-1"><b class="text-cb-ink">Quando:</b> ${x.when}</p>
-        <p class="text-sm mt-1.5 rounded-lg bg-cb-cream px-3 py-2 font-semibold text-cb-bordo">${x.say}</p>
+        ${sayBox(x)}
         <p class="text-xs text-stone-600 mt-2"><b>${x.metric[0].toUpperCase() + x.metric.slice(1)}:</b> ${x.benchS != null ? `meta <b>${pct(x.bench)}</b> (melhor loja: ${SHORT[x.benchS]}) · lojas de referência ${pct(x.refR)}` : `lojas de referência <b>${pct(x.refR)}</b> · demais lojas <b>${pct(x.restR)}</b>`} · cada conversão vale ${brl(x.value)}</p>
         <div class="flex flex-wrap gap-1 mt-2">${rows.map(r => { const v = x.per[r.s].r, lo = v < x.bench - .02; return `<span class="chip ${lo ? "bg-rose-50 text-rose-700" : "bg-emerald-50 text-emerald-700"}">${SHORT[r.s]} ${pct(v)}</span>`; }).join("")}</div></div></div></div>`).join("")}</div>
     <p class="text-[11px] text-cb-muted mt-3">Em vermelho, as lojas abaixo da meta em cada estratégia (nível das lojas de referência ou, quando elas não lideram aquele comportamento, da melhor loja). As frases são sugestões: o importante é sempre oferecer um produto pelo nome.</p>`, "mb-4");
@@ -2181,6 +2210,7 @@ document.addEventListener("click", (e) => {
   const dB = e.target.closest("[data-draft]"); if (dB) { S.draftSeen = true; if (dB.dataset.draft === "restore") { const d = draftRead(); if (d) { CF = { items: d.items, tree: d.tree }; DIRTY = d.n || 1; updateSaveBar(); } } else draftClear(); rerender(); return; }
   if (e.target.closest("#cfg-import")) { document.getElementById("cfg-file").click(); return; }
   const del = e.target.closest("[data-del]"); if (del) { const k = del.dataset.del; if (CF && CF.items[k]) ask("Remover a classificação deste produto?", "Ele volta para a lista de vendidos sem classificação.").then(ok => { if (ok) { delete CF.items[k]; touch(); rerender(); } }); return; }
+  const frB = e.target.closest("[data-fr]"); if (frB) { frAction(frB.dataset.fr, frB.dataset.id); return; }
   const act = e.target.closest("[data-act]"); if (act) { cfInit(); structAction(act.dataset.act, act); return; }
   const b = e.target.closest("[data-st],[data-tab],[data-hm],[data-dm],[data-lvl],[data-mlvl],th[data-k],#f-clear"); if (!b) return;
   if (b.id === "f-clear") { Object.assign(S, { st: new Set(SCOPE || []), from: DAYS[0], to: DAYS[DAYS.length - 1], dow: -1, shift: "", cat: "" }); }
