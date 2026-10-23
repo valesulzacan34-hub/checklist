@@ -1801,12 +1801,21 @@ function oneItemCard(ts) {
   const alone = {}; for (const t of one) for (const it of t.items) if (!it[8]) { const p = D.prods[it[1]][0]; alone[p] = (alone[p] || 0) + 1; }
   const topAlone = Object.entries(alone).sort((a, b) => b[1] - a[1]).slice(0, 8);
   const gain = one.length * 0.2 * (tmTwo - tmOne) * f;
+  // evolução por semana do mês (1–7, 8–14, 15–21, 22 ao fim): menos tickets de 1 item = melhor
+  const lastD = new Date(Y, MO + 1, 0).getDate(), p2 = (n) => String(n).padStart(2, "0");
+  const wks = [[1, 7], [8, 14], [15, 21], [22, lastD]].map(([a, z], i) => { const l = V.filter(t => t.d >= a && t.d <= z), o = l.filter(t => Math.round(t.q) <= 1).length, dias = new Set(l.map(t => t.d)).size;
+    return { i, a, z, n: l.length, o, r: l.length ? o / l.length : null, dias, parcial: dias && dias < (z - a + 1) }; });
+  const wMax = Math.max(...wks.map(w => w.r || 0), .01);
+  const wHtml = `<div class="mt-4 pt-3 border-t border-rose-200"><p class="text-[11px] font-bold uppercase tracking-wide text-rose-700 mb-2">Semana a semana</p><div class="space-y-1.5">${wks.map((w, k) => { const pv = k ? wks[k - 1] : null, dd = w.r != null && pv && pv.r != null ? w.r - pv.r : null;
+      return `<div class="flex items-center gap-2 text-xs"><span class="w-[70px] shrink-0 font-bold text-cb-ink">Sem ${w.i + 1} <span class="font-semibold text-cb-muted">${p2(w.a)}–${p2(w.z)}</span></span>${w.r == null ? `<span class="text-cb-muted">sem vendas</span>` : `<span class="flex-1 h-2 rounded-full bg-white overflow-hidden"><span class="block h-full rounded-full bg-rose-600" style="width:${(w.r / wMax * 100).toFixed(1)}%"></span></span><b class="w-9 text-right tabular text-rose-700">${pct(w.r)}</b><span class="w-9 text-right font-bold tabular ${dd == null ? "text-cb-muted" : Math.abs(dd) < .005 ? "text-stone-500" : dd < 0 ? "text-emerald-700" : "text-rose-700"}"${dd != null ? ` title="${dd < 0 ? "Melhorou" : "Piorou"} em relação à semana anterior"` : ""}>${dd == null ? "" : Math.abs(dd) < .005 ? "=" : `${dd < 0 ? "▼" : "▲"}${nf(Math.abs(dd) * 100, 0)}`}</span>`}</div>${w.parcial ? `<p class="text-[10px] text-cb-muted pl-[78px] -mt-0.5">parcial: ${w.dias} de ${w.z - w.a + 1} dias</p>` : ""}`; }).join("")}</div>
+    <p class="text-[10px] text-cb-muted mt-2 leading-snug">Seta = variação em pontos percentuais sobre a semana anterior. ▼ verde: menos tickets de 1 item (melhorou).</p></div>`;
   let b = `<div class="grid lg:grid-cols-[260px_1fr_1fr] gap-4 split">
     <div class="keep rounded-2xl bg-rose-50 p-5 flex flex-col justify-center">
       <p class="text-[11px] font-bold uppercase tracking-wide text-rose-700">Saem com 1 item só</p>
       <p class="text-5xl font-extrabold text-rose-700 tabular mt-1">${pct(one.length / V.length)}</p>
       <p class="text-sm font-bold text-cb-ink mt-1">${nf(one.length)} tickets <span class="font-semibold text-cb-muted">(${nf(one.length / nDays(ts), 0)} por dia)</span></p>
       <p class="text-xs text-stone-600 mt-3 leading-relaxed">TM desses tickets: <b>${brl(tmOne)}</b>, contra ${brl(tmTwo)} quando o cliente leva 2 itens. Se 1 em cada 5 levar um segundo item: <b class="text-emerald-700">+${brl(gain)}/mês</b>.</p>
+      ${wHtml}
     </div>
     <div><p class="text-sm font-extrabold mb-2">Por loja</p>${hbars(per.map(x => ({ label: SHORT[x.s], color: SCOLOR[x.s], v: x.r, mark: one.length / V.length, txt: pct(x.r), note: `${nf(x.o)} de ${nf(x.n)} tickets` })))}
       <p class="text-sm font-extrabold mb-2 mt-4">Por faixa de horário</p>${hbars(bands.map((x, i) => ({ label: x.l, color: BAND_C[i], v: x.r, txt: pct(x.r), note: `${nf(x.o)} tickets` })))}</div>
