@@ -393,6 +393,20 @@
     window.__CVFRASES = {};
     try { const fr = await db.doc("comport/frases").get(); if (fr.exists) window.__CVFRASES = (fr.data() || {}).items || {}; } catch (e) { }
     if (CAN) window.__CVSAVEFRASES = (items) => db.doc("comport/frases").set(toApp({ items, updatedAt: new Date().toISOString(), updatedBy: AU.uid || null }));
+    // Natal: grade importada da planilha de controle + vendas da temporada (resumo por loja/dia/código, só dos produtos da grade)
+    window.__NATAL = {};
+    try { const [ng, nv] = await Promise.all([db.doc("comport/natal_grade").get(), db.doc("comport/natal_vendas").get()]); if (ng.exists) window.__NATAL.grade = ng.data(); if (nv.exists) window.__NATAL.vendas = nv.data(); } catch (e) { }
+    if (CAN) {
+      window.__NATALSAVE = async (G) => { G.updatedAt = new Date().toISOString(); G.updatedBy = AU.uid || null; await db.doc("comport/natal_grade").set(toApp(G)); window.__NATAL.grade = JSON.parse(JSON.stringify(G)); };
+      window.__NATALREBUILD = async (say) => { const G = window.__NATAL.grade; if (!G) return; const codes = new Set(Object.values(G.items).map(x => x.c).filter(Boolean)), v = {};
+        let mm = {}; try { const m = await db.doc("comport/meta").get(); if (m.exists) mm = (m.data() || {}).months || {}; } catch (e) { }
+        const yms = Object.keys(mm).filter(ym => ym >= G.ini.slice(0, 7) && ym <= G.fim.slice(0, 7)).sort();
+        for (const ym of yms) { say(`Somando as vendas de ${MES3[+ym.slice(5, 7) - 1]}/${ym.slice(0, 4)}…`);
+          const q = await db.collection("comport_dias").where("date", ">=", ym + "-01").where("date", "<=", ym + "-31").get();
+          for (const d of q.docs) { const x = d.data(); for (const k of ["p", "i"]) if (typeof x[k] === "string") x[k] = JSON.parse(x[k]); (v[x.s] || (v[x.s] = {}))[x.date] = natalDay(x, codes); } }
+        const doc = { v, updatedAt: new Date().toISOString() }; await db.doc("comport/natal_vendas").set(toApp(doc)); window.__NATAL.vendas = doc;
+        say(`Pronto: vendas de ${yms.length} ${yms.length === 1 ? "mês" : "meses"} cruzadas com a grade.`); };
+    }
     // metas de faturamento e de TM: as mesmas do módulo Vendas e metas
     const METAS = {};
     try { const vc = await db.doc("vendas/config").get(); if (vc.exists) { const c = vc.data() || {}, G = c.goals || {}, TM = c.tmGoals || {};
@@ -407,6 +421,8 @@
   async function seedCategorias(db) {
     try { const r = await fetch("comportamento_categorias.json", { cache: "no-store" }); if (!r.ok) return null; const x = await r.json(); await db.doc("comport/categorias").set(toApp({ items: x.items || {}, tree: x.tree || {}, updatedAt: new Date().toISOString(), seed: true })); return x; } catch (e) { return null; }
   }
+  // unidades vendidas no dia por código (só os códigos da grade de Natal; adicionais não contam)
+  function natalDay(x, codes) { const o = {}; for (const it of x.i || []) { if (it[8]) continue; const pr = (x.p || [])[it[1]]; const c = pr && pr[2]; if (c && codes.has(c)) o[c] = (o[c] || 0) + (+it[2] || 0); } return o; }
   // grava a importação: números do dia em comport_dias (gerentes leem todas as lojas, como referência) e nomes da equipe à parte, em comport_atend (só a própria loja)
   async function saveApp(docs, onStep) {
     const db = APP.db, ids = Object.keys(docs), months = {};
@@ -420,6 +436,10 @@
       await b.commit(); onStep(Math.min(ids.length, i + 8));
     }
     await db.doc("comport/meta").set(toApp({ months, updatedAt: new Date().toISOString() }), toApp({ merge: true }));
+    // mantém o giro de Natal em dia: atualiza só os dias importados
+    try { const ng = await db.doc("comport/natal_grade").get(); if (ng.exists) { const G = ng.data() || {}, codes = new Set(Object.values(G.items || {}).map(x => x.c).filter(Boolean)), v = {};
+      for (const id of ids) { const d = docs[id]; if (d.date < G.ini || d.date > G.fim) continue; (v[d.s] || (v[d.s] = {}))[d.date] = natalDay(d, codes); }
+      if (Object.keys(v).length) await db.doc("comport/natal_vendas").set(toApp({ v, updatedAt: new Date().toISOString() }), toApp({ merge: true })); } } catch (e) { }
     try { localStorage.setItem(MONTH_KEY, Object.keys(months).sort().pop()); } catch (e) { }
   }
   async function boot() {
@@ -2116,10 +2136,177 @@ function viewMixVendas(ts) {
       return `<p class="text-sm font-extrabold mb-2 mt-5">Exclusividades por grupo</p>` + hbars(Object.entries(g).sort((a, b) => b[1].v - a[1].v).map(([k, o]) => ({ label: k, color: gcolor(k), v: o.v, txt: `${brl(o.v)} · ${nf(o.q)} un.` }))); } });
   return h;
 }
+/* ================= NATAL: giro da temporada (grade da planilha × vendas de out a jan) ================= */
+// linha do tempo igual à planilha Controle Natal: outubro, semanas de novembro, 01–07/12, dias de 08 a 24/12, 25–31/12 e janeiro
+function natalBuckets(G) {
+  const y = +(G.ini || "2026-09-01").slice(0, 4), p2 = (n) => String(n).padStart(2, "0"), B = [];
+  const add = (l, a, z, day) => B.push({ l, a, z, day: !!day });
+  add("Até set", `${y}-01-01`, `${y}-09-30`);
+  add("Outubro", `${y}-10-01`, `${y}-10-31`);
+  add("01–07/11", `${y}-11-01`, `${y}-11-07`); add("08–14/11", `${y}-11-08`, `${y}-11-14`); add("15–21/11", `${y}-11-15`, `${y}-11-21`); add("22–30/11", `${y}-11-22`, `${y}-11-30`);
+  add("01–07/12", `${y}-12-01`, `${y}-12-07`);
+  for (let d = 8; d <= 24; d++) add(`${p2(d)}/12`, `${y}-12-${p2(d)}`, `${y}-12-${p2(d)}`, true);
+  add("25–31/12", `${y}-12-25`, `${y}-12-31`);
+  add("Janeiro", `${y + 1}-01-01`, `${y + 1}-01-31`);
+  return B;
+}
+function natalData() {
+  const N = window.__NATAL; if (!N || !N.grade || !N.grade.items) return null;
+  const G = N.grade, V = (N.vendas && N.vendas.v) || {}, B = natalBuckets(G);
+  const items = Object.entries(G.items).map(([k, it]) => ({ k, ...it })).sort((a, b) => (a.o || 0) - (b.o || 0));
+  const byCode = {}; for (const it of items) if (it.c) byCode[it.c] = it;
+  // vendas por item × loja × período
+  const sold = {}; let last = "";
+  for (const [s, days] of Object.entries(V)) for (const [date, codes] of Object.entries(days || {})) {
+    if (date > last) last = date;
+    const bi = B.findIndex(b => date >= b.a && date <= b.z); if (bi < 0) continue;
+    for (const [code, q] of Object.entries(codes || {})) { const it = byCode[code]; if (!it) continue;
+      const x = sold[it.k] || (sold[it.k] = {}), y = x[s] || (x[s] = B.map(() => 0)); y[bi] += +q || 0; }
+  }
+  const stG = new Set(); for (const it of items) for (const [s, q] of Object.entries(it.g || {})) if (+q > 0) stG.add(+s);
+  for (const s of Object.keys(V)) if (Object.keys(V[s] || {}).length) stG.add(+s);
+  const used = B.map((b, i) => i > 0 || items.some(it => Object.values(sold[it.k] || {}).some(a => a[i] > 0))); // "Até set" só se houver venda
+  const lastBi = last ? B.findIndex(b => last >= b.a && last <= b.z) : -1;
+  return { G, B, items, sold, last, lastBi, used, stores: [...stG].sort((a, b) => a - b) };
+}
+const NT_FAMC = "bg-stone-50 font-extrabold text-cb-ink";
+function ntGiroCell(g, v, extra = "") {
+  if (!g) return `<td class="text-stone-400"${extra}${v ? tip(`${nf(v)} vendidos sem grade`) : ""}>${v ? `${nf(v)} un.` : "—"}</td>`;
+  const r = v / g, a = Math.min(1, r / 0.6), bg = `rgba(27,175,122,${(0.08 + a * 0.55).toFixed(2)})`;
+  return `<td style="background:${bg}"${extra}${tip(`${nf(v)} de ${nf(g)} vendidos · saldo ${nf(g - v)}`)}><b class="${v ? "text-cb-ink" : "text-rose-700"}">${pct(r)}</b></td>`;
+}
+function ntLines(series, labels) {
+  const W = 640, H = 260, L = 44, R = 14, TP = 12, BT = 28, iw = W - L - R, ih = H - TP - BT, n = labels.length;
+  const mx = Math.max(0.05, ...series.flatMap(s => s.v.filter(x => x != null)));
+  const step = mx > .5 ? .2 : mx > .2 ? .1 : mx > .1 ? .05 : .02, top = Math.ceil(mx / step) * step;
+  const X = (i) => L + (n === 1 ? iw / 2 : (i * iw) / (n - 1)), Y = (v) => TP + ih - (v / top) * ih;
+  let g = ""; for (let v = 0; v <= top + 1e-9; v += step) g += `<line x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}" stroke="#ECEAE7"/><text x="${L - 6}" y="${Y(v) + 4}" text-anchor="end" font-size="11" fill="#6B6560">${pct(v)}</text>`;
+  const every = Math.ceil(n / Math.max(4, Math.floor(iw / 58)));
+  labels.forEach((l, i) => { if (i % every === 0 || i === n - 1) g += `<text x="${X(i)}" y="${H - 8}" text-anchor="middle" font-size="11" fill="#6B6560">${esc(l)}</text>`; });
+  for (const s of series) { const pts = s.v.map((v, i) => v == null ? null : [X(i), Y(v)]).filter(Boolean); if (!pts.length) continue;
+    g += `<polyline fill="none" stroke="${s.c}" stroke-width="${s.w || 2}" ${s.dash ? 'stroke-dasharray="4 3"' : ""} points="${pts.map(p => p.join(",")).join(" ")}"/>`;
+    for (const pt of pts) g += `<circle cx="${pt[0]}" cy="${pt[1]}" r="3.5" fill="${s.c}"/>`; }
+  return `<svg viewBox="0 0 ${W} ${H}" class="w-full h-auto" role="img" aria-label="Giro acumulado por loja ao longo da temporada">${g}</svg>`;
+}
+function natalImportCard(N) {
+  if (!window.__CAN || !window.__NATALSAVE) return "";
+  const G = N && N.grade;
+  return `<div class="flex flex-wrap items-center gap-2 text-xs text-cb-muted ${G ? "mt-4 pt-3 border-t border-stone-100" : ""}">
+    ${G ? `<span>Grade: <b>${esc(G.fonte || "planilha")}</b>, importada em ${new Date(G.updatedAt).toLocaleDateString("pt-BR")}. Vendas da temporada atualizadas ${N.vendas && N.vendas.updatedAt ? new Date(N.vendas.updatedAt).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }) : "—"}.</span>` : ""}
+    <span class="flex gap-2 ml-auto"><button class="h-9 px-3 rounded-xl ${G ? "border border-stone-200 bg-white text-stone-700" : "bg-cb-bordo text-white"} text-xs font-bold" data-nt="import">${G ? "Reimportar grade" : "Importar planilha de Natal (.xlsx)"}</button>${G ? `<button class="h-9 px-3 rounded-xl border border-stone-200 bg-white text-xs font-bold text-stone-700" data-nt="rebuild">Recalcular vendas</button>` : ""}</span>
+    <input id="nt-file" type="file" accept=".xlsx,.xls" class="hidden"><p id="nt-msg" class="w-full text-xs font-semibold text-cb-bordo"></p></div>`;
+}
 function viewNatal(ts) {
   const ids = itemsWhere(p => nkey(p[4]).startsWith("NATAL"));
   const gname = (D.prods.find(p => nkey(p[4]).startsWith("NATAL")) || [])[4] || "Natal 2026";
-  return unitsCard(ts, ids, { title: gname, sub: "Venda em unidades dos produtos do grupo, por loja e por dia", empty: "Nenhum produto classificado no grupo Natal 2026 (Configurações).", daily: true, color: "#1baf7a" });
+  const monthCard = ids.size ? unitsCard(ts, ids, { title: `${gname}: vendas do mês selecionado`, sub: "Venda em unidades dos produtos do grupo, por loja e por dia (filtros da tela)", empty: "", daily: true, color: "#1baf7a" }) : "";
+  const N = window.__NATAL, X = natalData();
+  if (!X) return card("Giro de Natal", "Grade de cada loja × vendas da temporada, na linha do tempo da planilha de controle",
+    `<p class="text-sm text-cb-muted">${!window.__CVAPP ? "Disponível no app." : window.__CAN ? "Importe a planilha <b>Controle Natal</b> (aba Vendas Natal26): o app lê a grade de cada loja e cruza com as vendas de outubro a janeiro." : "A administração ainda não importou a grade de Natal."}</p>${natalImportCard(N)}`, "mb-4") + monthCard;
+  const { G, B, items, sold, last, lastBi, used } = X;
+  const sts = X.stores.filter(s => !S.st.size || S.st.has(s));
+  const BI = B.map((b, i) => i).filter(i => used[i]);
+  const gOf = (it, s) => +((it.g || {})[s] || 0), vOf = (it, s, upto = B.length - 1) => { const a = (sold[it.k] || {})[s]; if (!a) return 0; let t = 0; for (let i = 0; i <= upto; i++) t += a[i]; return t; };
+  const bOf = (it, s, i) => ((sold[it.k] || {})[s] || [])[i] || 0;
+  // totais
+  let GT = 0, VT = 0, RS = 0; const st = {};
+  for (const s of sts) { let g = 0, v = 0; for (const it of items) { g += gOf(it, s); v += vOf(it, s); RS += Math.max(0, gOf(it, s) - vOf(it, s)) * (it.p || 0); } st[s] = { g, v }; GT += g; VT += v; }
+  const lastTxt = last ? `${last.slice(8, 10)}/${last.slice(5, 7)}` : "—";
+  const parados = items.filter(it => sts.reduce((a, s) => a + gOf(it, s), 0) > 0 && sts.reduce((a, s) => a + vOf(it, s), 0) === 0);
+  let h = `<div class="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-4">${kpiCard("Grade", `${nf(GT)} un.`, `${sts.length} loja${sts.length > 1 ? "s" : ""} · ${items.filter(it => sts.some(s => gOf(it, s) > 0)).length} produtos`)}${kpiCard("Vendido", `${nf(VT)} un.`, `até ${lastTxt}`)}${kpiCard("Giro", pct(GT ? VT / GT : 0, 1), "vendido ÷ grade")}${kpiCard("Saldo em loja", `${nf(GT - VT)} un.`, `${brl(RS)} a preço de venda`)}${kpiCard("Sem nenhuma venda", nf(parados.length), parados.length ? "produtos com grade e 0 vendido" : "todos já venderam")}</div>`;
+  // giro por loja + gráfico acumulado
+  const cum = (s) => { let g = st[s].g, run = 0; return BI.map(i => { run += items.reduce((a, it) => a + bOf(it, s, i), 0); return i <= lastBi && g ? run / g : null; }); };
+  const totCum = (() => { let run = 0; return BI.map(i => { run += sts.reduce((a, s) => a + items.reduce((b, it) => b + bOf(it, s, i), 0), 0); return i <= lastBi && GT ? run / GT : null; }); })();
+  const series = sts.filter(s => st[s].g).map(s => ({ c: SCOLOR[s], v: cum(s) })).concat(sts.length > 1 ? [{ c: "#1C1917", v: totCum, w: 2.5, dash: true }] : []);
+  const tabSt = SCOPE ? X.stores : sts;
+  for (const s of tabSt) if (!st[s]) { let g = 0, v = 0; for (const it of items) { g += gOf(it, s); v += vOf(it, s); } st[s] = { g, v }; }
+  const rank = tabSt.slice().sort((a, b) => (st[b].g ? st[b].v / st[b].g : -1) - (st[a].g ? st[a].v / st[a].g : -1));
+  let b = `<div class="grid lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] gap-5 split"><div class="overflow-x-auto -mx-4 md:mx-0"><table class="t"><thead><tr><th>Loja</th><th>Grade</th><th>Vendido</th><th>Giro</th><th>Saldo</th></tr></thead><tbody>${rank.map(s => `<tr><td>${storeTag(s)}${isOwn(s) ? "" : ` <span class="text-[10px] text-cb-muted">ref.</span>`}</td><td>${nf(st[s].g)}</td><td>${nf(st[s].v)}</td>${ntGiroCell(st[s].g, st[s].v)}<td>${nf(st[s].g - st[s].v)}</td></tr>`).join("")}${sts.length > 1 ? `<tr class="${NT_FAMC}"><td>Total</td><td>${nf(GT)}</td><td>${nf(VT)}</td>${ntGiroCell(GT, VT)}<td>${nf(GT - VT)}</td></tr>` : ""}</tbody></table></div>
+    <div><p class="text-sm font-extrabold mb-1">Giro acumulado na linha do tempo</p>${ntLines(series, BI.map(i => B[i].l))}${legend(sts.filter(s => st[s].g).map(s => [SCOLOR[s], SHORT[s], 1]).concat(sts.length > 1 ? [["#1C1917", "Total", 1]] : []))}</div></div>`;
+  h += card("Giro por loja", `Grade da planilha (aba GIRO) × vendas do relatório analítico, com vendas até ${lastTxt}`, b, "mb-4");
+  // linha do tempo por loja
+  const tl = S.ntTl || "u";
+  const tlBtns = `<div class="flex gap-1 p-1 rounded-xl bg-stone-100 w-max mb-3">${[["u", "Unidades vendidas"], ["g", "Giro acumulado"]].map(([k, l]) => `<button class="h-8 px-3 rounded-lg text-xs font-bold ${tl === k ? "bg-white text-cb-bordo shadow-sm" : "text-stone-500"}" data-nt="tl:${k}">${l}</button>`).join("")}</div>`;
+  const hdr = BI.map(i => `<th class="${i > lastBi ? "text-stone-300" : ""} ${B[i].day ? "!px-1.5" : ""}">${B[i].l}</th>`).join("");
+  const rowTl = (label, g, arr, cls = "") => { let run = 0; return `<tr class="${cls}"><td class="sticky left-0 bg-white ${cls}">${label}</td>${BI.map(i => { run += arr[i]; if (i > lastBi) return `<td class="text-stone-300 ${B[i].day ? "!px-1.5" : ""}">·</td>`;
+      return `<td class="${B[i].day ? "!px-1.5" : ""}">${tl === "u" ? (arr[i] ? nf(arr[i]) : `<span class="text-stone-300">0</span>`) : g ? pct(run / g) : "—"}</td>`; }).join("")}<td><b>${nf(arr.reduce((a, x) => a + x, 0))}</b></td><td>${nf(g - arr.reduce((a, x) => a + x, 0))}</td></tr>`; };
+  const stArr = (s) => B.map((_, i) => items.reduce((a, it) => a + bOf(it, s, i), 0));
+  b = tlBtns + `<div class="overflow-x-auto -mx-4 md:mx-0"><table class="t"><thead><tr><th class="sticky left-0 bg-white">Loja</th>${hdr}<th>Total</th><th>Saldo</th></tr></thead><tbody>${sts.map(s => rowTl(storeTag(s), st[s].g, stArr(s))).join("")}${sts.length > 1 ? rowTl("Total", GT, B.map((_, i) => sts.reduce((a, s) => a + stArr(s)[i], 0)), NT_FAMC) : ""}</tbody></table></div>
+    <p class="text-[11px] text-cb-muted mt-2">Períodos da planilha de controle. Em cinza, períodos ainda sem relatório importado.</p>`;
+  h += card("Linha do tempo", "Quanto cada loja vendeu em cada período da temporada", b, "mb-4");
+  // por produto
+  const pv = S.ntPv || "loja";
+  const pvBtns = `<div class="flex flex-wrap items-center gap-2 mb-3"><div class="flex gap-1 p-1 rounded-xl bg-stone-100 w-max">${[["loja", "Giro por loja"], ["tempo", "Linha do tempo"]].map(([k, l]) => `<button class="h-8 px-3 rounded-lg text-xs font-bold ${pv === k ? "bg-white text-cb-bordo shadow-sm" : "text-stone-500"}" data-nt="pv:${k}">${l}</button>`).join("")}</div>
+    <label class="flex items-center gap-1.5 text-xs font-bold text-stone-600 ml-auto"><input type="checkbox" data-nt="zero" ${S.ntZero ? "checked" : ""} class="accent-[#4A0E17]"> Mostrar produtos sem grade</label></div>`;
+  const fams = []; for (const it of items) { const f = it.f || "Outros"; let F = fams.find(x => x.f === f); if (!F) fams.push(F = { f, its: [] }); F.its.push(it); }
+  const show = (it) => S.ntZero || sts.some(s => gOf(it, s) > 0 || vOf(it, s) > 0);
+  let rows = "";
+  if (pv === "loja") {
+    for (const F of fams) { const its = F.its.filter(show); if (!its.length) continue;
+      const fg = (s) => its.reduce((a, it) => a + gOf(it, s), 0), fv = (s) => its.reduce((a, it) => a + vOf(it, s), 0), tg = sts.reduce((a, s) => a + fg(s), 0), tv = sts.reduce((a, s) => a + fv(s), 0);
+      rows += `<tr class="${NT_FAMC}"><td class="sticky left-0 ${NT_FAMC}">${esc(F.f)}</td>${sts.length > 1 ? sts.map(s => ntGiroCell(fg(s), fv(s))).join("") : ""}<td>${nf(tg)}</td><td>${nf(tv)}</td>${ntGiroCell(tg, tv)}<td>${nf(tg - tv)}</td></tr>`;
+      for (const it of its) { const g = sts.reduce((a, s) => a + gOf(it, s), 0), v = sts.reduce((a, s) => a + vOf(it, s), 0);
+        rows += `<tr><td class="sticky left-0 bg-white"><span class="block max-w-[260px] truncate"${tip(it.n + (it.c ? ` · ${it.c}` : " · sem código no relatório"))}>${esc(it.n)}</span></td>${sts.length > 1 ? sts.map(s => ntGiroCell(gOf(it, s), vOf(it, s))).join("") : ""}<td>${nf(g)}</td><td>${nf(v)}</td>${ntGiroCell(g, v)}<td class="${g && !v ? "text-rose-700 font-bold" : ""}">${nf(g - v)}</td></tr>`; } }
+    b = pvBtns + `<div class="overflow-x-auto -mx-4 md:mx-0"><table class="t"><thead><tr><th class="sticky left-0 bg-white">Produto</th>${sts.length > 1 ? sts.map(s => `<th>${SHORT[s]}</th>`).join("") : ""}<th>Grade</th><th>Vendido</th><th>Giro</th><th>Saldo</th></tr></thead><tbody>${rows}</tbody></table></div>
+      <p class="text-[11px] text-cb-muted mt-2">Verde mais forte = maior giro. Saldo em vermelho = produto com grade e nenhuma venda. Passe o mouse (ou toque) para ver grade e vendido.</p>`;
+  } else {
+    for (const F of fams) { const its = F.its.filter(show); if (!its.length) continue;
+      const arr = (it) => B.map((_, i) => sts.reduce((a, s) => a + bOf(it, s, i), 0)), gg = (it) => sts.reduce((a, s) => a + gOf(it, s), 0);
+      const fa = B.map((_, i) => its.reduce((a, it) => a + arr(it)[i], 0)), fgT = its.reduce((a, it) => a + gg(it), 0);
+      rows += rowTl(esc(F.f), fgT, fa, NT_FAMC);
+      for (const it of its) rows += rowTl(`<span class="block max-w-[240px] truncate"${tip(it.n)}>${esc(it.n)}</span>`, gg(it), arr(it)); }
+    b = pvBtns + `<div class="overflow-x-auto -mx-4 md:mx-0"><table class="t"><thead><tr><th class="sticky left-0 bg-white">Produto</th>${hdr}<th>Total</th><th>Saldo</th></tr></thead><tbody>${rows}</tbody></table></div>
+      <p class="text-[11px] text-cb-muted mt-2">Soma das lojas do filtro. ${tl === "g" ? "Mostrando giro acumulado (troque em Linha do tempo, acima)." : "Mostrando unidades (troque para giro acumulado em Linha do tempo, acima)."}</p>`;
+  }
+  b += natalImportCard(N);
+  h += card("Giro por produto", sts.length > 1 ? "Como na aba GIRO da planilha: % da grade vendida por produto e por loja" : `Grade, vendido e saldo de cada produto em ${SHORT[sts[0]]}`, b, "mb-4");
+  return h + monthCard;
+}
+// ações da aba (admin importa a grade; todos alternam as visões)
+async function natalAction(a, el) {
+  if (a.startsWith("tl:")) { S.ntTl = a.slice(3); rerender(); return; }
+  if (a.startsWith("pv:")) { S.ntPv = a.slice(3); rerender(); return; }
+  if (a === "zero") { S.ntZero = el.checked; rerender(); return; }
+  const msgEl = () => document.getElementById("nt-msg"), say2 = (t) => { const m = msgEl(); if (m) m.textContent = t; };
+  if (a === "import") { const f = document.getElementById("nt-file"); f.value = ""; f.onchange = () => natalImportFile(f.files[0], say2); f.click(); return; }
+  if (a === "rebuild") { el.disabled = true; try { await window.__NATALREBUILD((t) => say2(t)); rerender(); } catch (e) { say2("Não foi possível recalcular: " + ((e && (e.message || e.code)) || e)); el.disabled = false; } }
+}
+async function natalImportFile(file, say2) {
+  if (!file) return;
+  try {
+    say2("Lendo a planilha…");
+    const X = await loadXLSX(), wb = X.read(await file.arrayBuffer(), { type: "array" });
+    const G = natalParse(X, wb); if (!G) throw new Error('Não encontrei a aba "Vendas Natal26" com as colunas Código, Produtos e Inicial de cada loja.');
+    G.fonte = file.name;
+    say2(`Grade lida: ${Object.keys(G.items).length} produtos. Gravando…`);
+    await window.__NATALSAVE(G);
+    await window.__NATALREBUILD(say2);
+    rerender();
+  } catch (e) { say2((e && e.message) || String(e)); }
+}
+// lê a aba "Vendas Natal26": código (B), produto (C), preço (D) e a coluna "Inicial" de cada loja (= grade da aba GIRO)
+function natalParse(X, wb) {
+  const name = wb.SheetNames.find(n => /vendas\s*natal/i.test(n)); if (!name) return null;
+  const R = X.utils.sheet_to_json(wb.Sheets[name], { header: 1, raw: true, defval: null });
+  let hr = R.findIndex(r => r && r.some(v => String(v || "").trim().toLowerCase() === "inicial")); if (hr < 1) return null;
+  const H = R[hr], top = R[hr - 1] || [], low = (v) => String(v || "").trim().toLowerCase();
+  const cCode = H.findIndex(v => /c[oó]digo/i.test(String(v || ""))), cName = H.findIndex(v => /produto/i.test(String(v || ""))), cPrice = H.findIndex(v => /pre[cç]o/i.test(String(v || "")));
+  if (cCode < 0 || cName < 0) return null;
+  const SMAP = [[/ARICA/, 0], [/CENTER\s*VALE|CENTERVALE/, 1], [/ORIENTE/, 2], [/MOGI/, 3], [/VALE\s*SUL/, 4], [/COLINAS/, 5]];
+  const cols = []; H.forEach((v, c) => { if (low(v) !== "inicial") return; let lab = ""; for (let k = c; k < Math.min(top.length, c + 40); k++) if (/^VENDAS\s/i.test(String(top[k] || ""))) { lab = String(top[k]).toUpperCase(); break; }
+    const m = SMAP.find(([re]) => re.test(lab)); if (m) cols.push([c, m[1]]); });
+  if (!cols.length) return null;
+  const items = {}; let fam = "", o = 0;
+  for (let r = hr + 1; r < R.length; r++) { const row = R[r] || [], nm = String(row[cName] || "").trim(); if (!nm) continue;
+    const code = row[cCode], hasG = cols.some(([c]) => typeof row[c] === "number");
+    if (code == null && !hasG) { fam = nm; continue; }
+    if (/^total/i.test(nm)) continue;
+    const c = code != null && /^\d+$/.test(String(code).replace(/\.0+$/, "")) ? String(code).replace(/\.0+$/, "") : "";
+    const g = {}; for (const [col, s] of cols) { const q = row[col]; if (typeof q === "number" && q) g[s] = Math.round(q); }
+    items[c || "x" + (o + 1)] = { n: nm, f: fam, p: typeof row[cPrice] === "number" ? row[cPrice] : 0, c, o: ++o, g };
+  }
+  const yy = +((name.match(/natal\s*(\d{2,4})/i) || [])[1] || 26), Y4 = yy < 100 ? 2000 + yy : yy;
+  return Object.keys(items).length ? { temporada: `Natal ${Y4}`, ini: `${Y4}-09-01`, fim: `${Y4 + 1}-01-31`, items } : null;
 }
 
 
@@ -2152,7 +2339,7 @@ function originCard(ts) {
 
 /* ---------- render ---------- */
 const TABS = [["plano", "Plano de ação", viewPlano], ["geral", "Visão geral", viewGeral], ["horas", "Horários e escala", viewHoras], ["sug", "Venda sugerida", viewSugest], ["mixv", "Mix de vendas", viewMixVendas], ["adic", "Adicionais", viewAdic], ["equipe", "Equipe", viewEquipe], ["promo", "Promoções e descontos", viewPromo], ["canc", "Cancelamentos", viewCanc]];
-if (D.prods.some(p => nkey(p[4]).startsWith("NATAL"))) TABS.splice(TABS.findIndex(t => t[0] === "mixv") + 1, 0, ["natal", (D.prods.find(p => nkey(p[4]).startsWith("NATAL")) || [])[4] || "Natal", viewNatal]);
+if (D.prods.some(p => nkey(p[4]).startsWith("NATAL")) || (window.__NATAL && window.__NATAL.grade)) TABS.splice(TABS.findIndex(t => t[0] === "mixv") + 1, 0, ["natal", (D.prods.find(p => nkey(p[4]).startsWith("NATAL")) || [])[4] || "Natal", viewNatal]);
 if (window.__CAN) TABS.push(["cfg", "Configurações", viewConfig]);
 function renderFilters() {
   const c = document.getElementById("store-chips");
@@ -2220,6 +2407,7 @@ document.addEventListener("click", (e) => {
   const dB = e.target.closest("[data-draft]"); if (dB) { S.draftSeen = true; if (dB.dataset.draft === "restore") { const d = draftRead(); if (d) { CF = { items: d.items, tree: d.tree }; DIRTY = d.n || 1; updateSaveBar(); } } else draftClear(); rerender(); return; }
   if (e.target.closest("#cfg-import")) { document.getElementById("cfg-file").click(); return; }
   const del = e.target.closest("[data-del]"); if (del) { const k = del.dataset.del; if (CF && CF.items[k]) ask("Remover a classificação deste produto?", "Ele volta para a lista de vendidos sem classificação.").then(ok => { if (ok) { delete CF.items[k]; touch(); rerender(); } }); return; }
+  const ntB = e.target.closest("[data-nt]"); if (ntB && ntB.type !== "checkbox") { natalAction(ntB.dataset.nt, ntB); return; }
   const frB = e.target.closest("[data-fr]"); if (frB) { frAction(frB.dataset.fr, frB.dataset.id); return; }
   const act = e.target.closest("[data-act]"); if (act) { cfInit(); structAction(act.dataset.act, act); return; }
   const b = e.target.closest("[data-st],[data-tab],[data-hm],[data-dm],[data-lvl],[data-mlvl],th[data-k],#f-clear"); if (!b) return;
