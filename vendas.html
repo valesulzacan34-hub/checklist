@@ -117,7 +117,7 @@
    0 loja | 4 data e hora | 5 valor líquido | 9 cliente | 10 forma de pagamento
    11 desconto (%) | 14 operador | 16 promoção | 18 itens | 20 valor bruto | 21 canal
    ========================================================= */
-const STORE_CODES = { BSHAR: "CB Aricanduva", BSHCV: "CB Center Vale", BJORI: "CB Jardim Oriente Shopping", BSMOG: "CB Mogi", BSHVS: "CB Vale Sul" };
+const STORE_CODES = { BSHAR: "CB Aricanduva", BSHCV: "CB Center Vale", BJORI: "CB Jardim Oriente Shopping", BSMOG: "CB Mogi", BSHVS: "CB Vale Sul", BSHCO: "CB Colinas" };
 const NO_FIN = "Sem financeiro (voucher, cortesia, ADM)";
 
 function zNum(s) { s = String(s || "").trim(); return s ? Number(s.replace(/\./g, "").replace(",", ".")) || 0 : 0; }
@@ -250,7 +250,7 @@ function shortStore(s) { return s.replace(/^(SP - )?CB /i, ""); }
 /* =========================================================
    Dados de exemplo
    ========================================================= */
-const STORES = ["CB Aricanduva", "CB Center Vale", "CB Jardim Oriente Shopping", "CB Mogi", "CB Vale Sul"];
+const STORES = ["CB Aricanduva", "CB Center Vale", "CB Jardim Oriente Shopping", "CB Mogi", "CB Vale Sul", "CB Colinas"];
 const STORAGE_KEY = "cb-vendas-prototipo-v10";
 // Metas de setembro/2026 (PDFs META_*_09_26): diárias, semanais com níveis e prêmios semanais.
 const SEED_PLANS = {};
@@ -393,7 +393,8 @@ const GOAL_STORE_ALIASES = [
   [/VALE\s*SUL/, "CB Vale Sul"],
   [/ORIENTE|HYDE/, "CB Jardim Oriente Shopping"],
   [/MOGI/, "CB Mogi"],
-  [/ARICANDUVA|ARICA/, "CB Aricanduva"]
+  [/ARICANDUVA|ARICA/, "CB Aricanduva"],
+  [/COLINAS/, "CB Colinas"]
 ];
 function gNorm(v) { return String(v ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().replace(/\s+/g, " ").trim(); }
 function gNum(v) { if (typeof v === "number" && isFinite(v)) return v; if (typeof v === "string" && /^-?[\d.,]+$/.test(v.trim())) { const s = v.includes(",") ? v.replace(/\./g, "").replace(",", ".") : v; const n = Number(s); return isFinite(n) ? n : null; } return null; }
@@ -560,7 +561,7 @@ function seedWithGoalImport() {
    ========================================================= */
 const APP = (() => { try { return window.parent && window.parent !== window ? window.parent.CB_APP || null : null; } catch (e) { return null; } })();
 const VIEW_KEY = "cb-vendas-view-v1";
-const STORE_ALIASES = [[/CENTER\s*VALE|CENTERVALE/, "CB Center Vale"], [/VALE\s*SUL/, "CB Vale Sul"], [/ORIENTE/, "CB Jardim Oriente Shopping"], [/MOGI/, "CB Mogi"], [/ARICANDUVA/, "CB Aricanduva"]];
+const STORE_ALIASES = [[/CENTER\s*VALE|CENTERVALE/, "CB Center Vale"], [/VALE\s*SUL/, "CB Vale Sul"], [/ORIENTE/, "CB Jardim Oriente Shopping"], [/MOGI/, "CB Mogi"], [/ARICANDUVA/, "CB Aricanduva"], [/COLINAS/, "CB Colinas"]];
 function storeOfUnit(u) { const n = String(u || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toUpperCase(); return (STORE_ALIASES.find(([re]) => re.test(n)) || [])[1] || null; }
 function unitOfStore(s) { const us = APP?.units?.() || []; return us.find(u => storeOfUnit(u) === s) || s; }
 function storeKey(s) { return String(s).replace(/^CB /, "").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^A-Za-z0-9]+/g, "_").toLowerCase(); }
@@ -1420,7 +1421,7 @@ function renderHomeSimple() {
 }
 
 // ======================= DASHBOARD DE VENDAS =======================
-const DASH_COLORS = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4"]; // fixo por loja (ordem de STORES)
+const DASH_COLORS = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#7a5bd1"]; // fixo por loja (ordem de STORES)
 const DASH_MIN = "2026-01-01";
 const INK = "#1C1917", MUTED = "#78716c", GRID = "#e7e5e4", BORDO = "#4A0E17";
 function storeColor(st) { return DASH_COLORS[STORES.indexOf(st)] || "#888"; }
@@ -2184,7 +2185,7 @@ function drawDashCharts() {
 }
 
 // ======================= FIDELIZAÇÃO E CASHBACK =======================
-const LOY_SIGLAS = { BSHAR: "CB Aricanduva", BSHCV: "CB Center Vale", BJORI: "CB Jardim Oriente Shopping", BSMOG: "CB Mogi", BSHVS: "CB Vale Sul" };
+const LOY_SIGLAS = { BSHAR: "CB Aricanduva", BSHCV: "CB Center Vale", BJORI: "CB Jardim Oriente Shopping", BSMOG: "CB Mogi", BSHVS: "CB Vale Sul", BSHCO: "CB Colinas" };
 const LOY_FIELDS = ["acum", "exp", "resg", "est", "saldo", "vendas", "fid"];
 function fidGoalOf(st) { const g = S.fidGoals?.stores?.[st]; return g != null ? g : (S.fidGoals?.default ?? 50); }
 function fidGoalFor(stores, by) {
@@ -2491,7 +2492,7 @@ function parseNps(text) {
   const I = { id: ix("Response ID"), loc: ix("Location"), at: ix("Started at"), q1: ix("Question 1"), q2: ix("Question 2"), q3: ix("Question 3"), q4: ix("Question 4"), q5: ix("Question 5"), q6: ix("Question 6"), q7: ix("Question 7"), q8: ix("Question 8"), q9: ix("Question 9"), q10: ix("Question 10"), q81: ix("Question 8.1"), q11: ix("Question 11"), q12: ix("Question 12"), q13: ix("Question 13"), q14: ix("Question 14") };
   const out = {}, unknown = new Set();
   rows.slice(1).forEach(r => {
-    const name = (r[I.loc] || "").trim(), st = STORES.find(s => s.toUpperCase() === name.toUpperCase());
+    const name = (r[I.loc] || "").trim(), st = STORES.find(s => s.toUpperCase() === name.toUpperCase()) || storeOfUnit(name);
     if (!st) { if (name) unknown.add(name); return; }
     const m = (r[I.at] || "").match(/(\d{2})\/(\d{2})\/(\d{2,4})\D+(\d{2}):(\d{2})/);
     if (!m) return;
@@ -2550,7 +2551,7 @@ function npsDelta(a, b) { if (a == null || b == null) return ""; const d = Math.
 
 
 // ---------- Metas do NPS ----------
-const NPS_COUNT_DEFAULT = { "CB Center Vale": 300, "CB Vale Sul": 250, "CB Aricanduva": 250, "CB Jardim Oriente Shopping": 250, "CB Mogi": 300 };
+const NPS_COUNT_DEFAULT = { "CB Center Vale": 300, "CB Vale Sul": 250, "CB Aricanduva": 250, "CB Jardim Oriente Shopping": 250, "CB Mogi": 300, "CB Colinas": 250 };
 function npsDayGoal(st, ym) { return npsCountGoal(st) / daysInMonth(ym); }
 const dec1 = v => (Number(v) || 0).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 function npsCountGoal(st) { return S.npsGoals?.count?.[st] ?? NPS_COUNT_DEFAULT[st] ?? 0; }
@@ -3129,7 +3130,7 @@ async function copyWhats(btn) {
 // ---------- Importação rápida dentro de cada indicador (somente administração) ----------
 let IMP_MODAL = null;
 const QUICK_IMPORT = {
-  metas: { accept: ".pdf", multiple: true, title: "Importar metas do mês", hint: "PDFs de meta no padrão META_LOJA_MM.AA.pdf (um por loja). Pode escolher os das 5 lojas de uma vez. Metas diárias, semanas, níveis Meta/Ouro/Diamante e prêmios." },
+  metas: { accept: ".pdf", multiple: true, title: "Importar metas do mês", hint: "PDFs de meta no padrão META_LOJA_MM.AA.pdf (um por loja). Pode escolher os de todas as lojas de uma vez. Metas diárias, semanas, níveis Meta/Ouro/Diamante e prêmios." },
   fid: { accept: ".xls,.xlsx,.htm,.html", multiple: false, title: "Importar extrato de cashback", hint: "Arquivo ExtratoPontosLojaExcel.xls do sistema (do dia ou acumulado do mês). O sistema separa o que é de cada dia." },
   nps: { accept: ".csv", multiple: false, title: "Importar pesquisa NPS", hint: "Arquivo .csv da pesquisa de satisfação. Respostas repetidas não duplicam; nome, e-mail e telefone não são importados." }
 };
@@ -4589,7 +4590,7 @@ function renderImport() {
     <label class="card p-6 flex flex-col items-center justify-center gap-2 text-center border-2 border-dashed border-stone-300 cursor-pointer hover:border-cb-bordo">
       <span class="w-12 h-12 rounded-2xl bg-cb-soft text-cb-bordo flex items-center justify-center">${icon("upload", "w-6 h-6")}</span>
       <span class="font-extrabold">Escolher arquivo</span>
-      <span class="text-xs text-stone-500">PDFs de meta (pode escolher os das 5 lojas de uma vez), planilha de metas, arquivo de vendas do sistema ou .xlsx / .csv</span>
+      <span class="text-xs text-stone-500">PDFs de meta (pode escolher os de todas as lojas de uma vez), planilha de metas, arquivo de vendas do sistema ou .xlsx / .csv</span>
       <input type="file" multiple accept=".pdf,.txt,.xlsx,.xls,.csv" class="sr-only" onchange="readImportFiles(this.files); this.value='';">
     </label>
     <div id="imp-area"></div>
