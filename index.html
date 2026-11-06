@@ -2094,17 +2094,16 @@
           <span class="${items.length > 6 ? "text-[10px] tracking-tight" : "text-[11px]"} truncate max-w-full ${navTarget === it.id ? "font-extrabold" : "font-semibold"}">${it.label}</span>
         </button>`).join("");
 
-      // menu lateral por categoria: Checklist, Vendas, Operação e Configurações
+      // menu lateral por categoria: Checklist, Vendas, Sazonal, Operação e Configurações
       const sideBtn = (id, ic, label) => `<button onclick="go('${id}')" class="nav-item ${navTarget === id ? "nav-item-active" : ""}" ${navTarget === id ? 'aria-current="page"' : ""}>${icon(ic)} ${label}</button>`;
       const sideHead = (t) => `<div class="pt-4 pb-1 px-3 text-[11px] font-bold uppercase tracking-wider text-stone-400">${t}</div>`;
       let side = sideBtn("home", "home", "Início");
       side += sideHead("Checklist") + sideBtn("reports", "folder", "Relatórios");
-      if (isManager()) side += sideBtn("actions", "list", "Planos de ação") + sideBtn("dashboard", "chart", "Indicadores");
-      if (isManager()) side += sideHead("Vendas") + sideBtn("vendas", "star", "Vendas e metas") + sideBtn("comportamento", "pulse", "Análise de vendas") + sideBtn("natal", "gift", "Natal 2026");
+      if (isManager()) side += sideBtn("actions", "list", "Planos de ação") + sideBtn("dashboard", "chart", "Indicadores") + `<button onclick="toggleConfigModal()" class="nav-item">${icon("sliders")} Modelos de checklist</button>`;
+      if (isManager()) side += sideHead("Vendas") + sideBtn("vendas", "star", "Vendas e metas") + sideBtn("comportamento", "pulse", "Análise de vendas");
+      if (isManager()) side += sideHead("Sazonal") + sideBtn("natal", "gift", "Natal 2026");
       side += sideHead("Operação") + sideBtn("maintenance", "wrench", "Manutenção");
-      if (isManager() || isAdmin()) side += sideHead("Configurações");
-      if (isManager()) side += `<button onclick="toggleConfigModal()" class="nav-item">${icon("sliders")} Modelos de checklist</button>`;
-      if (isAdmin()) side += `<button onclick="toggleUsersModal()" class="nav-item">${icon("users")} Lojas e usuários ${pendingUsers().length ? `<span class="chip bg-rose-600 text-white ml-auto">${pendingUsers().length}</span>` : ""}</button>`;
+      if (isAdmin()) side += sideHead("Configurações") + `<button onclick="toggleUsersModal()" class="nav-item">${icon("users")} Lojas e usuários ${pendingUsers().length ? `<span class="chip bg-rose-600 text-white ml-auto">${pendingUsers().length}</span>` : ""}</button>`;
       document.getElementById("side-nav").innerHTML = side;
     }
 
