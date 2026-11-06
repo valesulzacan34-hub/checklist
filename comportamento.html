@@ -142,7 +142,7 @@
    ========================================================= */
 (function (root) {
   "use strict";
-  const SIGLAS = { BSHAR: 0, BSHCV: 1, BJORI: 2, BSMOG: 3, BSHVS: 4 };
+  const SIGLAS = { BSHAR: 0, BSHCV: 1, BJORI: 2, BSMOG: 3, BSHVS: 4, BSHCO: 5 };
   const PAYS = ["Cartão de débito", "Cartão de crédito", "PIX", "Dinheiro", "Vale-refeição / alimentação", "Múltiplas formas", "Voucher / cortesia", "iFood / outros"];
   const RULES = [
     ["Adicionais", /^(ACOMP|ADICIONAL)/],
@@ -343,9 +343,9 @@
   function msg(html) { $("view").innerHTML = `<div class="card p-8 md:p-10 text-center max-w-xl mx-auto">${html}</div>`; const tb = $("topbar"); if (tb) tb.classList.add("hidden"); }
   /* ---------- modo app: dentro do app Casa Bauducco (Firebase), com o login do app ---------- */
   const APP = (() => { try { return window.parent && window.parent !== window ? window.parent.CB_APP || null : null; } catch (e) { return null; } })();
-  const SIG = ["BSHAR", "BSHCV", "BJORI", "BSMOG", "BSHVS"];
-  const STORE_NAMES = ["CB Aricanduva", "CB Center Vale", "CB Jardim Oriente Shopping", "CB Mogi", "CB Vale Sul"]; // nomes usados no módulo Vendas e metas
-  const STORE_RE = [/ARICANDUVA/, /CENTER\s*VALE|CENTERVALE/, /ORIENTE/, /MOGI/, /VALE\s*SUL/];
+  const SIG = ["BSHAR", "BSHCV", "BJORI", "BSMOG", "BSHVS", "BSHCO"];
+  const STORE_NAMES = ["CB Aricanduva", "CB Center Vale", "CB Jardim Oriente Shopping", "CB Mogi", "CB Vale Sul", "CB Colinas"]; // nomes usados no módulo Vendas e metas
+  const STORE_RE = [/ARICANDUVA/, /CENTER\s*VALE|CENTERVALE/, /ORIENTE/, /MOGI/, /VALE\s*SUL/, /COLINAS/];
   const storeOfUnit = (u) => STORE_RE.findIndex(r => r.test(nrm(u)));
   const unitOf = (s) => ((APP && APP.units && APP.units()) || []).find(u => storeOfUnit(u) === s) || STORE_NAMES[s];
   const toApp = (o) => APP.parse ? APP.parse(JSON.stringify(o)) : JSON.parse(JSON.stringify(o));
@@ -456,7 +456,7 @@
     const bar = (p) => $("imp-body").innerHTML = `<p class="text-cb-muted">Lendo o arquivo… ${Math.round(p * 100)}%</p><div class="h-2 rounded-full bg-stone-100 mt-2 overflow-hidden"><div class="h-full bg-cb-bordo" style="width:${p * 100}%"></div></div>`;
     try {
       bar(0); const rows = await CVImport.rowsFromFile(file, bar); parsed = CVImport.rowsToDocs(rows);
-      const ids = Object.keys(parsed.docs); if (!ids.length) throw new Error("Nenhuma venda das 5 lojas encontrada no arquivo.");
+      const ids = Object.keys(parsed.docs); if (!ids.length) throw new Error("Nenhuma venda das lojas encontrada no arquivo.");
       const repl = ids.filter(id => existing[id]).length;
       const ok = parsed.check == null || Math.abs(parsed.check - parsed.total) < 0.05;
       $("imp-body").innerHTML = `<div class="rounded-2xl bg-cb-cream p-4 space-y-1.5">
@@ -493,8 +493,9 @@
 window.__main = function () {
 "use strict";
 const D = window.__CVD;
-const SHORT = ["Aricanduva", "Center Vale", "Jardim Oriente", "Mogi", "Vale Sul"];
-const SCOLOR = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4"];
+const SHORT = ["Aricanduva", "Center Vale", "Jardim Oriente", "Mogi", "Vale Sul", "Colinas"];
+const ALL_ST = SHORT.map((_, i) => i); // índices de todas as lojas
+const SCOLOR = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#7a5bd1"];
 const DOW = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
 const DOW3 = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 const HOL_DATES = { "2026-10-12": "Feriado (Nossa Senhora Aparecida / Dia das Crianças)", "2026-11-02": "Feriado (Finados)", "2026-11-15": "Feriado (Proclamação da República)", "2026-11-20": "Feriado (Consciência Negra)", "2026-12-25": "Natal", "2027-01-01": "Ano-novo" };
@@ -542,7 +543,7 @@ const ATT = {}; for (const a of D.atts) ATT[a[0]] = { name: a[1], s: a[2] };
 const S = { st: new Set(), from: DAYS[0], to: DAYS[DAYS.length - 1], dow: -1, shift: "", tab: "plano", sort: {} };
 // lembra a aba e os filtros de loja/dia/horário entre visitas (o período volta sempre para o mês inteiro, para mostrar dias novos)
 const NAV_KEY = "cv_nav_v1";
-try { const n = JSON.parse(localStorage.getItem(NAV_KEY) || "null"); if (n) { if (n.tab) S.tab = n.tab; if (Array.isArray(n.st)) S.st = new Set(n.st.filter(i => i >= 0 && i < 5)); if (typeof n.dow === "number") S.dow = n.dow; if (typeof n.shift === "string") S.shift = n.shift; if (n.afLv) S.afLv = n.afLv; if (n.tmGran) S.tmGran = n.tmGran; } } catch (e) {}
+try { const n = JSON.parse(localStorage.getItem(NAV_KEY) || "null"); if (n) { if (n.tab) S.tab = n.tab; if (Array.isArray(n.st)) S.st = new Set(n.st.filter(i => i >= 0 && i < SHORT.length)); if (typeof n.dow === "number") S.dow = n.dow; if (typeof n.shift === "string") S.shift = n.shift; if (n.afLv) S.afLv = n.afLv; if (n.tmGran) S.tmGran = n.tmGran; } } catch (e) {}
 { const hsh = decodeURIComponent((location.hash || "").slice(1)); if (hsh) S.tab = hsh; }
 if (window.__SCOPE) { S.st = new Set([...S.st].filter(i => window.__SCOPE.includes(i))); if (!S.st.size) S.st = new Set(window.__SCOPE); }
 function navSave() { try { localStorage.setItem(NAV_KEY, JSON.stringify({ tab: S.tab, st: [...S.st], dow: S.dow, shift: S.shift, afLv: S.afLv, tmGran: S.tmGran })); } catch (e) {} try { history.replaceState(null, "", "#" + S.tab); } catch (e) {} }
@@ -552,16 +553,16 @@ const BAND_C = ["#f1d9a7", "#eb9a6f", "#a3313f", "#4A0E17"];
 const bandOf = (h) => BANDS.findIndex(b => b.f(h));
 const shiftOk = (h) => S.shift === "" || S.shift == null || bandOf(h) === +S.shift;
 function sel() { return T.filter(t => (!S.st.size || S.st.has(t.s)) && t.d >= S.from && t.d <= S.to && (S.dow < 0 || t.dow === S.dow) && shiftOk(t.h)); }
-function storesInView() { return S.st.size ? [...S.st].sort() : [0, 1, 2, 3, 4]; }
+function storesInView() { return S.st.size ? [...S.st].sort() : ALL_ST; }
 /* gerente (no app): vê a própria loja; as outras aparecem só como referência, marcadas "ref." */
 const SCOPE = window.__SCOPE || null;
 const HASS = new Set(T.map(t => t.s));
 function isOwn(s) { return !SCOPE || SCOPE.includes(s); }
-function cmpStores() { return SCOPE ? [0, 1, 2, 3, 4].filter(s => HASS.has(s)) : storesInView(); }
+function cmpStores() { return SCOPE ? ALL_ST.filter(s => HASS.has(s)) : storesInView(); }
 let ALLSEL = [];
 function sT(ts, s) { return isOwn(s) ? ts.filter(t => t.s === s) : ALLSEL.filter(t => t.s === s); }
 function sV(V, s) { return isOwn(s) ? V.filter(t => t.s === s) : ALLSEL.filter(t => t.s === s && t.v > 0); }
-if (SCOPE) for (let i = 0; i < 5; i++) if (!SCOPE.includes(i)) SHORT[i] = SHORT[i] + " (ref.)";
+if (SCOPE) for (let i = 0; i < SHORT.length; i++) if (!SCOPE.includes(i)) SHORT[i] = SHORT[i] + " (ref.)";
 
 /* ---------- formatos ---------- */
 const nf = (v, d = 0) => (v || 0).toLocaleString("pt-BR", { minimumFractionDigits: d, maximumFractionDigits: d });
@@ -983,7 +984,7 @@ function storeStats(ts) {
 function opportunities() {
   const all = selNoStore(), V = all.filter(t => t.v > 0); if (!V.length) return null;
   const f = 30 / nDays(all);
-  const per = [0, 1, 2, 3, 4].map(s => storeStats(all.filter(t => t.s === s)));
+  const per = ALL_ST.map(s => storeStats(all.filter(t => t.s === s)));
   const ok = per.map((p, s) => ({ ...p, s })).filter(p => p.n >= 30);
   if (!ok.length) return null;
   const best = (key, hi) => ok.reduce((b, p) => (hi ? p[key] > b[key] : p[key] < b[key]) ? p : b);
@@ -1360,7 +1361,7 @@ function upgradeCard(ts, cfg) {
   const A = agg(V); if (!A.n) return "";
   const pb = A.b ? A.bv / A.b : 0, pu = A.u ? A.uv / A.u : 0, diff = Math.max(0, pu - pb);
   const sts = cmpStores(), per = {}; for (const s of sts) per[s] = agg(sV(V, s));
-  const allS = {}; const VA = selNoStore().filter(t => t.v > 0); for (const s of [0, 1, 2, 3, 4]) allS[s] = agg(VA.filter(t => t.s === s));
+  const allS = {}; const VA = selNoStore().filter(t => t.v > 0); for (const s of ALL_ST) allS[s] = agg(VA.filter(t => t.s === s));
   let best = 0, bestS = -1; for (const [s, o] of Object.entries(allS)) if (o.n >= 100 && o.r > best) { best = o.r; bestS = +s; }
   const gainBest = sts.filter(isOwn).reduce((a, s) => a + Math.max(0, best - per[s].r) * per[s].n, 0) * diff * f;
   const gainT = Math.max(0, cfg.target * A.n - A.u) * diff * f;
@@ -1770,14 +1771,14 @@ let METAS_DRAFT = null;
 function metasCard() {
   if (window.__CVAPP) { const ym = ymOf(S.to), m = (window.__CVMETAS || {})[ym] || {};
     return card("Metas do mês", "Faturamento e TM de cada loja, usados no TM sugerido por horário", `<p class="text-sm text-stone-600 mb-3">No app, as metas vêm do módulo <b>Vendas e metas</b>. Para mudar, edite lá.</p>
-      <div class="grid sm:grid-cols-5 gap-2">${[0, 1, 2, 3, 4].map(s => `<div class="rounded-xl bg-stone-50 p-3"><p class="text-xs font-bold">${storeTag(s)}</p><p class="text-sm mt-1">${m[s] && m[s].fat ? brl(m[s].fat) : "—"}</p><p class="text-xs text-cb-muted">TM ${m[s] && m[s].tm ? brl(m[s].tm) : "—"}</p></div>`).join("")}</div>`, "mb-4"); }
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">${ALL_ST.map(s => `<div class="rounded-xl bg-stone-50 p-3"><p class="text-xs font-bold">${storeTag(s)}</p><p class="text-sm mt-1">${m[s] && m[s].fat ? brl(m[s].fat) : "—"}</p><p class="text-xs text-cb-muted">TM ${m[s] && m[s].tm ? brl(m[s].tm) : "—"}</p></div>`).join("")}</div>`, "mb-4"); }
   const months = [...new Set(DAYS.map(ymOf))]; const ym = months.includes(S.metaYM) ? S.metaYM : months[months.length - 1];
   if (!METAS_DRAFT) METAS_DRAFT = JSON.parse(JSON.stringify(window.__CVMETAS || {}));
   const m = METAS_DRAFT[ym] || {};
   const inp = (s, f, v, ph) => `<input class="field !h-9 w-32 text-right" inputmode="decimal" data-meta="${f}" data-s="${s}" value="${v != null ? String(v).replace(".", ",") : ""}" placeholder="${ph}">`;
   let b = `<div class="flex flex-wrap items-center gap-2 mb-3"><span class="text-xs font-bold text-cb-muted">Mês</span><select class="field" id="f-metaym">${months.map(x => `<option value="${x}"${x === ym ? " selected" : ""}>${ymLabel(x)}</option>`).join("")}</select></div>
   <div class="overflow-x-auto -mx-4 md:mx-0"><table class="t"><thead><tr><th>Loja</th><th>Meta de faturamento (R$)</th><th>Meta de TM (R$)</th><th>TC ideal no mês</th><th>TC ideal por dia</th></tr></thead><tbody>`;
-  for (const s of [0, 1, 2, 3, 4]) { const x = m[s] || {}, tc = x.fat > 0 && x.tm > 0 ? x.fat / x.tm : 0;
+  for (const s of ALL_ST) { const x = m[s] || {}, tc = x.fat > 0 && x.tm > 0 ? x.fat / x.tm : 0;
     b += `<tr><td>${storeTag(s)}</td><td>${inp(s, "fat", x.fat, "ex.: 106000")}</td><td>${inp(s, "tm", x.tm, "ex.: 50")}</td><td>${tc ? nf(tc, 0) : "–"}</td><td>${tc ? nf(tc / daysInYM(ym), 0) : "–"}</td></tr>`; }
   b += `</tbody></table></div><div class="flex items-center gap-3 mt-3"><button class="h-9 px-4 rounded-lg bg-cb-bordo text-white text-xs font-bold" id="metas-save">Salvar metas de ${ymLabel(ym)}</button><span class="text-[11px] text-cb-muted" id="metas-msg">Usadas no "TM sugerido por hora" (aba Horários e escala).</span></div>`;
   return card("Metas do mês", "Meta de faturamento e de TM de cada loja · TC ideal = faturamento ÷ TM", b, "mb-4");
@@ -1884,7 +1885,7 @@ async function frAction(a, id) {
 }
 function storeQuality(ts) {
   const V = ts.filter(t => t.v > 0);
-  const rows = [0, 1, 2, 3, 4].map(s => { const k = kpi(V.filter(t => t.s === s)); return { s, n: k.n, tm: k.tm, ipt: k.ipt, ppi: k.q ? k.v / k.q : 0 }; }).filter(x => x.n >= 50);
+  const rows = ALL_ST.map(s => { const k = kpi(V.filter(t => t.s === s)); return { s, n: k.n, tm: k.tm, ipt: k.ipt, ppi: k.q ? k.v / k.q : 0 }; }).filter(x => x.n >= 50);
   const rk = (key) => { const o = [...rows].sort((a, b) => b[key] - a[key]); o.forEach((x, i) => x["r_" + key] = i + 1); };
   rk("tm"); rk("ipt"); for (const x of rows) x.score = x.r_tm + x.r_ipt;
   rows.sort((a, b) => a.score - b.score || b.tm - a.tm);
