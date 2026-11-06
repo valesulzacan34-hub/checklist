@@ -4634,13 +4634,14 @@ function parseGoalPdfLines(lines, fileName = "") {
     const l = raw.replace(/\s+/g, " ").trim();
     let m;
     if (!res.label && (m = l.match(/^(.+?) META RESULTADO/i))) res.label = m[1].trim();
-    if ((m = l.match(new RegExp(`^(\\d{2})/(\\d{2})/(\\d{2,4})(?: [A-ZÁÉ]{3})? ${MONEY}`)))) {
+    // "-" no lugar da meta = dia sem meta (ex.: loja ainda não aberta): conta como 0
+    if ((m = l.match(new RegExp(`^(\\d{2})/(\\d{2})/(\\d{2,4})(?: [A-ZÁÉ]{3})? (?:${MONEY}|([-–—])(?= |$))`)))) {
       const y = m[3].length === 2 ? "20" + m[3] : m[3];
       const ym = `${y}-${m[2]}`;
       res.ym ||= ym;
       if (ym !== res.ym) continue;
       const d = Number(m[1]);
-      res.days[d] = N(m[4]);
+      res.days[d] = m[5] ? 0 : N(m[4]);
       if (weekStart === null) weekStart = d;
       lastDay = d;
       continue;
@@ -4659,7 +4660,7 @@ function parseGoalPdfLines(lines, fileName = "") {
   if (!res.ym) { res.warnings.push("nenhuma data encontrada"); return res; }
   const [Y, M] = res.ym.split("-").map(Number), dim = new Date(Y, M, 0).getDate();
   const days = Array.from({ length: dim }, (_, i) => res.days[i + 1] ?? null);
-  const filled = days.filter(x => x).length, daySum = days.reduce((a, x) => a + (x || 0), 0);
+  const filled = days.filter(x => x != null).length, daySum = days.reduce((a, x) => a + (x || 0), 0);
   res.monthMeta ||= daySum;
   const entry = { label: res.label, monthMeta: res.monthMeta, results: {}, ly: null, weekRanges: res.weekRanges, prizes: Object.keys(res.prizes).length ? { meta: res.prizes.meta ?? null, ouro: res.prizes.ouro ?? null, diamante: res.prizes.diamante ?? null } : null, weeks: null };
   if (filled === dim) {
