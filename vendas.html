@@ -27,6 +27,7 @@
       .field { @apply w-full min-w-0 h-11 px-3.5 rounded-xl border border-stone-200 bg-white text-base md:text-sm text-cb-ink placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-cb-bordo/25 focus:border-cb-bordo transition; }
       .label { @apply block text-xs font-semibold text-stone-600 mb-1.5; }
       .chip { @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold whitespace-nowrap; }
+      .filter-chip { @apply shrink-0 inline-flex items-center gap-2 h-9 px-3.5 rounded-full text-sm font-bold border transition; }
       .seg { @apply flex p-1 rounded-xl bg-stone-100 gap-1; }
       .seg-btn { @apply flex-1 h-9 rounded-lg text-sm font-bold text-stone-500 transition whitespace-nowrap px-2; }
       .seg-btn-active { @apply bg-white text-cb-bordo shadow-sm; }
@@ -76,13 +77,18 @@
 
 
   <header class="sticky top-0 z-20 bg-white/90 backdrop-blur border-b border-cb-line pt-[env(safe-area-inset-top)]">
-    <div class="min-h-16 py-3 md:py-0 md:h-16 px-4 md:px-8 flex items-center gap-2 flex-wrap md:flex-nowrap">
-      <label for="month-select" class="sr-only">Mês</label>
-      <select id="month-select" onchange="setMonth(this.value)" class="h-10 pl-3 pr-8 rounded-xl border border-stone-200 bg-white font-bold text-sm"></select>
-      <label for="store-select" class="sr-only">Loja</label>
-      <select id="store-select" onchange="setStore(this.value)" class="flex-1 min-w-0 max-w-xs h-10 pl-3 pr-8 rounded-xl border border-stone-200 bg-white font-bold text-sm truncate"></select>
-      <span class="ml-auto text-right leading-tight hidden sm:block"><span id="user-label" class="block text-[12px] font-bold text-cb-bordo"></span><span id="sync-state" class="text-[11px] font-bold text-stone-500"></span></span>
-      <button onclick="openMoreSheet()" class="icon-btn" aria-label="Mais opções" id="btn-more"></button>
+    <!-- filtros no mesmo padrão da Análise de vendas: lojas em botões e o período à direita -->
+    <div class="px-4 md:px-8 py-2.5 flex flex-col gap-2">
+      <div class="flex items-center gap-2">
+        <div id="store-chips" class="flex-1 min-w-0 flex flex-wrap gap-2" role="group" aria-label="Loja"></div>
+        <button onclick="openMoreSheet()" class="icon-btn self-start !w-9 !h-9" aria-label="Mais opções" id="btn-more"></button>
+      </div>
+      <div class="flex items-center justify-end gap-2">
+        <span class="mr-auto leading-tight hidden sm:block"><span id="user-label" class="text-[12px] font-bold text-cb-bordo"></span> <span id="sync-state" class="text-[11px] font-bold text-stone-500"></span></span>
+        <label for="month-select" class="text-xs font-bold text-stone-500">Mês</label>
+        <select id="month-select" onchange="setMonth(this.value)" class="h-10 pl-3 pr-8 rounded-xl border border-stone-200 bg-white font-bold text-sm"></select>
+        <select id="store-select" onchange="setStore(this.value)" class="hidden" aria-hidden="true" tabindex="-1"></select>
+      </div>
     </div>
   </header>
 
@@ -918,10 +924,14 @@ function renderSelectors() {
   if (!isBoard() && vs.length === 1) S.view.store = vs[0];
   ss.innerHTML = (vs.length > 1 ? `<option value="">${isBoard() ? "Todas as lojas" : "Todas as minhas lojas"}</option>` : "") + vs.map(s => `<option value="${esc(s)}" ${s === S.view.store ? "selected" : ""}>${esc(s)}</option>`).join("");
   ss.disabled = vs.length <= 1;
+  // botões de loja (mesmas cores da Análise de vendas)
+  const SC = { "CB Aricanduva": "#2a78d6", "CB Center Vale": "#eb6834", "CB Jardim Oriente Shopping": "#1baf7a", "CB Mogi": "#eda100", "CB Vale Sul": "#e87ba4", "CB Colinas": "#7a5bd1" };
+  const chip = (val, label, on, color) => `<button type="button" onclick="setStore(${JSON.stringify(val).replace(/"/g, "&quot;")})" aria-pressed="${on}" class="filter-chip ${on ? (color ? "bg-cb-ink text-white border-cb-ink" : "bg-cb-bordo text-white border-cb-bordo") : "bg-white text-stone-600 border-stone-200 hover:border-stone-300"}">${color ? `<span class="inline-block w-[9px] h-[9px] rounded-full" style="background:${color}"></span>` : ""}${esc(label)}</button>`;
+  document.getElementById("store-chips").innerHTML = (vs.length > 1 ? chip("", isBoard() ? "Todas as lojas" : "Todas as minhas lojas", !S.view.store) : "") + vs.map(st => chip(st, shortStore(st).replace(" Shopping", ""), st === S.view.store || vs.length === 1, SC[st] || "#78716c")).join("");
   const ul = document.getElementById("user-label"); if (ul) ul.textContent = isBoard() ? "Administração · todas as lojas" : `Gerente · ${vs.map(shortStore).join(", ")}`;
 }
 function setMonth(m) { S.view.month = m; save(); render(); }
-function setStore(s) { S.view.store = s; save(); render(); }
+function setStore(s) { S.view.store = s; save(); renderSelectors(); render(); }
 function go(tab) { if (IMP_MODAL) { IMP_MODAL = null; closeSheet(); tab = "home"; } S.view.tab = tab; save(); render(); window.scrollTo({ top: 0 }); }
 function render() {
   if (!navItems().some(n => n.id === S.view.tab)) S.view.tab = "home";
