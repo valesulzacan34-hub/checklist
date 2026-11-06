@@ -592,8 +592,10 @@ const S = { st: new Set(), from: DAYS[0], to: DAYS[DAYS.length - 1], dow: -1, sh
 const NAV_KEY = "cv_nav_v1";
 try { const n = JSON.parse(localStorage.getItem(NAV_KEY) || "null"); if (n) { if (n.tab) S.tab = n.tab; if (Array.isArray(n.st)) S.st = new Set(n.st.filter(i => i >= 0 && i < SHORT.length)); if (typeof n.dow === "number") S.dow = n.dow; if (typeof n.shift === "string") S.shift = n.shift; if (n.afLv) S.afLv = n.afLv; if (n.tmGran) S.tmGran = n.tmGran; } } catch (e) {}
 { const hsh = decodeURIComponent((location.hash || "").slice(1)); if (hsh) S.tab = hsh; }
+const MODO = new URLSearchParams(location.search).get("modo") || "";
+if (MODO === "natal") { S.tab = "natal"; try { const t = document.getElementById("tabs"); if (t) t.style.display = "none"; const h = document.querySelector("h1"); if (h) h.textContent = "Natal 2026"; document.title = "Natal 2026 · Casa Bauducco"; } catch (e) { } }
 if (window.__SCOPE) { S.st = new Set([...S.st].filter(i => window.__SCOPE.includes(i))); if (!S.st.size) S.st = new Set(window.__SCOPE); }
-function navSave() { try { localStorage.setItem(NAV_KEY, JSON.stringify({ tab: S.tab, st: [...S.st], dow: S.dow, shift: S.shift, afLv: S.afLv, tmGran: S.tmGran })); } catch (e) {} try { history.replaceState(null, "", "#" + S.tab); } catch (e) {} }
+function navSave() { if (MODO === "natal") return; try { localStorage.setItem(NAV_KEY, JSON.stringify({ tab: S.tab, st: [...S.st], dow: S.dow, shift: S.shift, afLv: S.afLv, tmGran: S.tmGran })); } catch (e) {} try { history.replaceState(null, "", "#" + S.tab); } catch (e) {} }
 // faixas de horário padrão do painel (antes das 10h entra na 1ª faixa; depois das 22h, na última)
 const BANDS = [{ l: "10h às 14h", f: h => h < 14 }, { l: "14h às 16h", f: h => h >= 14 && h < 16 }, { l: "16h às 19h", f: h => h >= 16 && h < 19 }, { l: "19h às 22h", f: h => h >= 19 }];
 const BAND_C = ["#f1d9a7", "#eb9a6f", "#a3313f", "#4A0E17"];
@@ -2386,7 +2388,8 @@ function originCard(ts) {
 
 /* ---------- render ---------- */
 const TABS = [["plano", "Plano de ação", viewPlano], ["geral", "Visão geral", viewGeral], ["horas", "Horários e escala", viewHoras], ["sug", "Venda sugerida", viewSugest], ["mixv", "Mix de vendas", viewMixVendas], ["adic", "Adicionais", viewAdic], ["equipe", "Equipe", viewEquipe], ["promo", "Promoções e descontos", viewPromo], ["canc", "Cancelamentos", viewCanc]];
-if (D.prods.some(p => nkey(p[4]).startsWith("NATAL")) || (window.__NATAL && window.__NATAL.grade)) TABS.splice(TABS.findIndex(t => t[0] === "mixv") + 1, 0, ["natal", (D.prods.find(p => nkey(p[4]).startsWith("NATAL")) || [])[4] || "Natal", viewNatal]);
+// Natal 2026 é um item próprio no menu do app (comportamento.html?modo=natal): mostra só a análise de Natal
+if (MODO === "natal") { TABS.length = 0; TABS.push(["natal", "Natal 2026", viewNatal]); }
 if (window.__CAN) TABS.push(["cfg", "Configurações", viewConfig]);
 function renderFilters() {
   const c = document.getElementById("store-chips");
