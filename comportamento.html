@@ -442,6 +442,11 @@
     // gravação da classificação de produtos (Configurações) no Firebase
     DB = { collection: (c) => ({ doc: (id) => ({ set: (obj) => { if (c === "config" && id === "categorias") return db.doc("comport/categorias").set(toApp({ ...obj, updatedBy: AU.uid || null })); return Promise.reject(new Error("não disponível no app")); } }) }) };
     window.__CVCFG = CFG; window.__CVTREE = TREE; window.__CVDB = DB; window.__CAN = CAN;
+    // fechamento do mês anterior (referência na aba Adicionais): lido só quando a aba é aberta
+    { const pm = (() => { const y = +MONTH.slice(0, 4), m = +MONTH.slice(5, 7) - 1; const d = new Date(y, m - 1, 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; })();
+      window.__CVPREVYM = ml.includes(pm) ? pm : "";
+      window.__CVPREVLOAD = window.__CVPREVYM ? async () => { const q = await db.collection("comport_dias").where("date", ">=", pm + "-01").where("date", "<=", pm + "-31").get();
+        return q.docs.map(d => { const x = d.data(); for (const k of ["p", "t", "i"]) if (typeof x[k] === "string") x[k] = JSON.parse(x[k]); return x; }); } : null; }
     window.__CVD = buildD(docs, CFG); window.__main();
   }
   // primeira vez: classificação de produtos montada no protótipo (arquivo comportamento_categorias.json, sem dados de clientes nem de equipe)
@@ -1330,7 +1335,25 @@ function cancelTypes(ts) {
 
 
 /* ================= ADICIONAIS (CHANTILLY E ACOMPANHAMENTOS DE FATIA) ================= */
-const idsOf = (names) => new Set(D.prods.map((p, i) => names.includes(p[0].toUpperCase()) ? i : -1).filter(i => i >= 0));
+const idsOf = (names) => { const r = new Set(D.prods.map((p, i) => names.includes(p[0].toUpperCase()) ? i : -1).filter(i => i >= 0)); r.names = new Set(names); return r; };
+// fechamento do mês anterior por loja (mesmas contas dos quadros, a partir dos dias importados daquele mês)
+let PREV = null, PREV_ST = "";
+const PREV_LBL = () => { const ym = window.__CVPREVYM || ""; return ym ? ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"][+ym.slice(5, 7) - 1] + "/" + ym.slice(2, 4) : ""; };
+function prevEnsure() {
+  if (PREV || PREV_ST || !window.__CVPREVLOAD) return;
+  PREV_ST = "loading";
+  window.__CVPREVLOAD().then(docs => {
+    const R = { add: {}, up: {} };
+    for (const d of docs) { const P = d.p || [], tk = {};
+      for (const it of d.i || []) { if (it[8]) continue; const o = tk[it[0]] || (tk[it[0]] = { v: 0, items: [] }); o.v += +it[3] || 0; o.items.push([String((P[it[1]] || [])[0] || "").toUpperCase(), +it[2] || 0]); }
+      for (const t of Object.values(tk)) { if (t.v <= 0) continue;
+        for (const c of ADDONS) { let e = 0, a = 0; for (const [n, q] of t.items) { if (c.elig.names.has(n)) e += q; if (c.add.names.has(n)) a += q; } if (!e) continue; const o = ((R.add[c.id] || (R.add[c.id] = {}))[d.s] || (R.add[c.id][d.s] = { e: 0, c: 0 })); o.e += e; o.c += a; }
+        for (const c of UPGRADES) { let b = 0, u = 0; for (const [n, q] of t.items) { if (c.base.names.has(n)) b += q; if (c.up.names.has(n)) u += q; } if (!b && !u) continue; const o = ((R.up[c.id] || (R.up[c.id] = {}))[d.s] || (R.up[c.id][d.s] = { b: 0, u: 0 })); o.b += b; o.u += u; } } }
+    PREV = R; PREV_ST = "ok"; if (S.tab === "adic") rerender();
+  }).catch(() => { PREV_ST = "erro"; if (S.tab === "adic") rerender(); });
+}
+const prevSum = (m, sts, a, b) => { let x = 0, y = 0; for (const s of sts) { const o = (m || {})[s]; if (o) { x += o[a]; y += o[b]; } } return { x, y }; };
+const ppDelta = (cur, prev) => { if (prev == null) return ""; const d = (cur - prev) * 100; return Math.abs(d) < 0.05 ? `<span class="text-stone-500">igual</span>` : `<span class="${d > 0 ? "text-emerald-700" : "text-rose-700"} font-bold">${d > 0 ? "▲" : "▼"} ${nf(Math.abs(d), 1)} p.p.</span>`; };
 const ADDONS = [
   { id: "ch", title: "Chantilly nas bebidas quentes", unit: "bebidas", unit1: "Bebida",
     sub: "Quantos chantillys saem para cada 100 cafés, capuccinos, lattes e chocolates da lista elegível",
@@ -1370,13 +1393,15 @@ function addonCard(ts, cfg) {
   let best = 0, bestS = -1; for (const [s, o] of Object.entries(bs)) if (o.e >= 100 && o.c / o.e > best) { best = o.c / o.e; bestS = +s; }
   const gainBest = sts.reduce((a, s) => a + Math.max(0, best - st[s].c / st[s].e) * st[s].e, 0) * price * f;
   const gainT = Math.max(0, cfg.target * E - C) * price * f;
-  let b = `<div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-    ${kpiCard(`A cada 100 ${cfg.unit}`, pct(rate, 1), `${nf(C)} adicionais em ${nf(E)} ${cfg.unit}`)}
+  const PA = PREV && PREV.add[cfg.id], pS = PA ? prevSum(PA, sts, "c", "e") : null, pRate = pS && pS.y ? pS.x / pS.y : null;
+  const prevKpi = window.__CVPREVYM ? kpiCard(`Fechamento ${PREV_LBL()}`, pRate != null ? pct(pRate, 1) : PREV_ST === "loading" || !PREV_ST ? "…" : "—", pRate != null ? `${ppDelta(rate, pRate)} no mês atual · ${nf(pS.x)} em ${nf(pS.y)} ${cfg.unit}` : PREV_ST === "erro" ? "não foi possível carregar" : "carregando") : "";
+  let b = `<div class="grid grid-cols-2 ${prevKpi ? "lg:grid-cols-5" : "lg:grid-cols-4"} gap-3 mb-4">
+    ${kpiCard(`A cada 100 ${cfg.unit}`, pct(rate, 1), `${nf(C)} adicionais em ${nf(E)} ${cfg.unit}`)}${prevKpi}
     ${kpiCard("Tickets com adicional", pct(tkE ? tkC / tkE : 0, 1), `${nf(tkC)} de ${nf(tkE)} tickets com ${cfg.unit}`)}
     ${kpiCard("Se todas chegarem na melhor loja", `+${brl(gainBest)}/mês`, `referência ${pct(best, 1)}${bestS >= 0 ? ` (${SHORT[bestS]})` : ""} · preço médio ${brl(price)}`)}
     ${kpiCard(`Se chegar a ${pct(cfg.target)}`, `+${brl(gainT)}/mês`, cfg.targetTxt)}
   </div><div class="grid lg:grid-cols-2 gap-4 split">`;
-  b += `<div><p class="text-sm font-extrabold mb-2">Por loja <span class="text-xs font-semibold text-cb-muted">(adicionais a cada 100 ${cfg.unit})</span></p>` + hbars(sts.map(s => ({ label: SHORT[s], color: SCOLOR[s], v: st[s].c / st[s].e, mark: rate, txt: pct(st[s].c / st[s].e, 1), note: `${nf(st[s].c)} em ${nf(st[s].e)} ${cfg.unit}` }))) + `<p class="text-[11px] text-cb-muted mt-2">Marca preta = média do filtro.</p>`;
+  b += `<div><p class="text-sm font-extrabold mb-2">Por loja <span class="text-xs font-semibold text-cb-muted">(adicionais a cada 100 ${cfg.unit})</span></p>` + hbars(sts.map(s => { const po = PA && PA[s], pr2 = po && po.e ? po.c / po.e : null; return { label: SHORT[s], color: SCOLOR[s], v: st[s].c / st[s].e, mark: rate, txt: pct(st[s].c / st[s].e, 1), note: `${nf(st[s].c)} em ${nf(st[s].e)} ${cfg.unit}${pr2 != null ? ` · ${PREV_LBL()}: ${pct(pr2, 1)} ${ppDelta(st[s].c / st[s].e, pr2)}` : ""}` }; })) + `<p class="text-[11px] text-cb-muted mt-2">Marca preta = média do filtro.</p>`;
   if (cfg.add.size > 1) { const ml = Object.entries(mix).sort((a, b) => b[1] - a[1]); const mt = ml.reduce((a, x) => a + x[1], 0) || 1;
     b += `<p class="text-sm font-extrabold mb-2 mt-5">Qual adicional sai</p>` + hbars(ml.map(([id, q]) => ({ label: D.prods[id][0], v: q, txt: `${nf(q)} · ${pct(q / mt)}`, color: "#7a2a35" }))); }
   b += `</div>`;
@@ -1417,13 +1442,16 @@ function upgradeCard(ts, cfg) {
   // por hora
   const hb = {}; for (const t of V) { const o = hb[t.h] || (hb[t.h] = []); o.push(t); }
   const hrs = Object.keys(hb).map(Number).sort((a, b) => a - b).map(h => ({ h, ...agg(hb[h]) })).filter(x => x.n >= 15);
-  let b = `<div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+  const PU = PREV && PREV.up[cfg.id], uS = PU ? prevSum(PU, sts, "u", "b") : null, uN = uS ? uS.x + uS.y : 0, uRate = uN ? uS.x / uN : null;
+  const prevKpiU = window.__CVPREVYM ? kpiCard(`Fechamento ${PREV_LBL()}`, uRate != null ? pct(uRate, 1) : PREV_ST === "loading" || !PREV_ST ? "…" : "—", uRate != null ? `${ppDelta(A.r, uRate)} no mês atual · ${nf(uS.x)} de ${nf(uN)} ${cfg.unitTxt}` : PREV_ST === "erro" ? "não foi possível carregar" : "carregando") : "";
+  let b = `<div class="grid grid-cols-2 ${prevKpiU ? "lg:grid-cols-5" : "lg:grid-cols-4"} gap-3 mb-4">${prevKpiU ? "" : ""}
     ${kpiCard(`Escolhem ${cfg.upName}`, pct(A.r, 1), `${nf(A.u)} de ${nf(A.n)} ${cfg.unitTxt} · 1 a cada ${nf(A.u ? A.n / A.u : 0, 1)}`, `(${cfg.baseName} + ${cfg.upName}) ÷ ${cfg.upName} = ${nf(A.u ? A.n / A.u : 0, 2)}: sai 1 ${cfg.upName} a cada ${nf(A.u ? A.n / A.u : 0, 1)} ${cfg.unitTxt}. Em porcentagem, ${cfg.upName} ÷ total = ${pct(A.r, 1)}.`)}
+${prevKpiU}
     ${kpiCard("Diferença de preço", `+${brl(diff)}`, `${cfg.baseName} ${brl(pb)} · ${cfg.upName} ${brl(pu)}`)}
     ${kpiCard("Se todas chegarem na melhor loja", `+${brl(gainBest)}/mês`, `referência ${pct(best, 1)}${bestS >= 0 ? ` (${SHORT[bestS]})` : ""}`)}
     ${kpiCard(`Se chegar a ${pct(cfg.target)}`, `+${brl(gainT)}/mês`, cfg.targetTxt)}
   </div><div class="grid lg:grid-cols-2 gap-4 split"><div><p class="text-sm font-extrabold mb-2">Por loja <span class="text-xs font-semibold text-cb-muted">(% que leva ${cfg.upName})</span></p>`
-    + hbars(sts.filter(s => per[s].n).map(s => ({ label: SHORT[s], color: SCOLOR[s], v: per[s].r, mark: A.r, txt: `${pct(per[s].r, 1)} · 1 a cada ${nf(per[s].u ? per[s].n / per[s].u : 0, 1)}`, note: `${nf(per[s].u)} ${cfg.upName} · ${nf(per[s].b)} ${cfg.baseName}` }))) + `<p class="text-[11px] text-cb-muted mt-2">Marca preta = média do filtro.</p></div>`;
+    + hbars(sts.filter(s => per[s].n).map(s => ({ label: SHORT[s], color: SCOLOR[s], v: per[s].r, mark: A.r, txt: `${pct(per[s].r, 1)} · 1 a cada ${nf(per[s].u ? per[s].n / per[s].u : 0, 1)}`, note: `${nf(per[s].u)} ${cfg.upName} · ${nf(per[s].b)} ${cfg.baseName}${PU && PU[s] && (PU[s].u + PU[s].b) ? ` · ${PREV_LBL()}: ${pct(PU[s].u / (PU[s].u + PU[s].b), 1)} ${ppDelta(per[s].r, PU[s].u / (PU[s].u + PU[s].b))}` : ""}` }))) + `<p class="text-[11px] text-cb-muted mt-2">Marca preta = média do filtro.</p></div>`;
   b += `<div><p class="text-sm font-extrabold mb-2">Por horário <span class="text-xs font-semibold text-cb-muted">(horas com 15+ ${cfg.unitTxt})</span></p>` + hbars(hrs.map(x => ({ label: x.h + "h", v: x.r, mark: A.r, txt: pct(x.r, 1), color: "#7a4a2f", note: `${nf(x.u)} de ${nf(x.n)}` }))) + `</div></div>`;
   const by = {}; for (const t of V) (by[t.a] = by[t.a] || []).push(t);
   const al = Object.entries(by).map(([a, l]) => ({ name: ATT[a].name, s: ATT[a].s, ...agg(l) })).filter(x => x.n >= 30 && x.name.toUpperCase() !== "SISTEMA");
@@ -1438,7 +1466,8 @@ function upgradeCard(ts, cfg) {
 }
 
 function viewAdic(ts) {
-  return `<div class="card p-4 mb-4 text-sm leading-relaxed bg-cb-cream"><b>Adicionais</b> são a venda mais barata de fazer: o cliente já decidiu pela bebida ou pela fatia, basta oferecer. Somam direto no ticket médio. Nos adicionais, a taxa é <b>adicionais vendidos ÷ itens elegíveis vendidos</b>. No fim da página, o <b>upgrade</b> mede quantos clientes escolhem a versão maior quando há duas opções.</div>` + ADDONS.map(c => addonCard(ts, c)).join("") + UPGRADES.map(c => upgradeCard(ts, c)).join("");
+  prevEnsure();
+  return `<div class="card p-4 mb-4 text-sm leading-relaxed bg-cb-cream"><b>Adicionais</b> são a venda mais barata de fazer: o cliente já decidiu pela bebida ou pela fatia, basta oferecer. Somam direto no ticket médio. Nos adicionais, a taxa é <b>adicionais vendidos ÷ itens elegíveis vendidos</b>. No fim da página, o <b>upgrade</b> mede quantos clientes escolhem a versão maior quando há duas opções.${window.__CVPREVYM ? ` O quadro <b>Fechamento ${PREV_LBL()}</b> mostra como a loja fechou o mês anterior, com a variação do mês atual em pontos percentuais (p.p.).` : ""}</div>` + ADDONS.map(c => addonCard(ts, c)).join("") + UPGRADES.map(c => upgradeCard(ts, c)).join("");
 }
 
 
