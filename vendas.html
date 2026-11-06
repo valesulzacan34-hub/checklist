@@ -251,10 +251,9 @@ function shortStore(s) { return s.replace(/^(SP - )?CB /i, ""); }
    Dados de exemplo
    ========================================================= */
 const STORES = ["CB Aricanduva", "CB Center Vale", "CB Jardim Oriente Shopping", "CB Mogi", "CB Vale Sul", "CB Colinas"];
-// Lojas sem metas e sem NPS: aparecem só em vendas e fidelização, fora das somas de meta da rede
-const NO_GOAL = new Set(["CB Colinas"]);
-function goalScope(ss) { const g = ss.filter(s => !NO_GOAL.has(s)); return g.length ? g : ss; }
-function npsScope(ss) { return ss.filter(s => !NO_GOAL.has(s)); }
+// Lojas sem pesquisa NPS: sem meta de NPS e fora das telas e indicadores de NPS (as demais metas valem)
+const NO_NPS = new Set(["CB Colinas"]);
+function npsScope(ss) { return ss.filter(s => !NO_NPS.has(s)); }
 const STORAGE_KEY = "cb-vendas-prototipo-v10";
 // Metas de setembro/2026 (PDFs META_*_09_26): diárias, semanais com níveis e prêmios semanais.
 const SEED_PLANS = {};
@@ -714,7 +713,6 @@ async function startApp() {
 function tmGoalOf(ym, store) { return S.tmGoals?.[ym]?.[store] || null; }
 // Meta de TM de várias lojas: média ponderada pela meta de faturamento (só se todas tiverem).
 function tmGoalFor(ym, stores) {
-  stores = goalScope(stores);
   if (stores.length === 1) return tmGoalOf(ym, stores[0]);
   if (!stores.every(st => tmGoalOf(ym, st))) return null;
   const g = stores.reduce((a, st) => a + (S.goals[ym]?.[st] || 0), 0);
@@ -776,7 +774,6 @@ function tierChip(level) {
 }
 // Níveis do mês somados para as lojas (só quando todas têm plano).
 function monthTiers(ym, stores) {
-  stores = goalScope(stores);
   const ps = stores.map(s => planOf(ym, s));
   if (ps.some(p => !p)) return null;
   const tot = k => ps.every(p => p.month[k]) ? ps.reduce((n, p) => n + p.month[k], 0) : null;
@@ -785,7 +782,6 @@ function monthTiers(ym, stores) {
 
 // Resumo do mês para um conjunto de lojas
 function monthStats(ym, stores = selStores(), uptoDay = null) {
-  stores = goalScope(stores);
   const dim = daysInMonth(ym);
   const last = uptoDay ?? lastDataDay(ym);
   let v = 0, t = 0, wDone = 0, wAll = 0;
@@ -970,7 +966,6 @@ function openMoreSheet() {
    ========================================================= */
 function storeLastDay(ym, stores) { let last = 0; for (let d = 1; d <= daysInMonth(ym); d++) if (dayTotal(dateOf(ym, d), stores)) last = d; return last; }
 function simpleStats(ym, stores) {
-  stores = goalScope(stores);
   const st = monthStats(ym, stores, storeLastDay(ym, stores));
   const expected = st.goal * st.expectedShare;
   const last = st.last;
@@ -1018,7 +1013,6 @@ function simpleBar(x, color) {
 
 // Prêmios por nível de meta (cada loja tem os seus valores; vale só o maior nível atingido na semana)
 function prizesCard(ym, stores) {
-  stores = goalScope(stores);
   const rows = stores.map(s => ({ s, p: planOf(ym, s) })).filter(r => r.p?.prizes && r.p?.weeks?.length);
   if (!rows.length) return "";
   const weeks = monthWeeks(ym), dim = daysInMonth(ym), td = todayDayOf(ym);
@@ -1067,7 +1061,6 @@ function prizesCard(ym, stores) {
   </div>`;
 }
 function weekTierGoals(ym, stores, wi) {
-  stores = goalScope(stores);
   const ps = stores.map(st => planOf(ym, st));
   if (ps.some(p => !p?.weeks?.[wi])) return null;
   const sum = k => ps.every(p => p.weeks[wi][k]) ? ps.reduce((a, p) => a + p.weeks[wi][k], 0) : null;
@@ -1133,7 +1126,6 @@ function weekSummary(ym, stores, wi, wk, prevWk, tmG) {
 }
 
 function dailyGoalTable(ym, stores, title = "Meta diária") {
-  stores = goalScope(stores);
   const weeks = monthWeeks(ym), dim = daysInMonth(ym);
   const todayIso = TODAY_ISO;
   const tmG = tmGoalFor(ym, stores);
@@ -1219,7 +1211,6 @@ function selWeekIdx(ym) { const w = S.view.weekSel; const n = monthWeeks(ym).len
 function setWeekSel(i) { S.view.weekSel = { ym: S.view.month, i }; save(); renderHome(); }
 
 function weekStats(ym, stores, wi) {
-  stores = goalScope(stores);
   const weeks = monthWeeks(ym), dim = daysInMonth(ym), w = weeks[wi], to = Math.min(w.to, dim);
   const td = todayDayOf(ym);
   let g = 0, v = 0, t = 0, gDone = 0, n = 0, last = 0;
@@ -1481,7 +1472,6 @@ function setDash(k, v) {
 }
 
 function dashData(from, to, stores) {
-  stores = goalScope(stores);
   const last = lastSaleDate(stores);
   const rows = [];
   const by = Object.fromEntries(stores.map(s => [s, { s, g: 0, gDone: 0, v: 0, t: 0, n: 0, tmW: 0 }]));
@@ -1816,14 +1806,14 @@ function supData(X, from, to) {
     const b = X.by[s], att = b.gDone ? b.v / b.gDone : null, tm = b.t ? b.v / b.t : null, tmG = b.tmG;
     const tcNeed = tmG ? b.gDone / tmG : null;
     const effTC = tmG && b.t ? (b.t - tcNeed) * tmG : null, effTM = tmG && b.t ? (tm - tmG) * b.t : null;
-    const l = loy?.[s], fid = l?.vendas ? l.fid / l.vendas : null, fidG = fidGoalOf(s) == null ? null : fidGoalOf(s) / 100;
+    const l = loy?.[s], fid = l?.vendas ? l.fid / l.vendas : null, fidG = fidGoalOf(s) / 100;
     const nc = npsCalc(npsList.filter(x => x.s === s));
     const cr = cnt?.rows.find(r => r.s === s);
     const tr = supTrend([s], X.last > to ? to : X.last);
     const yb = X.yoy?.by?.[s], yoy = yb?.lv ? yb.v / yb.lv - 1 : null;
     return { s, b, yoy, att, proj: b.g ? b.proj / b.g : null, tm, tmG, tcNeed, tcRatio: tcNeed ? b.t / tcNeed : null, tmRatio: tmG && tm ? tm / tmG : null, effTC, effTM,
-      fid, fidG, fidNeed: l?.vendas && fidG != null ? Math.max(0, Math.ceil(fidG * l.vendas - l.fid)) : null,
-      nps: nc.n ? nc.nps : null, npsN: nc.n, npsG: NO_GOAL.has(s) ? null : npsScoreGoal(s), cnt: cr ? cr.n : null, cntG: cr ? cr.g : null, cntProj: cr && cnt.remaining ? cr.proj : cr?.n, cntRem: cnt?.remaining, tr };
+      fid, fidG, fidNeed: l?.vendas ? Math.max(0, Math.ceil(fidG * l.vendas - l.fid)) : null,
+      nps: nc.n ? nc.nps : null, npsN: nc.n, npsG: NO_NPS.has(s) ? null : npsScoreGoal(s), cnt: cr ? cr.n : null, cntG: cr && !NO_NPS.has(s) ? cr.g : null, cntProj: cr && cnt.remaining ? cr.proj : cr?.n, cntRem: cnt?.remaining, tr };
   });
   const dowRank = X.dow.filter(d => d.n && d.g).map(d => ({ ...d, p: d.v / d.g })).sort((a, b) => a.p - b.p);
   return { rows, dowRank, trend: supTrend(stores, X.last > to ? to : X.last) };
@@ -1882,7 +1872,7 @@ function supInsights(X, SD) {
   if (wd && wd.p < 0.95) mk("warn", `${WDF[wd.i]} é o dia mais fraco: ${pct(wd.p)} da meta`, `Média de ${money(wd.v / wd.n)} vendidos contra ${money(wd.g / wd.n)} de meta nesse dia da semana.`,
     `Planejar ação específica para ${WDF[wd.i].toLowerCase()} (promoção do dia, degustação, reforço de escala no pico).`, 45);
   // 5) fidelização
-  const fidLow = SD.rows.filter(r => r.fid != null && r.fidG != null && r.fid < r.fidG).sort((a, b) => a.fid - b.fid)[0];
+  const fidLow = SD.rows.filter(r => r.fid != null && r.fid < r.fidG).sort((a, b) => a.fid - b.fid)[0];
   if (fidLow) mk(fidLow.fid < fidLow.fidG - 0.15 ? "crit" : "warn", `Fidelização baixa em ${shortStore(fidLow.s)}: ${pct(fidLow.fid, 1)} (meta ${pct(fidLow.fidG)})`,
     `Faltam ${intf(fidLow.fidNeed)} vendas identificadas no programa no período.`, "Pedir CPF em toda venda, explicar o cashback no caixa e acompanhar a conversão por atendente.", 50);
   // 6) NPS e avaliações
@@ -1915,7 +1905,7 @@ function supInsightsHtml(list) {
 
 function supScorecard(SD) {
   const cell = (ok, warn, main, sub, na) => na ? `<td class="px-2 py-2 text-center text-stone-300">—</td>` : `<td class="px-1.5 py-1.5"><div class="rounded-lg px-2 py-1.5 text-center ${ok ? "bg-emerald-50 text-emerald-900" : warn ? "bg-amber-50 text-amber-900" : "bg-rose-50 text-rose-800"}"><p class="font-extrabold tabular text-[13px] leading-tight">${main}</p>${sub ? `<p class="text-[10.5px] opacity-80 tabular leading-tight">${sub}</p>` : ""}</div></td>`;
-  const score = r => { const k = [r.att != null && r.att >= 1, r.tmRatio != null && r.tmRatio >= 1, r.tcRatio != null && r.tcRatio >= 1, r.fid != null && r.fidG != null && r.fid >= r.fidG, r.nps != null && r.nps >= r.npsG, r.cntG && r.cntProj >= r.cntG]; const valid = [r.att, r.tmRatio, r.tcRatio, r.fid, r.nps, r.cntG].filter(v => v != null).length; return { ok: k.filter(Boolean).length, valid }; };
+  const score = r => { const k = [r.att != null && r.att >= 1, r.tmRatio != null && r.tmRatio >= 1, r.tcRatio != null && r.tcRatio >= 1, r.fid != null && r.fid >= r.fidG, r.nps != null && r.nps >= r.npsG, r.cntG && r.cntProj >= r.cntG]; const valid = [r.att, r.tmRatio, r.tcRatio, r.fid, r.nps, r.cntG].filter(v => v != null).length; return { ok: k.filter(Boolean).length, valid }; };
   const rows = SD.rows.slice().sort((a, b) => score(b).ok - score(a).ok || (b.att ?? 0) - (a.att ?? 0));
   const tr = d => d == null ? "" : `<span class="${d >= 0 ? "text-emerald-700" : "text-rose-700"} font-bold">${d >= 0 ? "▲" : "▼"}${pct(Math.abs(d))}</span>`;
   return `<div class="card border border-cb-line overflow-hidden">
@@ -1931,7 +1921,7 @@ function supScorecard(SD) {
           ${cell(r.proj >= 1, r.proj >= 0.95, pct(r.proj ?? 0), moneyK(r.b.proj), r.proj == null)}
           ${cell(r.tcRatio >= 1, r.tcRatio >= 0.95, pct(r.tcRatio ?? 0), `${intf(r.b.t)} de ${intf(r.tcNeed ?? 0)}`, r.tcRatio == null)}
           ${cell(r.tmRatio >= 1, r.tmRatio >= 0.95, r.tm ? money2(r.tm) : "—", r.tmG ? `meta ${money2(r.tmG)}` : "", r.tmRatio == null)}
-          ${cell(r.fidG == null || r.fid >= r.fidG, r.fidG == null || r.fid >= r.fidG - 0.05, pct(r.fid ?? 0, 1), r.fidG == null ? "sem meta" : `meta ${pct(r.fidG)}`, r.fid == null)}
+          ${cell(r.fid >= r.fidG, r.fid >= r.fidG - 0.05, pct(r.fid ?? 0, 1), `meta ${pct(r.fidG)}`, r.fid == null)}
           ${cell(r.nps >= r.npsG, r.nps >= r.npsG - 5, npsNum(r.nps), `meta ${r.npsG}`, r.nps == null)}
           ${cell(r.cntProj >= r.cntG, r.cntProj >= r.cntG * 0.95, intf(Math.round(r.cntProj ?? 0)), `meta ${intf(Math.round(r.cntG ?? 0))}`, !r.cntG)}
           ${cell(r.yoy >= 0.05, r.yoy >= 0, r.yoy != null ? `${r.yoy >= 0 ? "+" : ""}${pct(r.yoy, 1)}` : "—", "", r.yoy == null)}
@@ -2200,9 +2190,8 @@ function drawDashCharts() {
 // ======================= FIDELIZAÇÃO E CASHBACK =======================
 const LOY_SIGLAS = { BSHAR: "CB Aricanduva", BSHCV: "CB Center Vale", BJORI: "CB Jardim Oriente Shopping", BSMOG: "CB Mogi", BSHVS: "CB Vale Sul", BSHCO: "CB Colinas" };
 const LOY_FIELDS = ["acum", "exp", "resg", "est", "saldo", "vendas", "fid"];
-function fidGoalOf(st) { if (NO_GOAL.has(st)) return null; const g = S.fidGoals?.stores?.[st]; return g != null ? g : (S.fidGoals?.default ?? 50); }
+function fidGoalOf(st) { const g = S.fidGoals?.stores?.[st]; return g != null ? g : (S.fidGoals?.default ?? 50); }
 function fidGoalFor(stores, by) {
-  stores = stores.filter(s => !NO_GOAL.has(s)); if (!stores.length) return null;
   const tv = stores.reduce((a, s) => a + (by?.[s]?.vendas || 0), 0);
   if (!tv) return stores.reduce((a, s) => a + fidGoalOf(s), 0) / stores.length;
   return stores.reduce((a, s) => a + fidGoalOf(s) * (by[s]?.vendas || 0), 0) / tv;
@@ -2312,21 +2301,20 @@ function loyWeeks(buckets, stores) {
 
 
 function chartFidDaily(W, days, goal) {
-  const noGoal = goal == null; if (noGoal) goal = 0;
   const H = 230, m = { l: 44, r: 14, t: 16, b: 30 }, h = H - m.t - m.b, w = W - m.l - m.r, n = days.length, band = w / n, bw = Math.max(4, Math.min(30, band * 0.62));
   const max = Math.min(1, Math.ceil(Math.max(...days.map(d => d.p), goal) * 1.12 * 10) / 10), y = v => m.t + h - h * v / max;
   let s = "";
   for (let i = 0; i <= Math.round(max * 10); i++) { const v = i / 10, yy = y(v); s += `<line x1="${m.l}" x2="${W - m.r}" y1="${yy}" y2="${yy}" stroke="${i ? GRID : "#a8a29e"}" ${i ? 'stroke-dasharray="2 3"' : ""}/><text x="${m.l - 8}" y="${yy + 4}" text-anchor="end" class="ax">${Math.round(v * 100)}%</text>`; }
   days.forEach((d, i) => {
-    const cx = m.l + band * i + band / 2, ok = noGoal || d.p >= goal;
+    const cx = m.l + band * i + band / 2, ok = d.p >= goal;
     s += `<path d="${roundTop(cx - bw / 2, y(d.p), bw, y(0) - y(d.p), 4)}" fill="${ok ? "#16855f" : BORDO}"/>`;
     if (n <= 16) s += `<text x="${cx}" y="${y(d.p) - 6}" text-anchor="middle" class="ax" style="font-size:10px;font-weight:700;paint-order:stroke;stroke:#fff;stroke-width:3px">${Math.round(d.p * 100)}</text>`;
     const wd = new Date(d.date + "T12:00:00").getDay();
     s += `<text x="${cx}" y="${H - m.b + 15}" text-anchor="middle" class="ax ${wd === 0 || wd === 6 ? "wk" : ""}">${Number(d.date.slice(8))}</text><text x="${cx}" y="${H - m.b + 26}" text-anchor="middle" class="ax2">${WD[wd]}</text>`;
-    const tip = `<p class="text-[11px] text-stone-400 mb-1">${WD[wd]}, ${ddmm(d.date)}</p>` + tipRow(null, "% fidelizadas", pct(d.p, 1)) + (noGoal ? "" : tipRow("#fff", "Meta", pct(goal), true)) + tipRow(null, "Fidelizadas", `${intf(d.fid)} de ${intf(d.vendas)}`) + tipRow(null, "Cashback acumulado", money2(d.acum)) + tipRow(null, "Resgatado", money2(d.resg));
+    const tip = `<p class="text-[11px] text-stone-400 mb-1">${WD[wd]}, ${ddmm(d.date)}</p>` + tipRow(null, "% fidelizadas", pct(d.p, 1)) + tipRow("#fff", "Meta", pct(goal), true) + tipRow(null, "Fidelizadas", `${intf(d.fid)} de ${intf(d.vendas)}`) + tipRow(null, "Cashback acumulado", money2(d.acum)) + tipRow(null, "Resgatado", money2(d.resg));
     s += `<rect class="hit" x="${m.l + band * i}" y="${m.t}" width="${band}" height="${h}" data-tip="${tipId(tip)}"/>`;
   });
-  if (!noGoal) s += `<line x1="${m.l}" x2="${W - m.r}" y1="${y(goal)}" y2="${y(goal)}" stroke="${INK}" stroke-width="2" stroke-dasharray="5 3"/>`;
+  s += `<line x1="${m.l}" x2="${W - m.r}" y1="${y(goal)}" y2="${y(goal)}" stroke="${INK}" stroke-width="2" stroke-dasharray="5 3"/>`;
   return `<svg width="${W}" height="${H}" role="img" aria-label="% de vendas fidelizadas por dia">${s}</svg>`;
 }
 let FID_DAYS = null;
@@ -2346,14 +2334,14 @@ function loyaltySection(from, to, stores) {
 
   const { tot: T, by } = loySum(inRange, stores);
   const cov = `${ddmm(inRange[0].from)} a ${ddmm(inRange[inRange.length - 1].to)}`;
-  const goalRaw = fidGoalFor(stores, by), goal = goalRaw == null ? null : goalRaw / 100, p = T.vendas ? T.fid / T.vendas : 0;
-  const needFid = goal == null ? 0 : Math.max(0, Math.ceil(goal * T.vendas - T.fid));
+  const goal = fidGoalFor(stores, by) / 100, p = T.vendas ? T.fid / T.vendas : 0;
+  const needFid = Math.max(0, Math.ceil(goal * T.vendas - T.fid));
   const weeks = loyWeeks(inRange, stores).filter(w => w.label !== "Período");
   FID_DAYS = { goal, days: inRange.filter(b => b.from === b.to).map(b => { const t = loySum([b], stores).tot; return { date: b.from, ...t, p: t.vendas ? t.fid / t.vendas : 0 }; }).filter(d => d.vendas) };
-  const st = v => goal == null ? { c: "#78716C", t: "text-stone-700", chip: "bg-stone-100 text-stone-600", l: "Sem meta" } : v >= goal ? { c: "#16855f", t: "text-emerald-700", chip: "bg-emerald-100 text-emerald-800", l: "Na meta" } : v >= goal - 0.05 ? { c: "#d97706", t: "text-amber-700", chip: "bg-amber-100 text-amber-900", l: "Perto da meta" } : { c: "#be123c", t: "text-rose-700", chip: "bg-rose-100 text-rose-700", l: "Abaixo da meta" };
+  const st = v => v >= goal ? { c: "#16855f", t: "text-emerald-700", chip: "bg-emerald-100 text-emerald-800", l: "Na meta" } : v >= goal - 0.05 ? { c: "#d97706", t: "text-amber-700", chip: "bg-amber-100 text-amber-900", l: "Perto da meta" } : { c: "#be123c", t: "text-rose-700", chip: "bg-rose-100 text-rose-700", l: "Abaixo da meta" };
   const S0 = st(p);
   const pp = (a, b) => { const d = (a - b) * 100; return `<span class="inline-flex items-center gap-0.5 font-bold ${d >= 0 ? "text-emerald-700" : "text-rose-700"}">${d >= 0 ? "▲" : "▼"} ${Math.abs(d).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} p.p.</span>`; };
-  const meter = (v, g, color, h = "h-3") => `<div class="relative ${h} rounded-full bg-stone-200/80"><div class="absolute inset-y-0 left-0 rounded-full" style="width:${Math.min(100, v * 100)}%;background:${color}"></div>${g == null ? "" : `<div class="absolute -top-1.5 -bottom-1.5 w-[3px] rounded bg-cb-ink" style="left:calc(${g * 100}% - 1.5px)" title="Meta"></div>`}</div>`;
+  const meter = (v, g, color, h = "h-3") => `<div class="relative ${h} rounded-full bg-stone-200/80"><div class="absolute inset-y-0 left-0 rounded-full" style="width:${Math.min(100, v * 100)}%;background:${color}"></div><div class="absolute -top-1.5 -bottom-1.5 w-[3px] rounded bg-cb-ink" style="left:calc(${g * 100}% - 1.5px)" title="Meta"></div></div>`;
   const lastW = weeks[weeks.length - 1], prevW = weeks[weeks.length - 2];
   const wp = (w, s) => { const x = s ? w.by[s] : w.tot; return x?.vendas ? x.fid / x.vendas : null; };
 
@@ -2368,7 +2356,7 @@ function loyaltySection(from, to, stores) {
       </div>
       <div class="text-right">
         <p class="text-[11px] font-bold uppercase tracking-wider text-stone-500">Meta</p>
-        <p class="text-3xl font-extrabold tabular">${goal == null ? "—" : pct(goal)}</p>
+        <p class="text-3xl font-extrabold tabular">${pct(goal)}</p>
         ${prevW && lastW ? `<p class="text-[12px] text-stone-500 mt-1">Semana ${weeks.length} vs anterior: ${pp(wp(lastW), wp(prevW))}</p>` : ""}
       </div>
     </div>
@@ -2376,24 +2364,24 @@ function loyaltySection(from, to, stores) {
     <div class="mt-4 grid sm:grid-cols-2 gap-3">
       <div class="rounded-xl bg-stone-50 border border-stone-200 p-3.5 flex items-center gap-3">
         <div class="flex gap-1 shrink-0" aria-hidden="true">${Array.from({ length: 10 }, (_, i) => `<i class="w-2.5 h-6 rounded-sm ${i < outOf10 ? "" : "bg-stone-200"}" style="${i < outOf10 ? `background:${S0.c}` : ""}"></i>`).join("")}</div>
-        <p class="text-[13px] text-stone-700">De cada <b>10 vendas</b>, <b>${outOf10}</b> são fidelizadas.${goal == null ? "" : ` A meta é <b>${Math.round(goal * 10)}</b>.`}</p>
+        <p class="text-[13px] text-stone-700">De cada <b>10 vendas</b>, <b>${outOf10}</b> são fidelizadas. A meta é <b>${Math.round(goal * 10)}</b>.</p>
       </div>
       <div class="rounded-xl p-3.5 ${needFid ? "bg-cb-bordo text-white" : "bg-emerald-50 border border-emerald-200 text-emerald-900"}">
-        ${needFid ? `<p class="text-[11px] font-bold uppercase tracking-wider opacity-80">Para chegar na meta</p><p class="text-xl font-extrabold tabular">+${intf(needFid)} vendas fidelizadas</p><p class="text-xs opacity-90">no mesmo número de vendas do período</p>` : goal == null ? `<p class="font-extrabold">Loja sem meta de fidelização</p>` : `<p class="font-extrabold">✓ Meta de fidelização atingida no período</p>`}
+        ${needFid ? `<p class="text-[11px] font-bold uppercase tracking-wider opacity-80">Para chegar na meta</p><p class="text-xl font-extrabold tabular">+${intf(needFid)} vendas fidelizadas</p><p class="text-xs opacity-90">no mesmo número de vendas do período</p>` : `<p class="font-extrabold">✓ Meta de fidelização atingida no período</p>`}
       </div>
     </div>
   </div>`;
 
   // 2) lojas
-  const list = stores.map(s => ({ s, ...by[s], p: by[s].vendas ? by[s].fid / by[s].vendas : 0, g: fidGoalOf(s) == null ? null : fidGoalOf(s) / 100 })).filter(x => x.vendas).sort((a, b) => b.p - a.p);
+  const list = stores.map(s => ({ s, ...by[s], p: by[s].vendas ? by[s].fid / by[s].vendas : 0, g: fidGoalOf(s) / 100 })).filter(x => x.vendas).sort((a, b) => b.p - a.p);
   const storeCards = stores.length > 1 ? `<div class="card border border-cb-line p-4 md:p-5">
     <div class="mb-3"><h2 class="font-extrabold text-[16px]">Lojas</h2><p class="text-[12px] text-stone-500">Da melhor para a pior · traço preto = meta</p></div>
-    <div class="divide-y divide-stone-100">${list.map((x, i) => { const s2 = x.g == null ? { c: "#78716C", t: "text-stone-700" } : st(x.p), need = x.g == null ? 0 : Math.max(0, Math.ceil(x.g * x.vendas - x.fid)); const a = lastW && prevW ? wp(lastW, x.s) : null, b = prevW ? wp(prevW, x.s) : null;
+    <div class="divide-y divide-stone-100">${list.map((x, i) => { const s2 = st(x.p), need = Math.max(0, Math.ceil(x.g * x.vendas - x.fid)); const a = lastW && prevW ? wp(lastW, x.s) : null, b = prevW ? wp(prevW, x.s) : null;
       return `<div class="py-3 grid grid-cols-[1.75rem_minmax(0,1fr)_auto] sm:grid-cols-[1.75rem_14rem_1fr_13rem] items-center gap-3">
         <span class="w-7 h-7 rounded-full bg-stone-100 text-stone-600 text-[12px] font-extrabold flex items-center justify-center">${i + 1}</span>
         <div class="min-w-0"><p class="font-extrabold text-[14px] truncate flex items-center gap-1.5"><i class="w-2.5 h-2.5 rounded-sm shrink-0" style="background:${storeColor(x.s)}"></i>${esc(shortStore(x.s))}</p><p class="text-[11px] text-stone-500 tabular">${intf(x.fid)} de ${intf(x.vendas)} vendas</p></div>
         <div class="hidden sm:block">${meter(x.p, x.g, s2.c)}</div>
-        <div class="text-right"><p class="text-xl font-extrabold tabular ${s2.t}">${pct(x.p, 1)}</p><p class="text-[11px] text-stone-500">${need ? `faltam <b class="text-rose-700">${intf(need)}</b> vendas` : x.g == null ? "sem meta" : `<b class="text-emerald-700">✓ na meta</b>`}${a != null && b != null ? ` · ${pp(a, b)}` : ""}</p></div>
+        <div class="text-right"><p class="text-xl font-extrabold tabular ${s2.t}">${pct(x.p, 1)}</p><p class="text-[11px] text-stone-500">${need ? `faltam <b class="text-rose-700">${intf(need)}</b> vendas` : `<b class="text-emerald-700">✓ na meta</b>`}${a != null && b != null ? ` · ${pp(a, b)}` : ""}</p></div>
         <div class="sm:hidden col-span-3">${meter(x.p, x.g, s2.c, "h-2")}</div>
       </div>`; }).join("")}</div>
     ${prevW ? `<p class="text-[11px] text-stone-500 mt-2">A seta compara a Semana ${weeks.length} com a Semana ${weeks.length - 1}.</p>` : ""}
@@ -2414,7 +2402,7 @@ function loyaltySection(from, to, stores) {
 
   // 4) por dia
   const daily = FID_DAYS.days.length > 1 ? `<div class="card border border-cb-line p-4 md:p-5">
-    <div class="mb-3 flex items-start justify-between gap-3 flex-wrap"><div><h2 class="font-extrabold text-[16px]">Dia a dia</h2><p class="text-[12px] text-stone-500">${goal == null ? `${FID_DAYS.days.length} dia(s)` : `${FID_DAYS.days.filter(d => d.p >= goal).length} de ${FID_DAYS.days.length} dia(s) bateram a meta`} · passe o mouse para ver os números</p></div>
+    <div class="mb-3 flex items-start justify-between gap-3 flex-wrap"><div><h2 class="font-extrabold text-[16px]">Dia a dia</h2><p class="text-[12px] text-stone-500">${FID_DAYS.days.filter(d => d.p >= goal).length} de ${FID_DAYS.days.length} dia(s) bateram a meta · passe o mouse para ver os números</p></div>
       <div class="flex items-center gap-3 text-[12px] text-stone-600"><span class="inline-flex items-center gap-1.5"><i class="w-2.5 h-2.5 rounded-sm" style="background:#16855f"></i>Bateu</span><span class="inline-flex items-center gap-1.5"><i class="w-2.5 h-2.5 rounded-sm" style="background:${BORDO}"></i>Não bateu</span><span class="inline-flex items-center gap-1.5"><svg width="18" height="4"><line x1="0" x2="18" y1="2" y2="2" stroke="${INK}" stroke-width="2" stroke-dasharray="5 3"/></svg>Meta ${pct(goal)}</span></div></div>
     <div data-chart="fid"></div>
   </div>` : "";
@@ -2435,12 +2423,12 @@ function loyaltySection(from, to, stores) {
   </div>`;
 
   // 6) detalhes (tabela)
-  const sRow = (name, x, color, g, bold) => { const pv = x.vendas ? x.fid / x.vendas : 0, need = g == null ? 0 : Math.max(0, Math.ceil(g * x.vendas - x.fid));
+  const sRow = (name, x, color, g, bold) => { const pv = x.vendas ? x.fid / x.vendas : 0, need = Math.max(0, Math.ceil(g * x.vendas - x.fid));
     return `<tr class="${bold ? "font-extrabold bg-stone-50 border-t-2 border-stone-200" : "border-t border-stone-100"}">
       <td class="py-2.5 pl-4 pr-2 whitespace-nowrap">${color ? `<span class="inline-block w-2.5 h-2.5 rounded-sm mr-2 align-middle" style="background:${color}"></span>` : ""}${esc(name)}</td>
       <td class="px-2 text-right tabular">${intf(x.vendas)}</td><td class="px-2 text-right tabular">${intf(x.fid)}</td>
-      <td class="px-2 text-right tabular font-bold ${st(pv).t}">${pct(pv, 1)}</td><td class="px-2 text-right tabular text-stone-500">${g == null ? "—" : pct(g)}</td>
-      <td class="px-2 text-right tabular">${g == null ? "—" : need ? `+${intf(need)}` : "✓"}</td>
+      <td class="px-2 text-right tabular font-bold ${st(pv).t}">${pct(pv, 1)}</td><td class="px-2 text-right tabular text-stone-500">${pct(g)}</td>
+      <td class="px-2 text-right tabular">${need ? `+${intf(need)}` : "✓"}</td>
       <td class="px-2 text-right tabular">${money2(x.acum)}</td><td class="px-2 text-right tabular">${money2(x.resg)}</td><td class="px-2 pr-4 text-right tabular">${money2(x.exp)}</td></tr>`; };
   const details = `<details class="card border border-cb-line overflow-hidden group">
     <summary class="px-4 md:px-5 py-4 cursor-pointer select-none flex items-center justify-between gap-2"><span class="font-extrabold text-[15px]">Tabela completa por loja</span><span class="text-[12px] font-bold text-cb-bordo group-open:hidden">Mostrar</span><span class="text-[12px] font-bold text-cb-bordo hidden group-open:inline">Esconder</span></summary>
@@ -2986,13 +2974,13 @@ function weekReportData(ym, wi, stores) {
     const fidG = fidGoalFor(ss, loyB.length ? loySum(loyB, ss).by : null) / 100;
     const tmG = tmGoalFor(ym, ss);
     return { v: st.v, g: st.g, gDone: st.gDone, att: st.gDone ? st.v / st.gDone : null, weekPct: st.g ? st.v / st.g : null, proj: st.closed ? st.v : st.projection, t: st.t, tm, tmG,
-      n: st.n, closed: st.closed, cnt, cntG, nps: nc.n ? nc.nps : null, npsG: npsScoreGoalFor(ss), fid, fidG, fidDays: loyB.length };
+      n: st.n, closed: st.closed, cnt, cntG, nps: nc.n ? nc.nps : null, npsG: npsScope(ss).length ? npsScoreGoalFor(ss) : null, fid, fidG, fidDays: loyB.length };
   };
   const last = stores.reduce((a, s) => Math.max(a, weekStats(ym, [s], wi).last || 0), 0);
   return { ym, wi, w: { from: w.from, to }, from, toD, last, rows: stores.map(s => ({ s, ...row([s]) })), tot: row(stores) };
 }
 async function exportWeekPdf(btn) {
-  const ym = S.view.month, wi = selWeekIdx(ym), stores = goalScope(visibleStores());
+  const ym = S.view.month, wi = selWeekIdx(ym), stores = visibleStores();
   const old = btn?.innerHTML; if (btn) { btn.disabled = true; btn.innerHTML = "Gerando PDF…"; }
   try {
     const jsPDF = await loadJsPdf();
@@ -4332,7 +4320,7 @@ function renderGoals() {
   const ro = editable ? "" : "disabled";
   const inp = (val, on, cls = "") => `<input type="number" inputmode="numeric" min="0" step="100" value="${val ?? ""}" ${ro} onchange="${on}" class="field !h-9 !px-2 text-right font-bold tabular disabled:bg-stone-50 disabled:text-stone-700 ${cls}">`;
   const tot = { meta: 0, ouro: 0, diamante: 0 };
-  const cards = visibleStores().filter(s => !NO_GOAL.has(s)).map(s => {
+  const cards = visibleStores().map(s => {
     const si = STORES.indexOf(s);
     const p = planOf(ym, s);
     const cur = monthStats(ym, [s]);
@@ -4349,8 +4337,8 @@ function renderGoals() {
         <div class="w-40"><label class="label">Meta de TM (R$)</label><input type="number" inputmode="decimal" min="0" step="0.5" value="${tmGoalOf(ym, s) ?? ""}" ${ro} onchange="setTmGoal('${ym}', ${si}, this.value)" class="field !h-9 !px-2 text-right font-bold tabular disabled:bg-stone-50 disabled:text-stone-700" placeholder="—"></div>
         <p class="text-[11px] text-stone-500 pb-2">${cur.t ? `TM atual: <b>${money2(cur.v / cur.t)}</b>` : "Ticket médio esperado por venda."}</p>
         <div class="w-48"><label class="label">Meta vendas fidelizadas (%)</label><input type="number" inputmode="decimal" min="0" max="100" step="1" value="${fidGoalOf(s)}" ${ro} onchange="setFidGoal(${si}, this.value)" class="field !h-9 !px-2 text-right font-bold tabular disabled:bg-stone-50 disabled:text-stone-700"></div>
-        <div class="w-48"><label class="label">Meta de avaliações NPS (mês)</label><input type="number" inputmode="numeric" min="0" step="10" value="${npsCountGoal(s)}" ${ro} onchange="setNpsGoal('count', ${si}, this.value)" class="field !h-9 !px-2 text-right font-bold tabular disabled:bg-stone-50 disabled:text-stone-700"><p class="text-[11px] text-stone-500 mt-0.5">≈ ${dec1(npsDayGoal(s, ym))} por dia</p></div>
-        <div class="w-36"><label class="label">Meta de NPS</label><input type="number" inputmode="numeric" min="-100" max="100" step="1" value="${npsScoreGoal(s)}" ${ro} onchange="setNpsGoal('score', ${si}, this.value)" class="field !h-9 !px-2 text-right font-bold tabular disabled:bg-stone-50 disabled:text-stone-700"></div>
+        ${NO_NPS.has(s) ? "" : `<div class="w-48"><label class="label">Meta de avaliações NPS (mês)</label><input type="number" inputmode="numeric" min="0" step="10" value="${npsCountGoal(s)}" ${ro} onchange="setNpsGoal('count', ${si}, this.value)" class="field !h-9 !px-2 text-right font-bold tabular disabled:bg-stone-50 disabled:text-stone-700"><p class="text-[11px] text-stone-500 mt-0.5">≈ ${dec1(npsDayGoal(s, ym))} por dia</p></div>
+        <div class="w-36"><label class="label">Meta de NPS</label><input type="number" inputmode="numeric" min="-100" max="100" step="1" value="${npsScoreGoal(s)}" ${ro} onchange="setNpsGoal('score', ${si}, this.value)" class="field !h-9 !px-2 text-right font-bold tabular disabled:bg-stone-50 disabled:text-stone-700"></div>`}
       </div>
       </div>`;
     }
@@ -4379,8 +4367,8 @@ function renderGoals() {
         <div class="w-40"><label class="label">Meta de TM (R$)</label><input type="number" inputmode="decimal" min="0" step="0.5" value="${tmGoalOf(ym, s) ?? ""}" ${ro} onchange="setTmGoal('${ym}', ${si}, this.value)" class="field !h-9 !px-2 text-right font-bold tabular disabled:bg-stone-50 disabled:text-stone-700" placeholder="—"></div>
         <p class="text-[11px] text-stone-500 pb-2">${cur.t ? `TM atual: <b>${money2(cur.v / cur.t)}</b>` : "Ticket médio esperado por venda."}</p>
         <div class="w-48"><label class="label">Meta vendas fidelizadas (%)</label><input type="number" inputmode="decimal" min="0" max="100" step="1" value="${fidGoalOf(s)}" ${ro} onchange="setFidGoal(${si}, this.value)" class="field !h-9 !px-2 text-right font-bold tabular disabled:bg-stone-50 disabled:text-stone-700"></div>
-        <div class="w-48"><label class="label">Meta de avaliações NPS (mês)</label><input type="number" inputmode="numeric" min="0" step="10" value="${npsCountGoal(s)}" ${ro} onchange="setNpsGoal('count', ${si}, this.value)" class="field !h-9 !px-2 text-right font-bold tabular disabled:bg-stone-50 disabled:text-stone-700"><p class="text-[11px] text-stone-500 mt-0.5">≈ ${dec1(npsDayGoal(s, ym))} por dia</p></div>
-        <div class="w-36"><label class="label">Meta de NPS</label><input type="number" inputmode="numeric" min="-100" max="100" step="1" value="${npsScoreGoal(s)}" ${ro} onchange="setNpsGoal('score', ${si}, this.value)" class="field !h-9 !px-2 text-right font-bold tabular disabled:bg-stone-50 disabled:text-stone-700"></div>
+        ${NO_NPS.has(s) ? "" : `<div class="w-48"><label class="label">Meta de avaliações NPS (mês)</label><input type="number" inputmode="numeric" min="0" step="10" value="${npsCountGoal(s)}" ${ro} onchange="setNpsGoal('count', ${si}, this.value)" class="field !h-9 !px-2 text-right font-bold tabular disabled:bg-stone-50 disabled:text-stone-700"><p class="text-[11px] text-stone-500 mt-0.5">≈ ${dec1(npsDayGoal(s, ym))} por dia</p></div>
+        <div class="w-36"><label class="label">Meta de NPS</label><input type="number" inputmode="numeric" min="-100" max="100" step="1" value="${npsScoreGoal(s)}" ${ro} onchange="setNpsGoal('score', ${si}, this.value)" class="field !h-9 !px-2 text-right font-bold tabular disabled:bg-stone-50 disabled:text-stone-700"></div>`}
       </div>
       <div>
         <p class="label">Prêmio por semana atingida (R$)</p>
