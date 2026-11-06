@@ -1,0 +1,428 @@
+{
+ "temporada": "Natal 2026",
+ "ini": "2026-09-01",
+ "fim": "2027-01-31",
+ "items": {
+  "60001023": {
+   "n": "Mini chocottone natal 100g",
+   "f": "MINIS",
+   "p": 15.9,
+   "c": "60001023",
+   "o": 22,
+   "g": {
+    "0": 168,
+    "1": 288,
+    "2": 96,
+    "3": 264,
+    "4": 168,
+    "5": 192
+   }
+  },
+  "60001025": {
+   "n": "Mini panettone natal 100g",
+   "f": "MINIS",
+   "p": 15.9,
+   "c": "60001025",
+   "o": 21,
+   "g": {
+    "0": 72,
+    "1": 192,
+    "2": 48,
+    "3": 144,
+    "4": 120,
+    "5": 96
+   }
+  },
+  "60001596": {
+   "n": "Chocottone clássico 750g",
+   "f": "CLASSICOS 750 g",
+   "p": 149.9,
+   "c": "60001596",
+   "o": 14,
+   "g": {}
+  },
+  "60003037": {
+   "n": "Panettone limão siciliano 450g",
+   "f": "ESPECIAIS",
+   "p": 79.9,
+   "c": "60003037",
+   "o": 5,
+   "g": {
+    "0": 102,
+    "1": 210,
+    "2": 18,
+    "3": 210,
+    "4": 120,
+    "5": 102
+   }
+  },
+  "60003044": {
+   "n": "Panettone clássico 450g",
+   "f": "CLÁSSICOS 450 g",
+   "p": 65.9,
+   "c": "60003044",
+   "o": 1,
+   "g": {
+    "0": 126,
+    "1": 270,
+    "2": 102,
+    "3": 240,
+    "4": 186,
+    "5": 108
+   }
+  },
+  "60003045": {
+   "n": "Chocottone clássico 450g",
+   "f": "CLÁSSICOS 450 g",
+   "p": 65.9,
+   "c": "60003045",
+   "o": 2,
+   "g": {
+    "0": 162,
+    "1": 264,
+    "2": 126,
+    "3": 246,
+    "4": 192,
+    "5": 60
+   }
+  },
+  "60003076": {
+   "n": "Panettone zero açúcar 450g",
+   "f": "ZERO 450 g",
+   "p": 79.9,
+   "c": "60003076",
+   "o": 3,
+   "g": {
+    "0": 54,
+    "1": 72,
+    "2": 18,
+    "3": 72,
+    "4": 60,
+    "5": 36
+   }
+  },
+  "60003077": {
+   "n": "Chocottone zero açúcar 450g",
+   "f": "ZERO 450 g",
+   "p": 79.9,
+   "c": "60003077",
+   "o": 4,
+   "g": {
+    "0": 42,
+    "1": 78,
+    "2": 18,
+    "3": 54,
+    "4": 48,
+    "5": 36
+   }
+  },
+  "60003109": {
+   "n": "Panettone damasco uva e mel 450g",
+   "f": "ESPECIAIS",
+   "p": 79.9,
+   "c": "60003109",
+   "o": 6,
+   "g": {
+    "0": 42,
+    "1": 72,
+    "2": 18,
+    "3": 66,
+    "4": 54,
+    "5": 36
+   }
+  },
+  "60003874": {
+   "n": "Biscotti arvore de natal 100g",
+   "f": "PRESENTES",
+   "p": 45.9,
+   "c": "60003874",
+   "o": 23,
+   "g": {
+    "2": 32,
+    "5": 32
+   }
+  },
+  "60003876": {
+   "n": "Biscoito gingerbread 60g",
+   "f": "PRESENTES",
+   "p": 35.9,
+   "c": "60003876",
+   "o": 24,
+   "g": {
+    "2": 21,
+    "5": 28
+   }
+  },
+  "60003878": {
+   "n": "Cantucci amêndoas 60g",
+   "f": "BISCOTTIS",
+   "p": 29.9,
+   "c": "60003878",
+   "o": 29,
+   "g": {
+    "0": 36,
+    "1": 60,
+    "2": 24,
+    "3": 72,
+    "4": 48,
+    "5": 36
+   }
+  },
+  "60003895": {
+   "n": "Panettone supremo 1,100kg",
+   "f": "LATAS / ESPECIAIS",
+   "p": 179.9,
+   "c": "60003895",
+   "o": 17,
+   "g": {}
+  },
+  "60003896": {
+   "n": "Chocottone três chocolates 1,020kg",
+   "f": "LATAS / ESPECIAIS",
+   "p": 179.9,
+   "c": "60003896",
+   "o": 18,
+   "g": {}
+  },
+  "60003902": {
+   "n": "Chocottone caramelo macchiato 600g",
+   "f": "RECHEADOS",
+   "p": 109.9,
+   "c": "60003902",
+   "o": 12,
+   "g": {}
+  },
+  "60003907": {
+   "n": "Chocottone frutas do bosque 750g",
+   "f": "CLASSICOS 750 g",
+   "p": 149.9,
+   "c": "60003907",
+   "o": 15,
+   "g": {}
+  },
+  "60003908": {
+   "n": "Panettone damasco e mel de laranjeira 750g",
+   "f": "CLASSICOS 750 g",
+   "p": 149.9,
+   "c": "60003908",
+   "o": 16,
+   "g": {}
+  },
+  "60003918": {
+   "n": "Chocottone frutas do bosque 450g",
+   "f": "ESPECIAIS",
+   "p": 85.9,
+   "c": "60003918",
+   "o": 7,
+   "g": {
+    "0": 36,
+    "1": 48,
+    "2": 18,
+    "3": 36,
+    "4": 36,
+    "5": 18
+   }
+  },
+  "60003919": {
+   "n": "Chocottone figo com pedaços de choco. 450g",
+   "f": "ESPECIAIS",
+   "p": 85.9,
+   "c": "60003919",
+   "o": 9,
+   "g": {
+    "0": 24,
+    "1": 72,
+    "2": 24,
+    "3": 48,
+    "4": 36,
+    "5": 24
+   }
+  },
+  "60003920": {
+   "n": "Chocottone três chocolates 450g",
+   "f": "ESPECIAIS",
+   "p": 85.9,
+   "c": "60003920",
+   "o": 8,
+   "g": {}
+  },
+  "60003921": {
+   "n": "Chocottone avela 450g",
+   "f": "RECHEADOS",
+   "p": 85.9,
+   "c": "60003921",
+   "o": 11,
+   "g": {}
+  },
+  "60003927": {
+   "n": "Pandoro esperienza 625g",
+   "f": "ESPECIAIS",
+   "p": 149.9,
+   "c": "60003927",
+   "o": 10,
+   "g": {}
+  },
+  "60003945": {
+   "n": "Perlina de choco. c/ figo, macadâmia, damasco 80g",
+   "f": "ESPECIAIS COM CHOCOLATE",
+   "p": 69.9,
+   "c": "60003945",
+   "o": 33,
+   "g": {}
+  },
+  "60003946": {
+   "n": "Perlina de choco. c/ tâmara, castanha, cranberry 80g",
+   "f": "ESPECIAIS COM CHOCOLATE",
+   "p": 69.9,
+   "c": "60003946",
+   "o": 34,
+   "g": {}
+  },
+  "60003947": {
+   "n": "Perlina de choco. c/ damasco, amêndoa, laranja 80g",
+   "f": "ESPECIAIS COM CHOCOLATE",
+   "p": 69.9,
+   "c": "60003947",
+   "o": 35,
+   "g": {}
+  },
+  "60003948": {
+   "n": "Selezionatti perlina de chocolate 150g",
+   "f": "SELEÇÃO",
+   "p": 119.9,
+   "c": "60003948",
+   "o": 38,
+   "g": {}
+  },
+  "60003952": {
+   "n": "Scorzette laranja com chocolate 100g",
+   "f": "ESPECIAIS COM CHOCOLATE",
+   "p": 39.9,
+   "c": "60003952",
+   "o": 32,
+   "g": {
+    "2": 22,
+    "5": 22
+   }
+  },
+  "60003954": {
+   "n": "Biscotti dueto recheado de chocolate 80g",
+   "f": "BISCOTTIS",
+   "p": 55.9,
+   "c": "60003954",
+   "o": 30,
+   "g": {}
+  },
+  "60003955": {
+   "n": "Biscotti dueto recheado de limão siciliano 80g",
+   "f": "BISCOTTIS",
+   "p": 55.9,
+   "c": "60003955",
+   "o": 31,
+   "g": {}
+  },
+  "60003956": {
+   "n": "Selezionatti biscotti dueto recheado 200g",
+   "f": "SELEÇÃO",
+   "p": 119.9,
+   "c": "60003956",
+   "o": 37,
+   "g": {}
+  },
+  "60003970": {
+   "n": "Chocottone italiano pera 750g",
+   "f": "ITALIANOS",
+   "p": 199.9,
+   "c": "60003970",
+   "o": 19,
+   "g": {
+    "0": 18,
+    "1": 30,
+    "2": 12,
+    "3": 24,
+    "4": 24,
+    "5": 24
+   }
+  },
+  "60003971": {
+   "n": "Chocottone italiano amarena 750g",
+   "f": "ITALIANOS",
+   "p": 199.9,
+   "c": "60003971",
+   "o": 20,
+   "g": {
+    "0": 18,
+    "1": 30,
+    "2": 12,
+    "3": 24,
+    "4": 24,
+    "5": 24
+   }
+  },
+  "60003974": {
+   "n": "Chocottone bites com creme de gianduia branco 140g",
+   "f": "BITES",
+   "p": 89.9,
+   "c": "60003974",
+   "o": 27,
+   "g": {
+    "2": 27,
+    "5": 63
+   }
+  },
+  "60003981": {
+   "n": "Chocolates de natal 95g",
+   "f": "PRESENTES",
+   "p": 69.9,
+   "c": "60003981",
+   "o": 25,
+   "g": {
+    "0": 75,
+    "1": 165,
+    "2": 45,
+    "3": 120,
+    "4": 135,
+    "5": 75
+   }
+  },
+  "60003985": {
+   "n": "Chocottone bites com creme de maracujá 140g",
+   "f": "BITES",
+   "p": 89.9,
+   "c": "60003985",
+   "o": 28,
+   "g": {
+    "2": 27,
+    "5": 36
+   }
+  },
+  "60003986": {
+   "n": "Chocottone bites natal 140g",
+   "f": "BITES",
+   "p": 79.9,
+   "c": "60003986",
+   "o": 26,
+   "g": {
+    "2": 27,
+    "5": 54
+   }
+  },
+  "x13": {
+   "n": "Chocottone creme de limão siciliano 600g",
+   "f": "RECHEADOS",
+   "p": 109.9,
+   "c": "",
+   "o": 13,
+   "g": {}
+  },
+  "x36": {
+   "n": "Urso de Chocolate",
+   "f": "ESPECIAIS COM CHOCOLATE",
+   "p": 49.9,
+   "c": "",
+   "o": 36,
+   "g": {}
+  }
+ },
+ "fonte": "Planilha Controle Natal 2026 (aba GIRO)"
+}

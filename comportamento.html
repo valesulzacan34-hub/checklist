@@ -416,6 +416,7 @@
     // Natal: grade importada da planilha de controle + vendas da temporada (resumo por loja/dia/código, só dos produtos da grade)
     window.__NATAL = {};
     try { const [ng, nv] = await Promise.all([db.doc("comport/natal_grade").get(), db.doc("comport/natal_vendas").get()]); if (ng.exists) window.__NATAL.grade = ng.data(); if (nv.exists) window.__NATAL.vendas = nv.data(); } catch (e) { }
+    if (!window.__NATAL.grade) { try { const r = await fetch("natal_grade_2026.json", { cache: "no-store" }); if (r.ok) { window.__NATAL.grade = await r.json(); window.__NATAL.seed = true; } } catch (e) { } }
     if (CAN) {
       window.__NATALSAVE = async (G) => { G.updatedAt = new Date().toISOString(); G.updatedBy = AU.uid || null; await db.doc("comport/natal_grade").set(toApp(G)); window.__NATAL.grade = JSON.parse(JSON.stringify(G)); };
       window.__NATALREBUILD = async (say) => { const G = window.__NATAL.grade; if (!G) return; const codes = new Set(Object.values(G.items).map(x => x.c).filter(Boolean)), v = {};
@@ -426,6 +427,12 @@
           for (const d of q.docs) { const x = d.data(); for (const k of ["p", "i"]) if (typeof x[k] === "string") x[k] = JSON.parse(x[k]); (v[x.s] || (v[x.s] = {}))[x.date] = natalDay(x, codes); } }
         const doc = { v, updatedAt: new Date().toISOString() }; await db.doc("comport/natal_vendas").set(toApp(doc)); window.__NATAL.vendas = doc;
         say(`Pronto: vendas de ${yms.length} ${yms.length === 1 ? "mês" : "meses"} cruzadas com a grade.`); };
+      // primeira vez: grava a grade da planilha e soma as vendas da temporada direto dos relatórios já importados
+      if (window.__NATAL.grade && (window.__NATAL.seed || !window.__NATAL.vendas)) {
+        const G0 = window.__NATAL.grade;
+        setTimeout(async () => { try { if (window.__NATAL.seed) { await window.__NATALSAVE(G0); window.__NATAL.seed = false; }
+          await window.__NATALREBUILD((t) => { const e = document.getElementById("nt-msg"); if (e) e.textContent = t; }); if (window.__NTREFRESH) window.__NTREFRESH(); } catch (e) { } }, 300);
+      }
     }
     // metas de faturamento e de TM: as mesmas do módulo Vendas e metas
     const METAS = {};
@@ -2212,8 +2219,8 @@ function natalImportCard(N) {
   if (!window.__CAN || !window.__NATALSAVE) return "";
   const G = N && N.grade;
   return `<div class="flex flex-wrap items-center gap-2 text-xs text-cb-muted ${G ? "mt-4 pt-3 border-t border-stone-100" : ""}">
-    ${G ? `<span>Grade: <b>${esc(G.fonte || "planilha")}</b>, importada em ${new Date(G.updatedAt).toLocaleDateString("pt-BR")}. Vendas da temporada atualizadas ${N.vendas && N.vendas.updatedAt ? new Date(N.vendas.updatedAt).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }) : "—"}.</span>` : ""}
-    <span class="flex gap-2 ml-auto"><button class="h-9 px-3 rounded-xl ${G ? "border border-stone-200 bg-white text-stone-700" : "bg-cb-bordo text-white"} text-xs font-bold" data-nt="import">${G ? "Reimportar grade" : "Importar planilha de Natal (.xlsx)"}</button>${G ? `<button class="h-9 px-3 rounded-xl border border-stone-200 bg-white text-xs font-bold text-stone-700" data-nt="rebuild">Recalcular vendas</button>` : ""}</span>
+    ${G ? `<span>Grade: <b>${esc(G.fonte || "planilha")}</b>. Vendas: relatório de vendas importado no app, atualizadas da temporada atualizadas ${N.vendas && N.vendas.updatedAt ? new Date(N.vendas.updatedAt).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }) : "—"}.</span>` : ""}
+    ${G ? `<span class="flex gap-2 ml-auto"><button class="h-9 px-3 rounded-xl border border-stone-200 bg-white text-xs font-bold text-stone-700" data-nt="rebuild">Recalcular vendas</button></span>` : ""}
     <input id="nt-file" type="file" accept=".xlsx,.xls" class="hidden"><p id="nt-msg" class="w-full text-xs font-semibold text-cb-bordo"></p></div>`;
 }
 function viewNatal(ts) {
@@ -2222,7 +2229,7 @@ function viewNatal(ts) {
   const monthCard = ids.size ? unitsCard(ts, ids, { title: `${gname}: vendas do mês selecionado`, sub: "Venda em unidades dos produtos do grupo, por loja e por dia (filtros da tela)", empty: "", daily: true, color: "#1baf7a" }) : "";
   const N = window.__NATAL, X = natalData();
   if (!X) return card("Giro de Natal", "Grade de cada loja × vendas da temporada, na linha do tempo da planilha de controle",
-    `<p class="text-sm text-cb-muted">${!window.__CVAPP ? "Disponível no app." : window.__CAN ? "Importe a planilha <b>Controle Natal</b> (aba Vendas Natal26): o app lê a grade de cada loja e cruza com as vendas de outubro a janeiro." : "A administração ainda não importou a grade de Natal."}</p>${natalImportCard(N)}`, "mb-4") + monthCard;
+    `<p class="text-sm text-cb-muted">${!window.__CVAPP ? "Disponível no app." : "Não foi possível carregar a grade de Natal. Recarregue a página."}</p>${natalImportCard(N)}`, "mb-4") + monthCard;
   const { G, B, items, sold, last, lastBi, used } = X;
   const sts = X.stores.filter(s => !S.st.size || S.st.has(s));
   const BI = B.map((b, i) => i).filter(i => used[i]);
@@ -2302,6 +2309,7 @@ function natalSheet(X, sts, mode, F) {
   return `<div class="pl-wrap -mx-4 md:mx-0"><table class="pl"><thead><tr>${left3("", "", "", "pl-h0", "th")}${head1}</tr><tr class="pl-h2">${left3("Código", "Produtos", "Preço", "", "th")}${head2}</tr></thead><tbody>${body}</tbody></table></div>`;
 }
 // ações da aba (admin importa a grade; todos alternam as visões)
+window.__NTREFRESH = () => { if (S.tab === "natal") rerender(); };
 async function natalAction(a, el) {
   if (a.startsWith("tl:")) { S.ntTl = a.slice(3); rerender(); return; }
   if (a.startsWith("pv:")) { S.ntPv = a.slice(3); rerender(); return; }
