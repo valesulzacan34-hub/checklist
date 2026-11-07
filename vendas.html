@@ -1371,6 +1371,7 @@ function renderHomeSimple() {
         </div>
         <div class="text-right"><p class="text-4xl font-extrabold tabular ${wt[2]}">${pct(w.pct)}</p><span class="chip ${wt[0]}">${ws.label}</span></div>
       </div>
+      ${isBoard() && !w.closed ? `<button onclick="openFollowUp()" class="btn-secondary btn-sm w-full sm:w-auto !text-[#0e6f63] !border-[#9fd8c4]" title="Mensagem curta para cada gerente: quanto falta, venda/dia, TM e TC necessários e 3 focos de venda">${icon("users", "w-4 h-4")} Follow-up para gerentes</button>` : ""}
       ${bar(w.pct, w.expShare, wt[1], !w.closed && !w.future && w.n && w.v < w.g)}
       ${w.n && !w.closed && w.v < w.g ? `<p class="text-sm font-semibold ${wt[2]}">Está ${money(Math.abs(w.diff))} ${w.diff >= 0 ? "acima" : "abaixo"} da meta dos dias já vendidos (${w.n} de ${w.to - w.from + 1}).</p>` : ""}
       ${w.closed ? `<p class="text-sm font-semibold ${wt[2]}">${w.v >= w.g ? `Fechou ${money(w.v - w.g)} acima da meta.` : `Fechou ${money(w.g - w.v)} abaixo da meta.`}</p>` : ""}
@@ -3138,6 +3139,121 @@ async function copyWhats(btn) {
   const txt = document.getElementById("wa-text").value;
   try { await navigator.clipboard.writeText(txt); toast("Texto copiado. É só colar no WhatsApp."); }
   catch (e) { const ta = document.getElementById("wa-text"); ta.classList.remove("sr-only"); ta.className = "field !h-48 text-[12px]"; ta.select(); toast("Selecione e copie o texto (Ctrl+C).", "info"); }
+}
+
+// ---------- Follow-up diário para os gerentes (somente administração) ----------
+// Mensagem curta por loja: quanto falta para a meta da semana, venda/dia, TM e TC necessários
+// e 3 comportamentos de venda (Análise de vendas, últimos 14 dias) em que a loja está pior que a rede.
+const FUP = { cache: null, at: 0, sel: null, texts: {} };
+async function fupLoadComport() {
+  if (FUP.cache && Date.now() - FUP.at < 10 * 60000) return FUP.cache;
+  const from = iso(new Date(Date.now() - 14 * 86400000)), to = YESTERDAY_ISO;
+  const q = await APP.db.collection("comport_dias").where("date", ">=", from).get();
+  const J = v => typeof v === "string" ? JSON.parse(v) : (v || []);
+  const blank = () => ({ n: 0, v: 0, q: 0, one: 0, drinkOnly: 0, foodOnly: 0, emp: 0, hot: 0, hotAdd: 0, fid: 0, days: new Set() });
+  const by = {}, net = blank(), day = {};
+  const DRINK = new Set(["Cafés e bebidas quentes", "Bebidas geladas", "Águas e refrigerantes"]);
+  const FOOD = new Set(["Fatias de panettone", "Salgados e pratos", "Doces e confeitaria"]);
+  q.docs.forEach(doc => {
+    const d = doc.data(); if (!d || d.date > to) return;
+    const p = J(d.p), t = J(d.t), it = J(d.i), st = STORES[d.s]; if (!st) return;
+    const tk = t.map(r => ({ f: r[3], v: 0, q: 0, cats: new Set() }));
+    it.forEach(r => { const x = tk[r[0]]; if (!x || r[8]) return; const c = (p[r[1]] || [])[1] || "Outros"; x.v += r[3]; if (c !== "Cestas e embalagens") x.q += r[2]; x.cats.add(c); });
+    (day[st] ||= {})[d.date] = { v: d.total || 0, t: d.vendas || 0 };
+    const k = by[st] || (by[st] = blank());
+    tk.forEach(x => {
+      if (x.v <= 0) return;
+      const drink = [...x.cats].some(c => DRINK.has(c)), food = [...x.cats].some(c => FOOD.has(c)), emp = x.cats.has("Empório (embalados)"), hot = x.cats.has("Cafés e bebidas quentes");
+      [k, net].forEach(a => {
+        a.n++; a.v += x.v; a.q += x.q; if (x.q <= 1) a.one++; if (x.f) a.fid++; if (emp) a.emp++;
+        if (drink && !food && !emp) a.drinkOnly++; if (food && !drink) a.foodOnly++;
+        if (hot) { a.hot++; if (x.cats.has("Adicionais")) a.hotAdd++; }
+        a.days.add(d.date);
+      });
+    });
+  });
+  FUP.cache = { by, net, day, from, to }; FUP.at = Date.now();
+  return FUP.cache;
+}
+// 3 comportamentos em que a loja mais perde para a média da rede (score = diferença relativa)
+function fupBehaviors(s, C, rep) {
+  const k = C.by[s], n = C.net; if (!k || k.n < 30) return [];
+  const r = (a, b) => b ? a / b : 0, P = v => pct(v);
+  const m = { one: r(k.one, k.n), dOnly: r(k.drinkOnly, k.n), fOnly: r(k.foodOnly, k.n), emp: r(k.emp, k.n), add: r(k.hotAdd, k.hot), ipt: r(k.q, k.n) };
+  const R = { one: r(n.one, n.n), dOnly: r(n.drinkOnly, n.n), fOnly: r(n.foodOnly, n.n), emp: r(n.emp, n.n), add: r(n.hotAdd, n.hot), ipt: r(n.q, n.n) };
+  const fid = rep?.fid, fidG = rep?.fidG;
+  const L = [
+    { sc: r(m.one - R.one, R.one), tx: `Venda sugestiva: ${P(m.one)} dos tickets saem com 1 item só (rede ${P(R.one)}). Ofereça sempre um acompanhamento.` },
+    { sc: r(m.dOnly - R.dOnly, R.dOnly), tx: `Só bebida em ${P(m.dOnly)} dos tickets (rede ${P(R.dOnly)}). Sugira uma fatia ou salgado com o café.` },
+    { sc: r(m.fOnly - R.fOnly, R.fOnly), tx: `Só comida em ${P(m.fOnly)} dos tickets (rede ${P(R.fOnly)}). Ofereça um café ou bebida gelada junto.` },
+    { sc: r(R.emp - m.emp, R.emp), tx: `Empório em ${P(m.emp)} dos tickets (rede ${P(R.emp)}). Apresente os embalados no caixa e na saída.` },
+    { sc: r(R.add - m.add, R.add), tx: `Adicionais em ${P(m.add)} das bebidas quentes (rede ${P(R.add)}). Ofereça chantilly, calda ou leite vegetal.` },
+    { sc: r(R.ipt - m.ipt, R.ipt), tx: `${m.ipt.toLocaleString("pt-BR", { maximumFractionDigits: 2 })} itens por ticket (rede ${R.ipt.toLocaleString("pt-BR", { maximumFractionDigits: 2 })}). Monte combos: bebida + fatia + empório.` }
+  ];
+  if (fid != null && fidG) L.push({ sc: r(fidG - fid, fidG), tx: `Fidelização em ${P(fid)} (meta ${P(fidG)}). Peça o CPF do programa em toda venda.` });
+  const out = L.filter(x => x.sc > 0.08).sort((a, b) => b.sc - a.sc).slice(0, 3).map(x => x.tx);
+  // completa com as alavancas da meta quando a loja já está igual ou melhor que a rede
+  const xtra = [`Ticket médio: ofereça o tamanho maior e o combo do dia em todo pedido.`, `Fluxo: aborde quem passa na frente da loja e ofereça degustação.`, `Fidelização: peça o CPF do programa em toda venda.`];
+  for (const t of xtra) if (out.length < 3 && !out.some(o => o.startsWith(t.split(":")[0]))) out.push(t);
+  return out;
+}
+function fupText(s, C) {
+  const ym = S.view.month, wi = selWeekIdx(ym), p2 = n => String(n).padStart(2, "0"), mm = ym.slice(5);
+  // semana da loja: informe de venda do dia ou, se ainda não lançado, o total da Análise de vendas (GCOM)
+  const w = (() => {
+    const W = monthWeeks(ym)[wi], to = Math.min(W.to, daysInMonth(ym)), td = todayDayOf(ym);
+    let g = 0, v = 0, t = 0, n = 0, last = 0;
+    for (let d = W.from; d <= to; d++) {
+      g += dayGoal(ym, d, [s]);
+      const r = dayTotal(dateOf(ym, d), [s]) || C.day?.[s]?.[dateOf(ym, d)];
+      if (r && r.v) { v += r.v; t += r.t; n++; last = d; }
+    }
+    const closed = to < td, future = W.from > td, remaining = closed ? 0 : future ? to - W.from + 1 : to - td + 1;
+    return { from: W.from, to, g, v, t, n, last, remaining, pct: g ? v / g : 0, need: remaining ? Math.max(0, g - v) / remaining : 0 };
+  })();
+  const rep = weekReportData(ym, wi, [s]).rows[0];
+  const tm = w.t ? w.v / w.t : 0, tmG = tmGoalFor(ym, [s]), tcDay = w.n ? w.t / w.n : 0;
+  const nm = shortStore(s).replace(" Shopping", "");
+  const L = [`*${nm} · Semana ${wi + 1} (${p2(w.from)} a ${p2(w.to)}/${mm})* 💪`];
+  L.push(`Vendemos ${money(w.v, true)} de ${money(w.g, true)} (${pct(w.pct)})${w.last ? `, até ${p2(w.last)}/${mm}` : ""}.`);
+  if (!w.g) L.push(`Sem meta cadastrada para esta semana.`);
+  else if (w.v >= w.g) L.push(`✅ *Meta da semana batida!* Agora é buscar o próximo nível.`);
+  else if (w.remaining) {
+    const falta = w.g - w.v, dia = w.need;
+    L.push(`🎯 Faltam *${money(falta)}* em ${w.remaining} dia(s): *${money(dia)}/dia*`);
+    if (tcDay) L.push(`🧾 TM necessário: *${money2(dia / tcDay)}* com ${intf(tcDay)} TC/dia${tm ? ` (atual ${money2(tm)})` : ""}`);
+    const base = Math.max(tm, tmG || 0);
+    if (base) L.push(`👥 Ou *${intf(Math.ceil(dia / base))} TC/dia* com TM de ${money2(base)}${tcDay ? ` (atual ${intf(tcDay)})` : ""}`);
+  }
+  const B = fupBehaviors(s, C, rep);
+  if (B.length) { L.push("", "*3 focos para hoje:*"); B.forEach((b, i) => L.push(`${i + 1}. ${b}`)); }
+  L.push("", "Bora pra cima, equipe! 🚀");
+  return L.join("\n");
+}
+async function openFollowUp() {
+  if (!isBoard()) return;
+  const stores = selStores();
+  FUP.sel = stores.includes(FUP.sel) ? FUP.sel : stores[0];
+  openSheet(`${sheetHeader("Follow-up para gerentes", "Carregando a análise de vendas…")}<div class="p-6 text-sm text-stone-500">Calculando…</div>`);
+  let C;
+  try { C = await fupLoadComport(); } catch (e) { console.error(e); C = { by: {}, net: { n: 0 } }; toast("Não consegui ler a análise de vendas; o texto sai sem os comportamentos.", "warn"); }
+  FUP.texts = {}; stores.forEach(s => { FUP.texts[s] = fupText(s, C); });
+  FUP.stores = stores; fupRender();
+}
+function fupSel(i) { FUP.sel = FUP.stores[i]; fupRender(); }
+function fupRender() {
+  const s = FUP.sel, txt = FUP.texts[s] || "";
+  openSheet(`${sheetHeader("Follow-up para gerentes", "Texto curto da semana atual, por loja")}
+    <div class="p-5 space-y-3 overflow-y-auto">
+      ${FUP.stores.length > 1 ? `<div class="flex gap-1.5 flex-wrap">${FUP.stores.map((x, i) => `<button onclick="fupSel(${i})" class="h-8 px-3 rounded-lg text-[12px] font-bold border ${x === s ? "bg-cb-bordo text-white border-cb-bordo" : "bg-white border-stone-200 text-stone-700"}">${esc(shortStore(x).replace(" Shopping", ""))}</button>`).join("")}</div>` : ""}
+      <div class="rounded-2xl bg-[#e7ffdb] border border-[#c9eebc] p-3.5 text-[13.5px] leading-relaxed whitespace-pre-wrap font-[system-ui]">${esc(txt).replace(/\*([^*\n]+)\*/g, "<b>$1</b>").replace(/_([^_\n]+)_/g, "<i>$1</i>")}</div>
+      <textarea id="wa-text" class="sr-only" aria-hidden="true">${esc(txt)}</textarea>
+      <div class="grid grid-cols-2 gap-2">
+        <button onclick="copyWhats(this)" class="btn-secondary">${icon("edit", "w-4 h-4")} Copiar texto</button>
+        <a href="https://wa.me/?text=${encodeURIComponent(txt)}" target="_blank" rel="noopener" class="btn-primary !bg-[#128C7E] hover:!bg-[#0e6f63]">Abrir no WhatsApp</a>
+      </div>
+      <p class="text-[11px] text-stone-500">Comportamentos: Análise de vendas dos últimos 14 dias, comparados com a média da rede. Só aparece para a administração.</p>
+    </div>`);
 }
 
 // ---------- Importação rápida dentro de cada indicador (somente administração) ----------
