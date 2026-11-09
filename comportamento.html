@@ -1343,14 +1343,15 @@ function prevEnsure() {
   if (PREV || PREV_ST || !window.__CVPREVLOAD) return;
   PREV_ST = "loading";
   window.__CVPREVLOAD().then(docs => {
-    const R = { add: {}, up: {} };
+    const R = { add: {}, up: {}, one: {} }, CATN = {}; for (const p of D.prods) CATN[String(p[0]).toUpperCase()] = p[1];
     for (const d of docs) { const P = d.p || [], tk = {};
       for (const it of d.i || []) { if (it[8]) continue; const o = tk[it[0]] || (tk[it[0]] = { v: 0, items: [] }); o.v += +it[3] || 0; o.items.push([String((P[it[1]] || [])[0] || "").toUpperCase(), +it[2] || 0]); }
       for (const t of Object.values(tk)) { if (t.v <= 0) continue;
+        { let q = 0; for (const [n, x] of t.items) if (CATN[n] !== "Cestas e embalagens") q += x; const o1 = R.one[d.s] || (R.one[d.s] = { n: 0, o: 0 }); o1.n++; if (Math.round(q) <= 1) o1.o++; } // tickets de 1 item (mesma conta do quadro)
         for (const c of ADDONS) { let e = 0, a = 0; for (const [n, q] of t.items) { if (c.elig.names.has(n)) e += q; if (c.add.names.has(n)) a += q; } if (!e) continue; const o = ((R.add[c.id] || (R.add[c.id] = {}))[d.s] || (R.add[c.id][d.s] = { e: 0, c: 0 })); o.e += e; o.c += a; }
         for (const c of UPGRADES) { let b = 0, u = 0; for (const [n, q] of t.items) { if (c.base.names.has(n)) b += q; if (c.up.names.has(n)) u += q; } if (!b && !u) continue; const o = ((R.up[c.id] || (R.up[c.id] = {}))[d.s] || (R.up[c.id][d.s] = { b: 0, u: 0 })); o.b += b; o.u += u; } } }
-    PREV = R; PREV_ST = "ok"; if (S.tab === "adic") rerender();
-  }).catch(() => { PREV_ST = "erro"; if (S.tab === "adic") rerender(); });
+    PREV = R; PREV_ST = "ok"; if (S.tab === "adic" || S.tab === "geral") rerender();
+  }).catch(() => { PREV_ST = "erro"; if (S.tab === "adic" || S.tab === "geral") rerender(); });
 }
 const prevSum = (m, sts, a, b) => { let x = 0, y = 0; for (const s of sts) { const o = (m || {})[s]; if (o) { x += o[a]; y += o[b]; } } return { x, y }; };
 const ppDelta = (cur, prev) => { if (prev == null) return ""; const d = (cur - prev) * 100; return Math.abs(d) < 0.05 ? `<span class="text-stone-500">igual</span>` : `<span class="${d > 0 ? "text-emerald-700" : "text-rose-700"} font-bold">${d > 0 ? "▲" : "▼"} ${nf(Math.abs(d), 1)} p.p.</span>`; };
@@ -1880,6 +1881,11 @@ function oneItemCard(ts) {
   const alone = {}; for (const t of one) for (const it of t.items) if (!it[8]) { const p = D.prods[it[1]][0]; alone[p] = (alone[p] || 0) + 1; }
   const topAlone = Object.entries(alone).sort((a, b) => b[1] - a[1]).slice(0, 8);
   const gain = one.length * 0.2 * (tmTwo - tmOne) * f;
+  // referência: fechamento do mês anterior (mesmas lojas, mês inteiro). Menos tickets de 1 item = melhor
+  prevEnsure();
+  const rOne = one.length / V.length, PO = PREV && PREV.one, pOne = PO ? prevSum(PO, sts, "o", "n") : null, pR = pOne && pOne.y ? pOne.x / pOne.y : null;
+  const oneDelta = (cur, prev) => { const d = (cur - prev) * 100; return Math.abs(d) < 0.05 ? `<span class="text-stone-500 font-bold">igual</span>` : `<span class="${d < 0 ? "text-emerald-700" : "text-rose-700"} font-bold">${d < 0 ? "▼" : "▲"} ${nf(Math.abs(d), 1)} p.p.</span>`; };
+  const prevHtml = window.__CVPREVYM ? `<div class="mt-3 rounded-xl bg-white/70 px-3 py-2 text-xs leading-snug"><span class="font-bold uppercase tracking-wide text-[10px] text-rose-700">Fechamento ${PREV_LBL()}</span><br>${pR != null ? `<b class="text-base text-cb-ink tabular">${pct(pR)}</b> <span class="text-cb-muted">(${nf(pOne.x)} de ${nf(pOne.y)} tickets)</span><br>Agora: ${oneDelta(rOne, pR)} ${Math.abs(rOne - pR) < .0005 ? "" : rOne < pR ? `<span class="text-emerald-700 font-semibold">melhorando</span>` : `<span class="text-rose-700 font-semibold">piorando</span>`}` : PREV_ST === "erro" ? "não foi possível carregar" : "carregando…"}</div>` : "";
   // evolução por semana do mês (1–7, 8–14, 15–21, 22 ao fim): menos tickets de 1 item = melhor
   const lastD = new Date(Y, MO + 1, 0).getDate(), p2 = (n) => String(n).padStart(2, "0");
   const wks = [[1, 7], [8, 14], [15, 21], [22, lastD]].map(([a, z], i) => { const l = V.filter(t => t.d >= a && t.d <= z), o = l.filter(t => Math.round(t.q) <= 1).length, dias = new Set(l.map(t => t.d)).size;
@@ -1893,10 +1899,11 @@ function oneItemCard(ts) {
       <p class="text-[11px] font-bold uppercase tracking-wide text-rose-700">Saem com 1 item só</p>
       <p class="text-5xl font-extrabold text-rose-700 tabular mt-1">${pct(one.length / V.length)}</p>
       <p class="text-sm font-bold text-cb-ink mt-1">${nf(one.length)} tickets <span class="font-semibold text-cb-muted">(${nf(one.length / nDays(ts), 0)} por dia)</span></p>
+      ${prevHtml}
       <p class="text-xs text-stone-600 mt-3 leading-relaxed">TM desses tickets: <b>${brl(tmOne)}</b>, contra ${brl(tmTwo)} quando o cliente leva 2 itens. Se 1 em cada 5 levar um segundo item: <b class="text-emerald-700">+${brl(gain)}/mês</b>.</p>
       ${wHtml}
     </div>
-    <div><p class="text-sm font-extrabold mb-2">Por loja</p>${hbars(per.map(x => ({ label: SHORT[x.s], color: SCOLOR[x.s], v: x.r, mark: one.length / V.length, txt: pct(x.r), note: `${nf(x.o)} de ${nf(x.n)} tickets` })))}
+    <div><p class="text-sm font-extrabold mb-2">Por loja</p>${hbars(per.map(x => ({ label: SHORT[x.s], color: SCOLOR[x.s], v: x.r, mark: one.length / V.length, txt: pct(x.r), note: `${nf(x.o)} de ${nf(x.n)} tickets${PO && PO[x.s] && PO[x.s].n ? ` · ${PREV_LBL()}: ${pct(PO[x.s].o / PO[x.s].n)} ${oneDelta(x.r, PO[x.s].o / PO[x.s].n)}` : ""}` })))}
       <p class="text-sm font-extrabold mb-2 mt-4">Por faixa de horário</p>${hbars(bands.map((x, i) => ({ label: x.l, color: BAND_C[i], v: x.r, txt: pct(x.r), note: `${nf(x.o)} tickets` })))}</div>
     <div><p class="text-sm font-extrabold mb-2">O que o cliente leva sozinho</p>${hbars(topAlone.map(([p, n]) => ({ label: p, v: n, txt: `${nf(n)} · ${pct(n / one.length)}`, color: "#be123c" })))}
       <p class="text-[11px] text-cb-muted mt-2">São os produtos que mais pedem companhia: veja as estratégias na aba Venda sugerida.</p></div>
